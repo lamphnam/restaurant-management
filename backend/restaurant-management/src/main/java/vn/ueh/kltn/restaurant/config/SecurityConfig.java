@@ -18,13 +18,18 @@ import vn.ueh.kltn.restaurant.security.ApiSecurityErrorHandler;
 @EnableMethodSecurity
 public class SecurityConfig {
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http, Environment environment, ApiSecurityErrorHandler errors) throws Exception {
+    JwtAuthenticationConverter jwtAuthenticationConverter() {
         var authorities = new JwtGrantedAuthoritiesConverter();
         authorities.setAuthoritiesClaimName("role");
         authorities.setAuthorityPrefix("ROLE_");
         var authenticationConverter = new JwtAuthenticationConverter();
         authenticationConverter.setJwtGrantedAuthoritiesConverter(authorities);
+        return authenticationConverter;
+    }
 
+    @Bean
+    SecurityFilterChain securityFilterChain(HttpSecurity http, Environment environment, ApiSecurityErrorHandler errors,
+                                            JwtAuthenticationConverter jwtAuthenticationConverter) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
@@ -42,7 +47,7 @@ public class SecurityConfig {
                 })
                 .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(errors).accessDeniedHandler(errors))
                 .oauth2ResourceServer(resource -> resource
-                        .jwt(jwt -> jwt.jwtAuthenticationConverter(authenticationConverter))
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter))
                         .authenticationEntryPoint(errors).accessDeniedHandler(errors));
         return http.build();
     }

@@ -761,7 +761,7 @@ Composition trên Class Diagram **không** có nghĩa là xóa cascade ở DB. M
 | D7 | Kiểm kê | Theo NVL (`lotId = NULL`). `systemQuantity` do backend tính lúc xác nhận, không lấy từ client. |
 | D8 | Thanh toán | Món `READY` chưa `SERVED` vẫn tính tiền, không chặn. Chỉ chặn khi còn `PENDING`/`COOKING`. Phiên có tổng 0đ (khách về, không gọi món) vẫn thanh toán được với `amount = 0` để đóng phiên. |
 | D9 | Đối soát | Xem chi tiết bên dưới bảng. |
-| D10 | Khóa tài khoản | Chặn đăng nhập mới. Token đang dùng hết hạn sau `app.jwt.expiration-hours` (mặc định 12h) — chấp nhận cho prototype. |
+| D10 | Khóa tài khoản / đổi vai trò | Khóa chặn đăng nhập mới. JWT đã cấp giữ quyền trong claim `role` đến hết hạn `app.jwt.expiration-hours` (12h cho demo), kể cả sau khi khóa hoặc đổi vai trò. `/api/auth/me` trả role từ JWT để UI và backend cùng nguồn; tên hiện tại vẫn đọc từ DB. Đăng nhập lại nhận role mới. Chủ dự án duyệt mở rộng này ngày 22/10/2026. |
 | D11 | Định lượng | Lưu kiểu “thay toàn bộ định lượng của món” (PUT). Xóa dòng định lượng được phép (không phải dữ liệu lịch sử). Tiêu hao đã ghi không đổi. |
 | D12 | Đổi đơn vị tính NVL | Chặn nếu NVL đã có `StockMovement`. |
 
@@ -1279,9 +1279,15 @@ Thêm bảng ngắn cho TR/NFR: cách đáp ứng (lấy từ mục 2.2, 2.4).
 # 20. SEED DATA CHO DEMO
 
 `DataSeeder` (`CommandLineRunner`):
-- chỉ chạy khi `app.seed = true` **và** bảng `account` rỗng;
+- mọi khối seed chỉ chạy khi `app.seed = true`;
+- `DataSeeder` nền tảng (`@Order(0)`, tài khoản/khu vực/bàn) giữ điều kiện bảng `account` rỗng;
+- các phase sau thêm runner có `@Order` kế tiếp và điều kiện riêng cho từng khối (menu rỗng, NVL rỗng, định lượng rỗng, đặt bàn rỗng; kiểm kê/nhập chỉ khi chưa có giao dịch seed tương ứng). Không đặt các runner này sau lệnh return kiểm tra account. Mỗi runner có transaction và không ghi đè dữ liệu hiện có;
 - hash mật khẩu bằng `PasswordEncoder`;
 - tạo nghiệp vụ (nhập, kiểm kê) qua ServiceImpl để dữ liệu nhất quán.
+
+Chủ dự án duyệt cổng seed theo từng khối ngày 22/10/2026; làm trên Neon `main`, không bắt buộc branch/reset. Phase 0 chỉ có runner nền tảng; các runner nghiệp vụ được thêm đúng phase. Nếu một khối đã có dữ liệu một phần thì bỏ qua và báo để kiểm tra, không tự xóa hay điền đè.
+
+Các mốc tương đối (45 phút tới, ngày mai, HSD còn 2 ngày) được tính tại lúc khối tương ứng seed lần đầu. Khởi động lại không làm mới ngày của dữ liệu cũ. Trước demo 27/10, kiểm tra lại độ tươi; khi cần tạo đặt bàn/phiếu nhập mới qua workflow của app, không sửa lịch sử hoặc reset DB tự động.
 
 Nội dung seed:
 - **6 tài khoản**, mỗi vai trò một, SĐT `0900000001`–`0900000006`, mật khẩu demo `Demo@123` (ghi trong README, không lưu plaintext trong DB).

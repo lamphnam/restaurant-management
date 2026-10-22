@@ -113,8 +113,9 @@ controller nghiệp vụ tương ứng.
 
 ## Lưu ý cho phase sau
 
-Điều kiện seed của §20 (`account` rỗng) hiện đã đóng sau Phase 0. Cần xử lý rõ
-cách bổ sung seed món/NVL/đặt bàn ở Phase 1 và seed kho ở Phase 3; không tự xóa
-dữ liệu hiện tại hoặc tự thay điều kiện seed.
+Sau review, §20 đã được cập nhật: seed nền tảng giữ cổng `account` rỗng,
+các phase sau có runner/cổng riêng theo khối, giữ Neon main hiện có. D10 đã
+mở rộng sang đổi role: token giữ quyền tối đa 12h, `/me` dùng role token.
+Chi tiết sửa review và bằng chứng chạy lại: [phase-0-review.md](phase-0-review.md).
 
 Danh sách file: [phase-0-files.md](phase-0-files.md).

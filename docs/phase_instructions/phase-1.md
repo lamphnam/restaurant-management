@@ -13,7 +13,9 @@
    - Tạo: khóa dòng `DiningTable` → `hasEnoughCapacity` → `checkOverlap` (`newStart < existingEnd AND newEnd > existingStart`, chạm biên không trùng) → `CONFIRMED`.
    - Hủy chỉ khi `CONFIRMED`, không DELETE.
 5. Mở phiên (`ServiceSessionService.open`) `[TX]`: khóa bàn, bàn không `INACTIVE`, không có phiên `ACTIVE`, nếu có đặt bàn thì `confirmSeated()` + gắn `reservationId`, tạo `ServiceSession`, bàn → `OCCUPIED`.
-6. Seed bổ sung: món (10), NVL (10), định lượng (≥ 6 món), 3 đặt bàn (§20).
+6. Seed bổ sung: món (10), NVL (10), định lượng (≥ 6 món), 3 đặt bàn (§20). Dùng runner `@Order` sau seed nền tảng, có cổng riêng cho từng khối và transaction; không phụ thuộc account rỗng. Giữ dữ liệu Neon main hiện có, kiểm tra độ tươi ngày demo.
+
+Lưu ý từ review Phase 0: AccountController dùng `@PreAuthorize`, đồng thời gỡ rule URL `/api/accounts/**` đang dành sẵn trong SecurityConfig. Đổi role tuân theo D10 mở rộng (token cũ giữ quyền đến hết 12h, `/me` dùng role token). POST mở phiên chỉ nhận reservation CONFIRMED; siết `confirmSeated()` và test khi triển khai service. PUT thay toàn bộ recipe cần diff các dòng hoặc delete + flush trước insert để tránh trùng khóa kép. Bổ sung ErrorCode nghiệp vụ cụ thể và `@Size` theo độ dài cột trong DTO. Quyền CASHIER xem sơ đồ bàn theo §13.4/§15 (cần đồng bộ mục §5 khi chốt báo cáo).
 
 ## Frontend
 - `/accounts`, `/menu` (+ Drawer Định lượng), `/floor-plan` (card bàn, nút Mở phiên/Xem phiên, hỏi xác nhận khi walk-in sát giờ đặt), `/reservations` (tạo → gợi ý bàn, hủy).

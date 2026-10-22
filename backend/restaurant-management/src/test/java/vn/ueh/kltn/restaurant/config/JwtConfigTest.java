@@ -61,4 +61,21 @@ class JwtConfigTest {
                 JwsHeader.with(MacAlgorithm.HS256).build(), claims)).getTokenValue();
         assertThrows(JwtException.class, () -> config.jwtDecoder(config.jwtSecretKey(properties)).decode(token));
     }
+
+    @Test
+    void unsecuredTokenIsRejected() {
+        var token = new com.nimbusds.jwt.PlainJWT(new com.nimbusds.jwt.JWTClaimsSet.Builder()
+                .subject("1").claim("role", "OWNER").expirationTime(java.util.Date.from(Instant.now().plusSeconds(3600))).build());
+        assertThrows(JwtException.class, () -> config.jwtDecoder(config.jwtSecretKey(properties)).decode(token.serialize()));
+    }
+
+    @Test
+    void hs512EvenWithTheCorrectSecretIsRejected() throws Exception {
+        var longProperties = properties("long-test-secret-for-HS512-abcdefghijklmnopqrstuvwxyz-01234567890123456789");
+        var token = new com.nimbusds.jwt.SignedJWT(new com.nimbusds.jose.JWSHeader(com.nimbusds.jose.JWSAlgorithm.HS512),
+                new com.nimbusds.jwt.JWTClaimsSet.Builder().subject("1").claim("role", "OWNER")
+                        .expirationTime(java.util.Date.from(Instant.now().plusSeconds(3600))).build());
+        token.sign(new com.nimbusds.jose.crypto.MACSigner(longProperties.jwt().secret()));
+        assertThrows(JwtException.class, () -> config.jwtDecoder(config.jwtSecretKey(longProperties)).decode(token.serialize()));
+    }
 }

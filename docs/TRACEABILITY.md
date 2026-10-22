@@ -3,14 +3,14 @@
 Nguồn: `CODEX_MASTER_SPEC_KLTN_SPRING_REACT.md` (§1, §2, §19).
 Tên Việt (khóa luận) ↔ tên code: xem Phụ lục A của spec.
 
-**Trạng thái:** `Chưa làm` → `Đã làm` / `Đơn giản hóa` (làm một phần theo phạm vi §1.2) / `Chưa hiện thực` (cắt, §1.3).
+**Phạm vi theo §19 (khi hoàn tất):** `Đã làm` / `Đơn giản hóa` (phần cắt theo §1.2) / `Chưa hiện thực` (cắt, §1.3). Cột Phạm vi mô tả mục tiêu bàn giao, không phải tiến độ hiện tại. Cột Hiện trạng là theo dõi tiến độ riêng: `Chưa làm`, `Đang làm (Phase 0)`, `Đã làm`; khi chốt báo cáo Phase 4 phải đối chiếu kết quả thực tế với ba giá trị §19.
 Cột *Phase* là phase dự kiến hiện thực (docs/phase_instructions). Cập nhật cột *Hiện trạng* khi xong từng phase.
 
 ## 1. Functional Requirements
 
 | FR | Use Case | Phạm vi | Phase | Controller | Service | Entity | Hiện trạng |
 |---|---|---|---|---|---|---|---|
-| FR-01 | UC1.1, UC4 (UC1.2, UC12 chưa hiện thực) | Đơn giản hóa | 0, 1 | Auth, Account | AuthService, AccountService | Account | Đơn giản hóa |
+| FR-01 | UC1.1, UC4 (UC1.2, UC12 chưa hiện thực) | Đơn giản hóa | 0, 1 | Auth, Account | AuthService, AccountService | Account | Đang làm (Phase 0) |
 | FR-02 | UC5, UC3 (UC3 chưa hiện thực — dữ liệu từ seed) | Đơn giản hóa | 1 | Menu, Table | MenuService, TableService | MenuItem, DiningArea, DiningTable | Chưa làm |
 | FR-03 | UC7 (không sửa đặt bàn) | Đơn giản hóa | 1 | Table | ReservationService | Reservation, DiningTable | Chưa làm |
 | FR-04 | UC8.1, UC11.1 | Đã làm (đầy đủ) | 1, 3 | ServiceSession, Payment | ServiceSessionService, PaymentService | DiningTable, ServiceSession | Chưa làm |
@@ -53,7 +53,7 @@ Cột *Phase* là phase dự kiến hiện thực (docs/phase_instructions). C�
 | BR-07 | Quản lý lô và HSD | FR-13 (lô ghi khi nhập, cảnh báo HSD) | Chưa làm |
 | BR-08 | Thông tin tổng hợp | FR-17 | Chưa làm |
 | BR-09 | Truy xuất giao dịch | FR-16 | Chưa làm |
-| BR-10 | Quyền theo vai trò | FR-01, `@PreAuthorize` | Đơn giản hóa |
+| BR-10 | Quyền theo vai trò | FR-01, `@PreAuthorize` | Đang làm (Phase 0) |
 | BR-11 | Món → định lượng → tiêu hao → biến động tồn | FR-18, `StockMovement` | Chưa làm |
 | BR-12 | Quản lý tập trung đặt bàn | FR-03 | Chưa làm |
 
@@ -64,9 +64,9 @@ Cột *Phase* là phase dự kiến hiện thực (docs/phase_instructions). C�
 | TR-01 | React SPA + REST API Spring Boot | Đã làm |
 | TR-02, TR-03 | PostgreSQL (Neon), Flyway | Đã làm |
 | TR-04 | PK `BIGINT` identity, trừ `RecipeItem` dùng PK kép | Đã làm |
-| TR-05, TR-06 | Cột thời gian và `*_by_id` theo ERD | Đơn giản hóa |
-| TR-07, NFR-04 | JWT + `@PreAuthorize` | Đơn giản hóa |
-| TR-08, NFR-03 | `@Transactional` + khóa dòng + unique/CHECK (§16.3) | Đơn giản hóa |
+| TR-05, TR-06 | Cột thời gian và `*_by_id` theo ERD | Đang làm (Phase 0) |
+| TR-07, NFR-04 | JWT + `@PreAuthorize` | Đang làm (Phase 0) |
+| TR-08, NFR-03 | `@Transactional` + khóa dòng + unique/CHECK (§16.3) | Đang làm (Phase 0) |
 | TR-09 | Neon restore/branch + `pg_dump` (README) | Chưa làm |
 | TR-10, NFR-07 | Ant Design, ưu tiên tablet cho Bếp/Phục vụ/Sơ đồ bàn | Chưa làm |
 | TR-11, NFR-02 | SSE + TanStack Query invalidation | Chưa làm |
@@ -75,8 +75,8 @@ Cột *Phase* là phase dự kiến hiện thực (docs/phase_instructions). C�
 | NFR-06 | Lưu người/thời điểm trên giao dịch | Chưa làm |
 | NFR-08 | Dữ liệu commit trong PostgreSQL | Chưa làm |
 | NFR-10 | Trình duyệt phổ biến (Chrome/Edge) | Chưa làm |
-| NFR-11 | Phân lớp controller → service → impl → repository | Đã làm |
-| NFR-12 | Nhãn trạng thái dùng chung `labels.ts` (§6) | Đã làm |
+| NFR-11 | Phân lớp controller → service → impl → repository | Đang làm (Phase 0) |
+| NFR-12 | Nhãn trạng thái dùng chung `labels.ts` (§6) | Đang làm (Phase 0) |
 
 ## 5. Ghi chú cho báo cáo khóa luận
 
@@ -97,5 +97,8 @@ Cột *Phase* là phase dự kiến hiện thực (docs/phase_instructions). C�
   transaction cho seed/auth; các workflow nghiệp vụ chưa được hiện thực.
 - Toàn bộ 18 entity/repository là nền tảng dữ liệu; sự hiện diện của chúng không
   có nghĩa các FR bán hàng/kho đã hoàn thành.
+- NFR-11: mới kiểm chứng phân lớp cho auth, chờ các workflow nghiệp vụ.
+- NFR-12: có `labels.ts`/`StatusTag`, chưa có màn nghiệp vụ dùng nhãn trạng thái;
+  chỉ hoàn thành nền tảng, chưa nghiệm thu tính nhất quán toàn hệ thống.
 - Báo cáo kiểm tra, danh sách file và khác biệt kỹ thuật:
   [Phase 0](phase_results/phase-0.md).

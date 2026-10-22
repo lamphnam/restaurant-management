@@ -87,22 +87,29 @@ Mật khẩu chung: **Demo@123**. Mật khẩu được hash BCrypt trước khi
 | 0900000005 | Nhân viên bếp (`KITCHEN_STAFF`) | `/kitchen` |
 | 0900000006 | Bếp trưởng (`HEAD_CHEF`) | `/kitchen` |
 
-Seed chỉ chạy khi `app.seed = true` và bảng `account` rỗng; các lần khởi động
-sau không thêm trùng tài khoản/bàn. Món, NVL, định lượng, đặt bàn và nghiệp vụ
-kho chưa được seed ở Phase 0. Cách bổ sung seed qua các phase cần xử lý rõ
-vì điều kiện `account` rỗng của §20 không còn đúng sau lần khởi tạo này.
+Seed nền tảng (`DataSeeder`, `@Order(0)`) chỉ chạy khi `app.seed = true` và bảng
+`account` rỗng. Các phase sau thêm runner có thứ tự và cổng riêng theo §20,
+để tài khoản đã có không chặn seed món/NVL/định lượng/đặt bàn. Phase 0 chưa
+tạo dữ liệu nghiệp vụ này. Giữ Neon `main` hiện có; không tự reset hay ghi đè.
+Mốc tương đối tính lúc seed lần đầu, không tự làm mới khi restart. Trước demo
+27/10 kiểm tra ngày đặt bàn/HSD và tạo giao dịch mới qua app nếu cần.
 
-Khóa tài khoản chặn đăng nhập mới; JWT đã cấp vẫn có hiệu lực đến khi hết hạn
-12 giờ (D10). Đăng xuất xóa token ở frontend. Chức năng khóa/đổi vai trò qua
+Khóa tài khoản chặn đăng nhập mới; JWT đã cấp vẫn giữ role cũ đến khi hết hạn
+12 giờ, kể cả khi đổi vai trò (D10 mở rộng đã duyệt). `/me` trả role từ token;
+đăng nhập lại nhận role mới. Đăng xuất xóa token ở frontend. Chức năng khóa/đổi vai trò qua
 API quản lý tài khoản thuộc Phase 1; Phase 0 mới giữ quyền OWNER cho namespace
 `/api/accounts/**`.
 
 Cập nhật `docs/TRACEABILITY.md` khi hoàn thành từng requirement. Không đánh dấu
 phase hoàn thành chỉ dựa vào build.
 
+Lệnh chạy lại test và kiểm tra API/Chrome sau review Phase 0:
+[phase-0-review.md](docs/phase_results/phase-0-review.md).
+
 ## Backup/restore Neon
 
-Dùng restore/branch của Neon; trước buổi demo tạo branch `demo-snapshot` từ `main`.
+Demo dùng Neon `main` theo lựa chọn của chủ dự án; không bắt buộc tạo branch.
+Có thể dùng backup/restore khi chủ dự án cần khôi phục:
 PostgreSQL client tools phải cùng hoặc mới hơn major version của server:
 
 ```powershell

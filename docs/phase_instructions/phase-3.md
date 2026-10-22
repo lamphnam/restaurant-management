@@ -4,6 +4,8 @@
 **Requirement:** FR-09, FR-11, FR-12, FR-13, FR-14, FR-15, FR-16 (UC6.3), BR-06/07/11.
 **Checklist cuối phase:** 23–32 (§21.2).
 
+Lưu ý review Phase 0: khi làm thanh toán, rà guard của ServiceSession.close() và DiningTable.release(), test chuyển sai trạng thái; idempotency của PATCH được xử lý theo §13.1. Seed kiểm kê/nhập có runner/cổng riêng theo §20, không phụ thuộc account rỗng và không tự sửa ngày của dữ liệu lịch sử để làm mới demo.
+
 ## Backend — Thanh toán (UC11.1)
 1. `open-sessions`: phiên `ACTIVE` + tạm tính + cờ còn món `PENDING/COOKING`.
 2. Xem trước hóa đơn: bỏ `CANCELLED`, `UNAVAILABLE`; tổng = Σ `quantity × unitPriceAtOrder`; liệt kê món chặn thanh toán.

@@ -77,10 +77,21 @@ class AuthServiceImplTest {
     @Test
     void meReadsIdentityFromCurrentUser() {
         when(currentUser.accountId()).thenReturn(4L);
+        when(currentUser.role()).thenReturn(Role.WAITER);
         when(accounts.findById(4L)).thenReturn(Optional.of(account));
         assertEquals(Role.WAITER, service.me().role());
         verify(currentUser).accountId();
         verify(accounts).findById(4L);
+    }
+
+    @Test
+    void meKeepsTokenRoleAfterRoleChangeAndAccountLock() {
+        account.changeRole(Role.MANAGER);
+        account.lock();
+        when(currentUser.accountId()).thenReturn(4L);
+        when(currentUser.role()).thenReturn(Role.WAITER);
+        when(accounts.findById(4L)).thenReturn(Optional.of(account));
+        assertEquals(Role.WAITER, service.me().role());
     }
 
     @Test

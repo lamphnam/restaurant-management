@@ -104,8 +104,11 @@ Tests are JUnit 5 + Mockito unit tests that need no DB (§21.1).
 **Auth:** stateless JWT (HS256).
 - Tokens are issued with `NimbusJwtEncoder` and validated by Spring OAuth2 Resource Server.
 - The `role` claim becomes the `ROLE_<role>` authority.
+- D10 (owner approved 22/10/2026): locking an account or changing its role does not revoke an existing JWT. It retains its role until expiry (12 hours for the demo); `/api/auth/me` returns the role from that JWT, with the current name from the DB. Logging in again obtains the new role.
 - There are six roles: `OWNER`, `MANAGER`, `CASHIER`, `WAITER`, `KITCHEN_STAFF`, `HEAD_CHEF`. The per-role API matrix is in §13.
 - The acting user always comes from the JWT, never from the request body.
+
+**Demo seed (§20, owner approved 22/10/2026):** work on the existing Neon `main`, without an automatic reset. The base `DataSeeder` is `@Order(0)`, gated by `app.seed` and an empty account table. Future phase runners have their own ordered, transactional, table-specific gates; existing accounts must not block menu/ingredient/reservation seed. Never overwrite historical data to refresh relative demo dates; inspect freshness before the demo and create new records through the implemented workflows.
 
 **Real-time (§14):** Server-Sent Events, with SSE only as an invalidation signal.
 - A `ServiceImpl` publishes a `RealtimeEvent`.

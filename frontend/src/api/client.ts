@@ -19,8 +19,12 @@ api.interceptors.response.use(
   (error: unknown) => {
     if (axios.isAxiosError(error) && error.config?.url !== '/auth/login') {
       if (error.response?.status === 401) {
-        clearSession()
-        window.dispatchEvent(new Event('auth:expired'))
+        const current = readSession()
+        const rejectedToken = error.config?.headers.get('Authorization')
+        if (current && rejectedToken === `Bearer ${current.accessToken}`) {
+          clearSession()
+          window.dispatchEvent(new Event('auth:expired'))
+        }
       } else if (error.response?.status === 403) {
         window.dispatchEvent(new Event('api:forbidden'))
       }

@@ -32,10 +32,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!session) {
       return () => controller.abort()
     }
+    const isCurrent = () => !controller.signal.aborted && readSession()?.accessToken === session.accessToken
     authApi.me(controller.signal)
-      .then(setAccount)
+      .then((value) => { if (isCurrent()) setAccount(value) })
       .catch(() => {
-        if (!controller.signal.aborted) {
+        if (isCurrent()) {
           setAccount(null)
           setConnectionError(readSession() !== null)
         }
@@ -47,13 +48,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const expired = () => {
       logout()
-      void message.info('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.')
+      void message.info({ key: 'auth-expired', content: 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.' })
     }
-    const forbidden = () => { void message.error('Bạn không có quyền thực hiện thao tác này') }
+    const forbidden = () => { void message.error({ key: 'api-forbidden', content: 'Bạn không có quyền thực hiện thao tác này' }) }
     const changed = (event: StorageEvent) => {
       if (event.key === 'restaurant.session') {
-        if (event.newValue === null) logout()
+        if (event.newValue === null || !readSession()) logout()
         else {
+          pending.current?.abort()
+          queryClient.clear()
+          setAccount(null)
           setLoading(true)
           setConnectionError(false)
           setRevision((value) => value + 1)
@@ -68,14 +72,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.removeEventListener('api:forbidden', forbidden)
       window.removeEventListener('storage', changed)
     }
-  }, [logout, message])
+  }, [logout, message, queryClient])
 
   useEffect(() => {
     const session = readSession()
     if (!account || !session) return
     const timer = window.setTimeout(() => {
+      const current = readSession()
+      if (current && current.accessToken !== session.accessToken) return
       logout()
-      void message.info('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.')
+      void message.info({ key: 'auth-expired', content: 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.' })
     }, Math.max(0, Date.parse(session.expiresAt) - Date.now()))
     return () => window.clearTimeout(timer)
   }, [account, logout, message])
@@ -83,9 +89,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (request: LoginRequest) => {
     const response = await authApi.login(request)
     saveSession({ accessToken: response.accessToken, expiresAt: response.expiresAt })
+    pending.current?.abort()
     queryClient.clear()
     setAccount(response.account)
     setConnectionError(false)
+    setLoading(false)
   }, [queryClient])
 
   const value = useMemo(() => ({ account, loading, login, logout }), [account, loading, login, logout])
@@ -93,6 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   if (connectionError) {
     return <Result status="warning" title="Chưa thể kết nối với hệ thống" subTitle="Kiểm tra kết nối và thử tải lại thông tin đăng nhập."
       extra={<Space><Button type="primary" onClick={() => {
+        if (!readSession()) { logout(); return }
         setLoading(true)
         setConnectionError(false)
         setRevision((current) => current + 1)

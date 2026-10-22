@@ -9,10 +9,10 @@
 2. `application.yml` đúng §23; `application-local.yml` (gitignore) chứa `DB_URL` (endpoint direct của Neon), `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`.
 3. `V1__init_schema.sql`: **đủ 18 bảng**, CHECK, partial unique index, index theo §7 và §16. Không thêm bảng thứ 19.
 4. 18 entity + enum (§6) + repository. `ddl-auto: validate` phải chạy qua. `@ManyToOne` LAZY, không `@Data`.
-5. `exception/`: `BusinessException`, `ErrorCode`, `ErrorResponse`, `GlobalExceptionHandler` (400/401/403/404/409 theo §13.1; `DataIntegrityViolationException` → 409 không lộ SQL). `PageResponse`.
+5. `exception/`: `BusinessException`, `ErrorCode`, `ErrorResponse`, `GlobalExceptionHandler` (400/401/403/404/409 theo §13.1; HTTP 405/406/415 đúng nghĩa; `DataIntegrityViolationException` → 409 không lộ SQL). Validation gồm field/global/query; SSE ngắt chỉ debug, không ghi JSON. `PageResponse`.
 6. Security JWT HS256 (§17): `JwtService`, `SecurityConfig` stateless, `CurrentUser`, `@EnableMethodSecurity`.
 7. `AuthController`: `POST /api/auth/login`, `GET /api/auth/me` (UC1.1, §12.1). Sai SĐT/mật khẩu cùng một thông báo; tài khoản `LOCKED` có thông báo riêng.
-8. `DataSeeder` (§20): 6 tài khoản `0900000001–06` / `Demo@123`, khu vực, bàn `T01–T12`. Phần món/NVL/kiểm kê/đặt bàn seed ở các phase sau khi service tương ứng có.
+8. `DataSeeder` (§20): 6 tài khoản `0900000001–06` / `Demo@123`, khu vực, bàn `T01–T12`. Runner nền tảng `@Order(0)` giữ cổng account rỗng, khai báo tài khoản tường minh. Phần món/NVL/kiểm kê/đặt bàn seed ở các phase sau bằng runner/cổng riêng khi service tương ứng có.
 9. Swagger ở profile `local`. Xóa test `contextLoads()`.
 
 ## Frontend

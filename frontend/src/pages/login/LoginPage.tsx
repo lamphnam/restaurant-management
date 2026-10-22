@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { landingRoutes } from '../../auth/roles'
+import { SessionStorageError } from '../../auth/session'
 import type { ApiError, LoginRequest } from '../../types/auth'
 
 export default function LoginPage() {
@@ -25,6 +26,8 @@ export default function LoginPage() {
         if (fields) form.setFields((['phone', 'password'] as const)
           .filter((name) => fields[name])
           .map((name) => ({ name, errors: [fields[name]] })))
+      } else if (failure instanceof SessionStorageError) {
+        setError(failure.message)
       } else {
         setError('Không thể đăng nhập. Vui lòng thử lại.')
       }

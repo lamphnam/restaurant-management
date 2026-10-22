@@ -5,6 +5,13 @@ export interface StoredSession {
   expiresAt: string
 }
 
+export class SessionStorageError extends Error {
+  constructor() {
+    super('Trình duyệt chưa cho phép lưu phiên đăng nhập. Vui lòng cho phép lưu dữ liệu trang web và thử lại.')
+    this.name = 'SessionStorageError'
+  }
+}
+
 export function readSession(): StoredSession | null {
   try {
     const raw = localStorage.getItem(SESSION_KEY)
@@ -27,9 +34,17 @@ export function readSession(): StoredSession | null {
 }
 
 export function saveSession(session: StoredSession) {
-  localStorage.setItem(SESSION_KEY, JSON.stringify(session))
+  try {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session))
+  } catch {
+    throw new SessionStorageError()
+  }
 }
 
 export function clearSession() {
-  localStorage.removeItem(SESSION_KEY)
+  try {
+    localStorage.removeItem(SESSION_KEY)
+  } catch {
+    // Storage may be disabled by the browser. Logout must still clear React state.
+  }
 }

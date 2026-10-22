@@ -9,7 +9,6 @@ import vn.ueh.kltn.restaurant.dto.response.LoginResponse;
 import vn.ueh.kltn.restaurant.enums.AccountStatus;
 import vn.ueh.kltn.restaurant.exception.BusinessException;
 import vn.ueh.kltn.restaurant.exception.ErrorCode;
-import vn.ueh.kltn.restaurant.mapper.AccountMapper;
 import vn.ueh.kltn.restaurant.repository.AccountRepository;
 import vn.ueh.kltn.restaurant.security.CurrentUser;
 import vn.ueh.kltn.restaurant.security.JwtService;
@@ -46,7 +45,9 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AccountResponse me() {
-        return accounts.findById(currentUser.accountId()).map(AccountMapper::toResponse)
+        // D10: an issued JWT keeps its role until expiry or a fresh login.
+        return accounts.findById(currentUser.accountId()).map(account ->
+                        new AccountResponse(account.getId(), account.getFullName(), currentUser.role()))
                 .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
     }
 }
