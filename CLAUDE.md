@@ -6,16 +6,33 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a graduation-thesis (KLTN, UEH) prototype: an internal web app for a ~30–50 table dine-in restaurant. It covers two business chains, **table service and sales** and **ingredient inventory**, and both must demo end to end. Hard deadline: **2026-10-27**.
 
-The Git repository has been initialized. Backend scaffold is in
-`backend/restaurant-management/` (Java 21, Boot 4.1.1); frontend scaffold is in
+The Git repository has been initialized. Backend is in
+`backend/restaurant-management/` (Java 21, Boot 4.1.1); frontend is in
 `frontend/` (React, TypeScript, Vite, Bun). Neon direct connectivity and both
 builds have been verified. Phase 0 now includes the V1 migration (18 domain
 tables), entities/repositories, JWT login and `/me`, frontend authentication,
 role guards and navigation, shared status labels, and account/area/table seed.
-Phase 0 is complete: both builds, 9 unit tests, live DB/API checks, and checklist
-1–4 through Chrome headless passed. Phase 1 has not been started.
-Business screens are role-gated placeholders for Phase 1–4. Verification details
-are recorded in `docs/phase_results/phase-0.md`.
+Phase 0 is complete. Phase 1 and all seven PR #1 review fixes are implemented;
+the owner requested documentation and preparation for Phase 2, which has not started:
+AccountController/AccountService, MenuController/MenuService (including recipe diff),
+InventoryController/IngredientService (read only), TableController/TableService/ReservationService,
+and ServiceSessionController/ServiceSessionService (opening only). PhaseOneSeeder has independent gates.
+The four routes /accounts, /menu, /floor-plan and /reservations are implemented;
+other business screens and /sessions/:id remain placeholders. No Phase 2 work has started.
+Verification is recorded in `docs/phase_results/phase-1.md` (75 backend tests, 13 frontend tests,
+186 live API assertions, 17 functional browser checks and 5 visual/validation checks).
+The Phase 1 review fixes are recorded separately in `docs/phase_results/phase-1-review.md`:
+recipe replacements lock the parent menu item, retained inactive ingredients remain editable,
+the session picker filters reservations server-side and never blocks walk-ins,
+and mutating QA scripts require an explicit environment flag. Review verification:
+83 backend tests, 46 live API checks, 7 mocked-API browser checks and 4 QA-guard tests.
+Frontend baseline: 13 tests / 27 assertions, production build and lint passed.
+Start the next task by reading `docs/PHASE_2_HANDOFF.md`, then
+`docs/phase_instructions/phase-2.md`. A ready-to-use implementation prompt is in
+`docs/phase_instructions/phase-2-prompt.md`; creating these documents is not permission
+to begin Phase 2. Do not commit/push until the owner requests it.
+The latest recorded Neon snapshot is 9 ACTIVE sessions / 3 free tables, with no
+confirmed booking for 27/10; this is dated evidence, not a live availability guarantee.
 The Java root package is `vn.ueh.kltn.restaurant`.
 
 - `CODEX_MASTER_SPEC_KLTN_SPRING_REACT.md`: **the source of truth**, written in Vietnamese. Section numbers below (§N) refer to this file.
@@ -47,7 +64,7 @@ The Java root package is `vn.ueh.kltn.restaurant`.
   - Redux, Next.js.
 - The user writes in Vietnamese. Reply in the language they use.
 
-## Commands (from §23, once scaffolded)
+## Commands (from §23)
 
 Backend (`backend/restaurant-management/`, Spring Boot 4, Java 21, Maven wrapper, Windows PowerShell):
 
@@ -82,6 +99,12 @@ Tests are JUnit 5 + Mockito unit tests that need no DB (§21.1).
 - **ServiceImpl:** owns workflows, `@Transactional` boundaries, row locks and real-time event publishing.
 - **Entities:** carry the class-diagram state-transition methods (e.g. `OrderItem.markReady()`, `Reservation.confirmSeated()`, §8). An invalid transition throws `BusinessException`.
 - **Mapping:** entities are never returned from the API. They are mapped to response DTOs by hand.
+- **Java style after the Phase 1 review:** explicit imports and explicit types for repository
+  results, collections returned by methods, Optional and time values; keep `var` only where
+  the right-hand side is an obvious `new X(...)`. Avoid inline fully qualified class names,
+  wildcard imports and multiple statements per line. Phase 1 was formatted with
+  google-java-format 1.28.0, AOSP mode (four-space indentation); do not add a project
+  dependency just to format code.
 
 **Schema:** owned by **Flyway** (`db/migration/V1__init_schema.sql`). JPA runs with `ddl-auto: validate`, so schema changes go into migrations, never into entity annotations alone.
 
@@ -109,6 +132,12 @@ Tests are JUnit 5 + Mockito unit tests that need no DB (§21.1).
 - The acting user always comes from the JWT, never from the request body.
 
 **Demo seed (§20, owner approved 22/10/2026):** work on the existing Neon `main`, without an automatic reset. The base `DataSeeder` is `@Order(0)`, gated by `app.seed` and an empty account table. Future phase runners have their own ordered, transactional, table-specific gates; existing accounts must not block menu/ingredient/reservation seed. Never overwrite historical data to refresh relative demo dates; inspect freshness before the demo and create new records through the implemented workflows.
+
+**Phase 1 QA override (owner approved 22/10/2026):** run QA directly on Neon `main`; do not create a QA branch. The owner explicitly permits resetting and initializing demo data again if errors require it. Normal startup still preserves existing rows. Use `[QA]` prefixes for test data, never print secrets, and record QA/reset actions in the phase report. Sessions opened during QA remain active until a later phase implements payment/closing.
+
+The approval comes from the owner's instruction: “cứ làm trên branch main của Neon không cần tạo thêm gì nữa hết. Nếu lỗi cứ reset và init lại data”. It does not instruct scripts to reset automatically. Mutating Phase 1 QA scripts require `PHASE1_QA_ALLOW_WRITES=main` for that run; inspect readiness with the read-only `node scripts/phase1-demo-readiness.mjs` first.
+
+**Recipe review policy (requested 22/10/2026):** new recipe lines require an ACTIVE ingredient; an existing line may remain or change quantity after its ingredient becomes INACTIVE. Serialize full replacements by locking MenuItem before reading recipe rows. The reservation picker uses optional `tableId` and `unexpired=true` filters; ordinary lists keep historical data by default.
 
 **Real-time (§14):** Server-Sent Events, with SSE only as an invalidation signal.
 - A `ServiceImpl` publishes a `RealtimeEvent`.

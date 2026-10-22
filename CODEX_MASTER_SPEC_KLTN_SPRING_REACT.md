@@ -823,7 +823,7 @@ Ký hiệu `[TX]` = toàn bộ trong một transaction. `[EV: X]` = sau commit p
 
 ## 12.5 FR-18 — Định lượng (OWNER, HEAD_CHEF)
 - Xem định lượng của món.
-- Lưu toàn bộ danh sách dòng `{ingredientId, quantityPerServing > 0}` (D11): không trùng NVL, chỉ NVL `ACTIVE`. `[TX]`
+- Lưu toàn bộ danh sách dòng `{ingredientId, quantityPerServing > 0}` (D11): không trùng NVL; dòng thêm mới chỉ nhận NVL `ACTIVE`, dòng đã có được giữ/sửa số lượng khi NVL đã `INACTIVE` (sửa theo review Phase 1 của chủ dự án ngày 22/10/2026). Khóa `MenuItem` trước khi đọc và diff để hai PUT cùng món thực thi tuần tự. `[TX]`
 - Thay đổi chỉ ảnh hưởng các lần tiêu hao sau đó.
 
 ## 12.6 Sơ đồ bàn
@@ -1025,7 +1025,7 @@ Cột “Vai trò” dùng đúng giá trị enum `Role` (mục 6): `OWNER`, `MA
 | Method | Path | Vai trò | Mô tả |
 |---|---|---|---|
 | GET | `/api/tables/floor-plan` | WAITER, MANAGER, CASHIER, OWNER | Khu vực → bàn: trạng thái, phiên đang mở, đặt bàn hiệu lực/sắp tới |
-| GET | `/api/reservations` | MANAGER, WAITER, OWNER | Lọc `?date&status&q`; phân trang |
+| GET | `/api/reservations` | MANAGER, WAITER, OWNER | Lọc `?date&status&q&tableId&unexpired`; phân trang. `tableId` tùy chọn, `unexpired=true` lọc `endTime > now`, mặc định false để giữ lịch sử. Bổ sung theo review Phase 1 ngày 22/10/2026. |
 | GET | `/api/reservations/available-tables` | MANAGER | `?startTime&endTime&guestCount` → bàn đủ sức chứa, không trùng lịch |
 | POST | `/api/reservations` | MANAGER | Tạo đặt bàn |
 | PATCH | `/api/reservations/{id}/cancel` | MANAGER | Hủy |
@@ -1208,7 +1208,7 @@ Index thêm cho FK khi cần.
 | Kiểm kê + điều chỉnh | — | unique `stocktake_item_id` |
 | Loại bỏ | `Ingredient` | CHECK dấu/lý do |
 | Thanh toán + Invoice + đóng phiên + bàn | `ServiceSession` | unique `invoice.session_id` |
-| Lưu định lượng | — | PK kép |
+| Lưu định lượng | `MenuItem` trước khi đọc/diff | PK kép |
 
 Vi phạm unique/check từ DB (`DataIntegrityViolationException`) → 409 với thông báo thân thiện, không lộ SQL.
 
@@ -1286,6 +1286,10 @@ Thêm bảng ngắn cho TR/NFR: cách đáp ứng (lấy từ mục 2.2, 2.4).
 - tạo nghiệp vụ (nhập, kiểm kê) qua ServiceImpl để dữ liệu nhất quán.
 
 Chủ dự án duyệt cổng seed theo từng khối ngày 22/10/2026; làm trên Neon `main`, không bắt buộc branch/reset. Phase 0 chỉ có runner nền tảng; các runner nghiệp vụ được thêm đúng phase. Nếu một khối đã có dữ liệu một phần thì bỏ qua và báo để kiểm tra, không tự xóa hay điền đè.
+
+QA Phase 1: chủ dự án xác nhận ngày 22/10/2026 dùng trực tiếp Neon `main`, không tạo branch QA. Được reset/init lại dữ liệu demo khi lỗi cần đến việc đó; phải ghi nhận trong báo cáo. Đây là quyền khôi phục khi cần, không thay đổi tính không ghi đè/idempotent của seed khi khởi động bình thường. Phiên mở khi QA có thể giữ bàn OCCUPIED vì thanh toán/đóng phiên thuộc Phase 3.
+
+Nguồn quyết định là chỉ dẫn của chủ dự án: “cứ làm trên branch main của Neon không cần tạo thêm gì nữa hết. Nếu lỗi cứ reset và init lại data”. Script QA có ghi dữ liệu phải được bật riêng bằng `PHASE1_QA_ALLOW_WRITES=main`; không có reset tự động. Dùng `node scripts/phase1-demo-readiness.mjs` để kiểm tra chỉ đọc trước khi chạy QA hoặc chuẩn bị demo.
 
 Các mốc tương đối (45 phút tới, ngày mai, HSD còn 2 ngày) được tính tại lúc khối tương ứng seed lần đầu. Khởi động lại không làm mới ngày của dữ liệu cũ. Trước demo 27/10, kiểm tra lại độ tươi; khi cần tạo đặt bàn/phiếu nhập mới qua workflow của app, không sửa lịch sử hoặc reset DB tự động.
 

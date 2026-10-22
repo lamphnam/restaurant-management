@@ -9,6 +9,14 @@ import { AppLayout } from './layouts/AppLayout'
 
 const LoginPage = lazy(() => import('./pages/login/LoginPage'))
 const WorkspacePage = lazy(() => import('./pages/workspace/WorkspacePage'))
+const AccountsPage = lazy(() => import('./pages/accounts/AccountsPage'))
+const MenuPage = lazy(() => import('./pages/menu/MenuPage'))
+const FloorPlanPage = lazy(() => import('./pages/floor-plan/FloorPlanPage'))
+const ReservationsPage = lazy(() => import('./pages/reservations/ReservationsPage'))
+
+const phaseOnePages: Record<string, React.ReactNode> = {
+  '/accounts': <AccountsPage />, '/menu': <MenuPage />, '/floor-plan': <FloorPlanPage />, '/reservations': <ReservationsPage />,
+}
 
 function LandingRedirect() {
   const { account } = useAuth()
@@ -22,7 +30,7 @@ export function AppRouter() {
       <Route element={<AppLayout />}>
         <Route index element={<LandingRedirect />} />
         {navigation.map((entry) => <Route key={entry.path} element={<RequireRole roles={entry.roles} />}>
-          <Route path={entry.path} element={<WorkspacePage title={entry.label} description={entry.description} />} />
+          <Route path={entry.path} element={phaseOnePages[entry.path] ?? <WorkspacePage title={entry.label} description={entry.description} />} />
         </Route>)}
         <Route element={<RequireRole roles={['WAITER', 'MANAGER']} />}>
           <Route path="/sessions/:id" element={<WorkspacePage title="Phiên phục vụ" description="Thông tin bàn và các đợt gọi món trong phiên phục vụ." />} />
