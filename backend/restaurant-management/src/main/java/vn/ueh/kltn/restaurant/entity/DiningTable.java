@@ -1,0 +1,58 @@
+package vn.ueh.kltn.restaurant.entity;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import vn.ueh.kltn.restaurant.enums.TableStatus;
+import vn.ueh.kltn.restaurant.exception.BusinessException;
+import vn.ueh.kltn.restaurant.exception.ErrorCode;
+
+@Entity
+@Table(name = "dining_table")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class DiningTable {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "area_id", nullable = false)
+    private DiningArea area;
+
+    @Column(name = "name", nullable = false, length = 50)
+    private String name;
+
+    @Column(name = "capacity", nullable = false)
+    private int capacity;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 30)
+    private TableStatus status;
+
+    public DiningTable(DiningArea area, String name, int capacity) {
+        this.area = area; this.name = name; this.capacity = capacity;
+        this.status = TableStatus.AVAILABLE;
+    }
+    public boolean hasEnoughCapacity(int guestCount) { return guestCount > 0 && capacity >= guestCount; }
+    public void occupy() {
+        if (status != TableStatus.AVAILABLE) throw new BusinessException(ErrorCode.INVALID_STATE, "Bàn không ở trạng thái trống");
+        status = TableStatus.OCCUPIED;
+    }
+    public void release() {
+        if (status == TableStatus.AVAILABLE) return;
+        if (status != TableStatus.OCCUPIED) throw new BusinessException(ErrorCode.INVALID_STATE, "Bàn không đang phục vụ");
+        status = TableStatus.AVAILABLE;
+    }
+}

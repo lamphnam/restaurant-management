@@ -4,14 +4,19 @@ Prototype hỗ trợ vận hành bán hàng tại bàn và quản lý nguyên v�
 Yêu cầu nghiệp vụ: `CODEX_MASTER_SPEC_KLTN_SPRING_REACT.md`.
 Kế hoạch triển khai: `docs/phase_instructions/`.
 
-## Trạng thái khởi tạo
+## Trạng thái Phase 0
 
 - Backend: Java 21, Spring Boot 4.1.1, Maven wrapper; đã có các dependencies
   theo spec, cấu hình Neon, Flyway và JPA `ddl-auto: validate`.
 - Frontend: React + TypeScript + Vite + Bun; Ant Design, TanStack Query,
   React Router, Axios, dayjs và thư viện SSE đã được cài.
-- Đây là scaffold, chưa hoàn thành Phase 0: chưa có migration 18 bảng, entity,
-  JWT login, phân quyền, dữ liệu demo và các màn hình nghiệp vụ.
+- Có migration V1 với đúng 18 bảng domain, entity/repository và các constraint/index
+  theo spec. JPA dùng `ddl-auto: validate`, không tự sửa schema.
+- Đã có đăng nhập JWT HS256, `/api/auth/me`, lỗi JSON tiếng Việt, route guard và
+  menu theo 6 vai trò. Các màn hình nghiệp vụ hiện là khung; xử lý nghiệp vụ được
+  triển khai ở Phase 1–4 theo kế hoạch.
+- Seed Phase 0 gồm 6 tài khoản, 3 khu vực, 12 bàn. Chi tiết kiểm tra được ghi tại
+  `docs/phase_results/phase-0.md`.
 
 ## Yêu cầu môi trường
 
@@ -38,16 +43,19 @@ Kết nối Neon dùng endpoint **direct** (hostname không có `-pooler`),
 `sslmode=require&channelBinding=require`, Hikari tối đa 5 kết nối.
 JWT secret cần ít nhất 32 ký tự. Không lưu secrets trong frontend.
 
-Swagger được bật trong profile `local`. Cấu hình xác thực JWT và quyền truy cập
-Swagger sẽ được hoàn thiện cùng phần security của Phase 0; scaffold hiện dùng
-cấu hình bảo mật mặc định của Spring Security.
+Swagger được bật công khai trong profile `local` tại http://localhost:8080/swagger-ui.html.
+Đăng nhập tại `POST /api/auth/login`, lấy `accessToken` rồi dùng nút **Authorize**
+với Bearer token để thử `GET /api/auth/me`. Ngoài profile `local`, Swagger bị tắt.
+API dùng JWT stateless, không dùng đăng nhập HTTP Basic hay session cookie.
 
 ```powershell
 .\mvnw.cmd clean verify
 ```
 
 Test `contextLoads()` mặc định đã được bỏ để build không phụ thuộc Neon.
-Sáu nhóm unit test nghiệp vụ sẽ được bổ sung theo spec; hiện chưa có test nghiệp vụ.
+Hiện có 9 unit test cho đăng nhập và JWT, không cần DB. Sáu nhóm unit test nghiệp
+vụ trong §21.1 sẽ được bổ sung theo kế hoạch; không được xem các test auth này
+là thay thế cho các nhóm đó.
 Flyway quản lý schema; không dùng `ddl-auto: update` để tự sinh bảng.
 
 ## Chạy frontend
@@ -66,10 +74,31 @@ bun run build
 bun run lint
 ```
 
-## Dữ liệu demo và truy vết
+## Tài khoản demo và truy vết
 
-Tài khoản demo và seed chưa được tạo. Cập nhật `docs/TRACEABILITY.md` khi hoàn
-thành từng requirement. Không đánh dấu phase hoàn thành chỉ dựa vào build.
+Mật khẩu chung: **Demo@123**. Mật khẩu được hash BCrypt trước khi lưu DB.
+
+| Số điện thoại | Vai trò | Trang mặc định |
+|---|---|---|
+| 0900000001 | Chủ quán (`OWNER`) | `/reports` |
+| 0900000002 | Quản lý (`MANAGER`) | `/reservations` |
+| 0900000003 | Thu ngân (`CASHIER`) | `/payment` |
+| 0900000004 | Phục vụ (`WAITER`) | `/floor-plan` |
+| 0900000005 | Nhân viên bếp (`KITCHEN_STAFF`) | `/kitchen` |
+| 0900000006 | Bếp trưởng (`HEAD_CHEF`) | `/kitchen` |
+
+Seed chỉ chạy khi `app.seed = true` và bảng `account` rỗng; các lần khởi động
+sau không thêm trùng tài khoản/bàn. Món, NVL, định lượng, đặt bàn và nghiệp vụ
+kho chưa được seed ở Phase 0. Cách bổ sung seed qua các phase cần xử lý rõ
+vì điều kiện `account` rỗng của §20 không còn đúng sau lần khởi tạo này.
+
+Khóa tài khoản chặn đăng nhập mới; JWT đã cấp vẫn có hiệu lực đến khi hết hạn
+12 giờ (D10). Đăng xuất xóa token ở frontend. Chức năng khóa/đổi vai trò qua
+API quản lý tài khoản thuộc Phase 1; Phase 0 mới giữ quyền OWNER cho namespace
+`/api/accounts/**`.
+
+Cập nhật `docs/TRACEABILITY.md` khi hoàn thành từng requirement. Không đánh dấu
+phase hoàn thành chỉ dựa vào build.
 
 ## Backup/restore Neon
 

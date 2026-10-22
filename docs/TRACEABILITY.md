@@ -10,7 +10,7 @@ Cột *Phase* là phase dự kiến hiện thực (docs/phase_instructions). C�
 
 | FR | Use Case | Phạm vi | Phase | Controller | Service | Entity | Hiện trạng |
 |---|---|---|---|---|---|---|---|
-| FR-01 | UC1.1, UC4 (UC1.2, UC12 chưa hiện thực) | Đơn giản hóa | 0, 1 | Auth, Account | AuthService, AccountService | Account | Chưa làm |
+| FR-01 | UC1.1, UC4 (UC1.2, UC12 chưa hiện thực) | Đơn giản hóa | 0, 1 | Auth, Account | AuthService, AccountService | Account | Đơn giản hóa |
 | FR-02 | UC5, UC3 (UC3 chưa hiện thực — dữ liệu từ seed) | Đơn giản hóa | 1 | Menu, Table | MenuService, TableService | MenuItem, DiningArea, DiningTable | Chưa làm |
 | FR-03 | UC7 (không sửa đặt bàn) | Đơn giản hóa | 1 | Table | ReservationService | Reservation, DiningTable | Chưa làm |
 | FR-04 | UC8.1, UC11.1 | Đã làm (đầy đủ) | 1, 3 | ServiceSession, Payment | ServiceSessionService, PaymentService | DiningTable, ServiceSession | Chưa làm |
@@ -53,7 +53,7 @@ Cột *Phase* là phase dự kiến hiện thực (docs/phase_instructions). C�
 | BR-07 | Quản lý lô và HSD | FR-13 (lô ghi khi nhập, cảnh báo HSD) | Chưa làm |
 | BR-08 | Thông tin tổng hợp | FR-17 | Chưa làm |
 | BR-09 | Truy xuất giao dịch | FR-16 | Chưa làm |
-| BR-10 | Quyền theo vai trò | FR-01, `@PreAuthorize` | Chưa làm |
+| BR-10 | Quyền theo vai trò | FR-01, `@PreAuthorize` | Đơn giản hóa |
 | BR-11 | Món → định lượng → tiêu hao → biến động tồn | FR-18, `StockMovement` | Chưa làm |
 | BR-12 | Quản lý tập trung đặt bàn | FR-03 | Chưa làm |
 
@@ -61,22 +61,22 @@ Cột *Phase* là phase dự kiến hiện thực (docs/phase_instructions). C�
 
 | ID | Cách đáp ứng | Hiện trạng |
 |---|---|---|
-| TR-01 | React SPA + REST API Spring Boot | Chưa làm |
-| TR-02, TR-03 | PostgreSQL (Neon), Flyway | Chưa làm |
-| TR-04 | PK `BIGINT` identity mọi bảng | Chưa làm |
-| TR-05, TR-06 | Cột thời gian và `*_by_id` theo ERD | Chưa làm |
-| TR-07, NFR-04 | JWT + `@PreAuthorize` | Chưa làm |
-| TR-08, NFR-03 | `@Transactional` + khóa dòng + unique/CHECK (§16.3) | Chưa làm |
+| TR-01 | React SPA + REST API Spring Boot | Đã làm |
+| TR-02, TR-03 | PostgreSQL (Neon), Flyway | Đã làm |
+| TR-04 | PK `BIGINT` identity, trừ `RecipeItem` dùng PK kép | Đã làm |
+| TR-05, TR-06 | Cột thời gian và `*_by_id` theo ERD | Đơn giản hóa |
+| TR-07, NFR-04 | JWT + `@PreAuthorize` | Đơn giản hóa |
+| TR-08, NFR-03 | `@Transactional` + khóa dòng + unique/CHECK (§16.3) | Đơn giản hóa |
 | TR-09 | Neon restore/branch + `pg_dump` (README) | Chưa làm |
 | TR-10, NFR-07 | Ant Design, ưu tiên tablet cho Bếp/Phục vụ/Sơ đồ bàn | Chưa làm |
 | TR-11, NFR-02 | SSE + TanStack Query invalidation | Chưa làm |
 | NFR-01, NFR-09 | Projection, index, phân trang (§18) | Chưa làm |
-| NFR-05 | BCrypt | Chưa làm |
+| NFR-05 | BCrypt | Đã làm |
 | NFR-06 | Lưu người/thời điểm trên giao dịch | Chưa làm |
 | NFR-08 | Dữ liệu commit trong PostgreSQL | Chưa làm |
 | NFR-10 | Trình duyệt phổ biến (Chrome/Edge) | Chưa làm |
-| NFR-11 | Phân lớp controller → service → impl → repository | Chưa làm |
-| NFR-12 | Nhãn trạng thái dùng chung `labels.ts` (§6) | Chưa làm |
+| NFR-11 | Phân lớp controller → service → impl → repository | Đã làm |
+| NFR-12 | Nhãn trạng thái dùng chung `labels.ts` (§6) | Đã làm |
 
 ## 5. Ghi chú cho báo cáo khóa luận
 
@@ -84,3 +84,18 @@ Cột *Phase* là phase dự kiến hiện thực (docs/phase_instructions). C�
 - Các UC "Chưa hiện thực" trình bày là phạm vi prototype / hướng phát triển.
 - Đối chiếu tên ERD/Class Diagram ↔ code: Phụ lục A của spec.
 - Cần xác nhận lại với hình ERD: bội số `StockReceiptItem` – `StockMovement` (spec §9, ghi chú `(*)`).
+
+## 6. Phần đã hiện thực ở Phase 0
+
+- FR-01: UC1.1 đăng nhập/đăng xuất và xác định tài khoản hiện tại đã làm. UC4
+  (quản lý tài khoản) chờ Phase 1. Không đánh dấu toàn bộ FR-01 đã hoàn thành.
+- BR-10 / TR-07 / NFR-04: có JWT, role authority, `@EnableMethodSecurity`,
+  `@PreAuthorize`, route guard và menu. Namespace `/api/accounts/**` dành cho
+  OWNER đã được bảo vệ; controller nghiệp vụ và ma trận quyền còn lại sẽ được
+  bổ sung đúng phase tương ứng.
+- TR-05/06/08 và NFR-03: đã có cột, constraint, index, repository khóa dòng và
+  transaction cho seed/auth; các workflow nghiệp vụ chưa được hiện thực.
+- Toàn bộ 18 entity/repository là nền tảng dữ liệu; sự hiện diện của chúng không
+  có nghĩa các FR bán hàng/kho đã hoàn thành.
+- Báo cáo kiểm tra, danh sách file và khác biệt kỹ thuật:
+  [Phase 0](phase_results/phase-0.md).

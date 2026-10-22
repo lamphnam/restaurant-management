@@ -1,0 +1,105 @@
+# File thay đổi — Phase 0
+
+Danh sách so với commit trước Phase 0; không bao gồm secrets, target, node_modules, dist và cache.
+
+```text
+ M CLAUDE.md
+ M README.md
+ D backend/restaurant-management/src/main/java/com/capstone/restaurant_management/RestaurantManagementApplication.java
+ M docs/TRACEABILITY.md
+ M frontend/src/App.tsx
+ M frontend/src/api/client.ts
+ M frontend/src/index.css
+ M frontend/src/main.tsx
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/RestaurantApplication.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/config/AppProperties.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/config/JwtConfig.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/config/OpenApiConfig.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/config/SecurityConfig.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/controller/AuthController.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/dto/request/LoginRequest.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/dto/response/AccountResponse.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/dto/response/LoginResponse.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/dto/response/PageResponse.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/entity/Account.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/entity/DiningArea.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/entity/DiningTable.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/entity/FoodOrder.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/entity/Ingredient.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/entity/IngredientLot.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/entity/Invoice.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/entity/MenuItem.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/entity/OrderItem.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/entity/RecipeItem.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/entity/RecipeItemId.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/entity/Reservation.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/entity/RevenueReconciliation.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/entity/ServiceSession.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/entity/StockMovement.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/entity/StockReceipt.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/entity/StockReceiptItem.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/entity/Stocktake.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/entity/StocktakeItem.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/enums/AccountStatus.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/enums/AreaStatus.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/enums/IngredientStatus.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/enums/MenuItemStatus.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/enums/MovementType.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/enums/OrderItemStatus.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/enums/PaymentMethod.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/enums/ReservationStatus.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/enums/Role.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/enums/SessionStatus.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/enums/TableStatus.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/exception/BusinessException.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/exception/ErrorCode.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/exception/ErrorResponse.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/exception/GlobalExceptionHandler.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/mapper/AccountMapper.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/repository/AccountRepository.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/repository/DiningAreaRepository.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/repository/DiningTableRepository.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/repository/FoodOrderRepository.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/repository/IngredientLotRepository.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/repository/IngredientRepository.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/repository/InvoiceRepository.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/repository/MenuItemRepository.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/repository/OrderItemRepository.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/repository/RecipeItemRepository.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/repository/ReservationRepository.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/repository/RevenueReconciliationRepository.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/repository/ServiceSessionRepository.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/repository/StockMovementRepository.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/repository/StockReceiptItemRepository.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/repository/StockReceiptRepository.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/repository/StocktakeItemRepository.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/repository/StocktakeRepository.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/security/ApiSecurityErrorHandler.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/security/CurrentUser.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/security/JwtService.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/seed/DataSeeder.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/service/AuthService.java
+?? backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/service/impl/AuthServiceImpl.java
+?? backend/restaurant-management/src/main/resources/db/migration/V1__init_schema.sql
+?? backend/restaurant-management/src/test/java/vn/ueh/kltn/restaurant/config/JwtConfigTest.java
+?? backend/restaurant-management/src/test/java/vn/ueh/kltn/restaurant/service/impl/AuthServiceImplTest.java
+?? backend/restaurant-management/src/test/resources/mockito-extensions/org.mockito.plugins.MockMaker
+?? docs/phase_results/phase-0-files.md
+?? docs/phase_results/phase-0.md
+?? frontend/src/api/authApi.ts
+?? frontend/src/auth/AuthContext.tsx
+?? frontend/src/auth/RequireAuth.tsx
+?? frontend/src/auth/RequireRole.tsx
+?? frontend/src/auth/authState.ts
+?? frontend/src/auth/roles.ts
+?? frontend/src/auth/session.ts
+?? frontend/src/auth/useAuth.ts
+?? frontend/src/components/MoneyText.tsx
+?? frontend/src/components/StatusTag.tsx
+?? frontend/src/layouts/AppLayout.tsx
+?? frontend/src/pages/login/LoginPage.tsx
+?? frontend/src/pages/workspace/WorkspacePage.tsx
+?? frontend/src/router.tsx
+?? frontend/src/types/auth.ts
+?? frontend/src/utils/labels.ts
+```

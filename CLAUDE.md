@@ -9,8 +9,14 @@ This is a graduation-thesis (KLTN, UEH) prototype: an internal web app for a ~30
 The Git repository has been initialized. Backend scaffold is in
 `backend/restaurant-management/` (Java 21, Boot 4.1.1); frontend scaffold is in
 `frontend/` (React, TypeScript, Vite, Bun). Neon direct connectivity and both
-builds have been verified. Phase 0 is not complete: domain migrations/entities,
-JWT login/authorization, seed data and business screens are still pending.
+builds have been verified. Phase 0 now includes the V1 migration (18 domain
+tables), entities/repositories, JWT login and `/me`, frontend authentication,
+role guards and navigation, shared status labels, and account/area/table seed.
+Phase 0 is complete: both builds, 9 unit tests, live DB/API checks, and checklist
+1–4 through Chrome headless passed. Phase 1 has not been started.
+Business screens are role-gated placeholders for Phase 1–4. Verification details
+are recorded in `docs/phase_results/phase-0.md`.
+The Java root package is `vn.ueh.kltn.restaurant`.
 
 - `CODEX_MASTER_SPEC_KLTN_SPRING_REACT.md`: **the source of truth**, written in Vietnamese. Section numbers below (§N) refer to this file.
 - `CODEX_MASTER_SPEC_KLTN_ASPNET_FINAL.md`: the superseded ASP.NET version, for reference only. When the two disagree, the Spring/React spec wins.
