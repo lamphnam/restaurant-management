@@ -9,6 +9,9 @@ import org.springframework.data.repository.query.Param;
 import vn.ueh.kltn.restaurant.entity.Ingredient;
 
 public interface IngredientRepository extends JpaRepository<Ingredient, Long> {
+    java.util.List<Ingredient> findByStatusOrderByNameAsc(vn.ueh.kltn.restaurant.enums.IngredientStatus status);
+    java.util.List<Ingredient> findAllByOrderByNameAsc();
+    Optional<Ingredient> findByName(String name);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select entity from Ingredient entity where entity.id = :id")

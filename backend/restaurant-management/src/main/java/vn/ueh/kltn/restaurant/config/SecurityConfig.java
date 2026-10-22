@@ -41,8 +41,6 @@ public class SecurityConfig {
                     if (environment.acceptsProfiles(Profiles.of("local"))) {
                         authorize.requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs", "/v3/api-docs/**").permitAll();
                     }
-                    // Reserve the Phase 1 account API for OWNER, as required by §13.3.
-                    authorize.requestMatchers("/api/accounts", "/api/accounts/**").hasRole("OWNER");
                     authorize.anyRequest().authenticated();
                 })
                 .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(errors).accessDeniedHandler(errors))

@@ -43,4 +43,11 @@ public class RecipeItem {
     public BigDecimal calculateConsumption(int portions) {
         return quantityPerServing.multiply(BigDecimal.valueOf(portions));
     }
+    public void changeQuantity(BigDecimal quantity) {
+        if (quantity == null || quantity.signum() <= 0) {
+            throw new vn.ueh.kltn.restaurant.exception.BusinessException(
+                    vn.ueh.kltn.restaurant.exception.ErrorCode.INVALID_INPUT, "Định lượng phải lớn hơn 0");
+        }
+        this.quantityPerServing = quantity;
+    }
 }

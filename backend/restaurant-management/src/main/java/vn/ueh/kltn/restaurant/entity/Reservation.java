@@ -75,7 +75,6 @@ public class Reservation {
         requireConfirmed(); status = ReservationStatus.CANCELLED;
     }
     public void confirmSeated() {
-        if (status == ReservationStatus.SEATED) return;
         requireConfirmed(); status = ReservationStatus.SEATED;
     }
     private void requireConfirmed() {

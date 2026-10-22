@@ -10,6 +10,16 @@ class InputValidationTest {
     private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
     @Test
+    void accountPasswordRespectsUtf8ByteLimitAndColumnLengths() {
+        var valid = new vn.ueh.kltn.restaurant.dto.request.CreateAccountRequest("Nhân viên", "0900000001", "Demo@123", vn.ueh.kltn.restaurant.enums.Role.WAITER);
+        assertTrue(validator.validate(valid).isEmpty());
+        var tooLong = new vn.ueh.kltn.restaurant.dto.request.CreateAccountRequest("x".repeat(101), "0900000001", "ế".repeat(25), vn.ueh.kltn.restaurant.enums.Role.WAITER);
+        var errors = validator.validate(tooLong);
+        assertTrue(errors.stream().anyMatch(e -> e.getPropertyPath().toString().equals("password")));
+        assertTrue(errors.stream().anyMatch(e -> e.getPropertyPath().toString().equals("fullName")));
+    }
+
+    @Test
     void blankPhoneHasOnlyRequiredMessage() {
         for (String phone : new String[]{"", "  "}) {
             var errors = validator.validate(new LoginRequest(phone, "Demo@123"));

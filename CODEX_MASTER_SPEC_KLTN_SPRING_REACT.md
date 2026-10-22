@@ -1287,6 +1287,8 @@ Thêm bảng ngắn cho TR/NFR: cách đáp ứng (lấy từ mục 2.2, 2.4).
 
 Chủ dự án duyệt cổng seed theo từng khối ngày 22/10/2026; làm trên Neon `main`, không bắt buộc branch/reset. Phase 0 chỉ có runner nền tảng; các runner nghiệp vụ được thêm đúng phase. Nếu một khối đã có dữ liệu một phần thì bỏ qua và báo để kiểm tra, không tự xóa hay điền đè.
 
+QA Phase 1: chủ dự án xác nhận ngày 22/10/2026 dùng trực tiếp Neon `main`, không tạo branch QA. Được reset/init lại dữ liệu demo khi lỗi cần đến việc đó; phải ghi nhận trong báo cáo. Đây là quyền khôi phục khi cần, không thay đổi tính không ghi đè/idempotent của seed khi khởi động bình thường. Phiên mở khi QA có thể giữ bàn OCCUPIED vì thanh toán/đóng phiên thuộc Phase 3.
+
 Các mốc tương đối (45 phút tới, ngày mai, HSD còn 2 ngày) được tính tại lúc khối tương ứng seed lần đầu. Khởi động lại không làm mới ngày của dữ liệu cũ. Trước demo 27/10, kiểm tra lại độ tươi; khi cần tạo đặt bàn/phiếu nhập mới qua workflow của app, không sửa lịch sử hoặc reset DB tự động.
 
 Nội dung seed:

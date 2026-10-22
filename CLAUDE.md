@@ -12,10 +12,14 @@ The Git repository has been initialized. Backend scaffold is in
 builds have been verified. Phase 0 now includes the V1 migration (18 domain
 tables), entities/repositories, JWT login and `/me`, frontend authentication,
 role guards and navigation, shared status labels, and account/area/table seed.
-Phase 0 is complete: both builds, 9 unit tests, live DB/API checks, and checklist
-1–4 through Chrome headless passed. Phase 1 has not been started.
-Business screens are role-gated placeholders for Phase 1–4. Verification details
-are recorded in `docs/phase_results/phase-0.md`.
+Phase 0 and its review fixes are complete. Phase 1 is implemented and awaiting review:
+AccountController/AccountService, MenuController/MenuService (including recipe diff),
+InventoryController/IngredientService (read only), TableController/TableService/ReservationService,
+and ServiceSessionController/ServiceSessionService (opening only). PhaseOneSeeder has independent gates.
+The four routes /accounts, /menu, /floor-plan and /reservations are implemented;
+other business screens and /sessions/:id remain placeholders. No Phase 2 work has started.
+Verification is recorded in `docs/phase_results/phase-1.md` (75 backend tests, 13 frontend tests,
+186 live API assertions, 17 functional browser checks and 5 visual/validation checks).
 The Java root package is `vn.ueh.kltn.restaurant`.
 
 - `CODEX_MASTER_SPEC_KLTN_SPRING_REACT.md`: **the source of truth**, written in Vietnamese. Section numbers below (§N) refer to this file.
@@ -109,6 +113,8 @@ Tests are JUnit 5 + Mockito unit tests that need no DB (§21.1).
 - The acting user always comes from the JWT, never from the request body.
 
 **Demo seed (§20, owner approved 22/10/2026):** work on the existing Neon `main`, without an automatic reset. The base `DataSeeder` is `@Order(0)`, gated by `app.seed` and an empty account table. Future phase runners have their own ordered, transactional, table-specific gates; existing accounts must not block menu/ingredient/reservation seed. Never overwrite historical data to refresh relative demo dates; inspect freshness before the demo and create new records through the implemented workflows.
+
+**Phase 1 QA override (owner approved 22/10/2026):** run QA directly on Neon `main`; do not create a QA branch. The owner explicitly permits resetting and initializing demo data again if errors require it. Normal startup still preserves existing rows. Use `[QA]` prefixes for test data, never print secrets, and record QA/reset actions in the phase report. Sessions opened during QA remain active until a later phase implements payment/closing.
 
 **Real-time (§14):** Server-Sent Events, with SSE only as an invalidation signal.
 - A `ServiceImpl` publishes a `RealtimeEvent`.

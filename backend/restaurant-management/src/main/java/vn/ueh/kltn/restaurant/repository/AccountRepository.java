@@ -7,4 +7,6 @@ import vn.ueh.kltn.restaurant.entity.Account;
 public interface AccountRepository extends JpaRepository<Account, Long> {
 
     Optional<Account> findByPhone(String phone);
+    boolean existsByPhone(String phone);
+    java.util.List<Account> findAllByOrderByIdAsc();
 }

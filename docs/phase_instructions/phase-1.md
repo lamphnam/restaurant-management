@@ -25,9 +25,16 @@ Lưu ý từ review Phase 0: AccountController dùng `@PreAuthorize`, đồng th
 - Build sạch; checklist 5–13, 15–16 đạt.
 - Mở 2 phiên cho cùng bàn (bấm 2 lần / 2 tab) → chỉ một thành công.
 
+## QA và dữ liệu — quyết định mới nhất 22/10/2026
+
+- Chủ dự án đã thay yêu cầu branch QA: dùng trực tiếp Neon `main`, không tạo `phase1-qa` và không yêu cầu Neon MCP/CLI.
+- Được reset/init lại dữ liệu demo nếu lỗi cần đến việc đó; ghi rõ hành động và kết quả trong phase report. Khởi động bình thường vẫn không sửa/xóa dữ liệu có sẵn.
+- Dữ liệu thử có tiền tố `[QA]`; không in DB password/JWT secret/token. Chưa có đóng phiên nên bàn mở khi QA có thể còn OCCUPIED.
+- Kiểm tra cổng 8080/5173 trước khi chạy, không dừng nhầm tiến trình. Không commit/push nếu chủ dự án chưa yêu cầu.
+
 ## Prompt
 ```text
 Triển khai Phase 1 theo CODEX_MASTER_SPEC_KLTN_SPRING_REACT.md và docs/phase_instructions/phase-1.md.
 Trước khi code: liệt kê requirement/UC, entity/table, business rule, file dự kiến, checklist sẽ kiểm.
-Sau khi code: build cả hai phía, chạy app, kiểm checklist, báo file đã đổi và khác biệt với spec. Không tự sang Phase 2.
+Sau khi code: build cả hai phía, chạy app, kiểm checklist 5–13 và phần Phase 1 của 15–16; test ma trận 6 vai trò, race mở phiên, recipe diff và seed chạy lại. QA trực tiếp trên Neon main theo duyệt 22/10/2026, không tạo branch; được reset/init demo khi lỗi cần đến, ghi vào report. Không tự sang Phase 2, không commit/push.
 ```

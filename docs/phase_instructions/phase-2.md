@@ -4,6 +4,8 @@
 **Requirement:** FR-05, FR-06, FR-07, FR-08, FR-18 (tiêu hao), TR-11, NFR-02, BR-03/04/11.
 **Checklist cuối phase:** 14, 17–22, 35 (§21.2).
 
+Ghi chú bàn giao từ Phase 1: ReservationServiceImpl và ServiceSessionServiceImpl đã đánh dấu vị trí publish RESERVATION/FLOOR_PLAN; Phase 2 mới thêm event và phát sau commit, bỏ qua PATCH no-op. GET /api/sessions/{id} và màn chi tiết vẫn chưa có; giữ snapshot unitPriceAtOrder khi tạo OrderItem. QA Phase 1 dùng Neon main theo duyệt mới nhất, còn các phiên ACTIVE được ghi trong phase-1 report.
+
 ## Backend
 1. Gọi món `[TX]`: phiên phải `ACTIVE`; tạo `FoodOrder` mới; thêm `OrderItem` chỉ cho món `ON_SALE`, `quantity > 0`, snapshot `unitPriceAtOrder = MenuItem.price`, trạng thái `PENDING`. Gọi thêm = `FoodOrder` mới cùng phiên.
 2. Hủy món: chỉ `PENDING → CANCELLED` (WAITER, MANAGER).
