@@ -1,12 +1,14 @@
 # Kết quả Phase 1 — Danh mục, đặt bàn, mở phiên
 
+Kết quả sửa sau review PR #1 và kiểm thử mới nằm ở [phase-1-review.md](phase-1-review.md). Các số liệu bên dưới là lần nghiệm thu ban đầu; trạng thái Neon mới nhất và guard QA xem báo cáo review.
+
 Ngày kiểm tra: 22/10/2026, Asia/Ho_Chi_Minh. Trạng thái: đã triển khai, chờ review. Chưa commit/push; chưa bắt đầu Phase 2.
 
 ## Phạm vi hoàn thành
 
 - FR-01/UC4: danh sách/tạo tài khoản, khóa/mở khóa/đổi role, OWNER không sửa chính mình. Không trả password/hash. Kiểm SĐT unique trước khi lưu và xử lý race. Mật khẩu tạo mới 6–72 ký tự, tối đa 72 byte UTF-8 trước BCrypt.
 - FR-02/UC5: tra cứu theo tên/trạng thái, thêm/sửa tên/giá, ngừng/kinh doanh lại. HEAD_CHEF chỉ đọc thực đơn và sửa định lượng.
-- FR-18 phần định lượng: GET/PUT toàn bộ bằng diff thêm/sửa/xóa; giữ lại khóa kép cũ, không xóa rồi insert lại cùng khóa. Chặn trùng NVL, NVL INACTIVE và số lượng không hợp lệ; danh sách rỗng được phép.
+- FR-18 phần định lượng: GET/PUT toàn bộ bằng diff thêm/sửa/xóa; giữ lại khóa kép cũ, không xóa rồi insert lại cùng khóa. Sau review: khóa MenuItem trước diff, chỉ chặn NVL INACTIVE với dòng mới; dòng đã có được giữ/sửa số lượng. Chặn trùng NVL và số lượng không hợp lệ; danh sách rỗng được phép.
 - Đọc NVL tối thiểu tại GET /api/inventory/ingredients?status. Chưa có currentStock hoặc CRUD kho.
 - FR-03/UC7: tra cứu theo ngày Việt Nam/trạng thái/tên/SĐT, phân trang; gợi ý bàn; tạo/hủy; nhãn overdue suy ra. Không có sửa đặt bàn hoặc trạng thái mới.
 - FR-04/UC8.1: mở walk-in/gắn reservation, khóa DiningTable trước Reservation, kiểm trạng thái/liên kết/thời hạn; lưu phiên và đổi trạng thái bàn trong một transaction.
@@ -98,11 +100,13 @@ bun run dev -- --host 127.0.0.1
 QA từ gốc repo, app đang chạy:
 
 ```powershell
+$env:PHASE1_QA_ALLOW_WRITES = 'main' # Ghi QA, tiêu thụ bàn; kiểm readiness trước.
 node scripts/phase1-api-check.mjs
 New-Item -ItemType Directory -Force .cache/phase1-browser | Out-Null
 bun add --cwd .cache/phase1-browser playwright@1.64.1
 $env:PLAYWRIGHT_MODULE = (Resolve-Path .cache/phase1-browser/node_modules/playwright/index.mjs).Path
 node scripts/phase1-browser-check.mjs
+Remove-Item Env:PHASE1_QA_ALLOW_WRITES
 node scripts/phase1-visual-check.mjs
 ```
 

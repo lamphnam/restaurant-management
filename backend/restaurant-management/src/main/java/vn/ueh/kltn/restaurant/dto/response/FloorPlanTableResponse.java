@@ -1,3 +1,11 @@
 package vn.ueh.kltn.restaurant.dto.response;
 
-public record FloorPlanTableResponse(Long id, String name, int capacity, vn.ueh.kltn.restaurant.enums.TableStatus status, Long activeSessionId, UpcomingReservationResponse upcomingReservation) { }
+import vn.ueh.kltn.restaurant.enums.TableStatus;
+
+public record FloorPlanTableResponse(
+        Long id,
+        String name,
+        int capacity,
+        TableStatus status,
+        Long activeSessionId,
+        UpcomingReservationResponse upcomingReservation) {}

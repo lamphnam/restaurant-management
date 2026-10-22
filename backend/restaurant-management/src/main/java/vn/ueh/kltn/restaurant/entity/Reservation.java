@@ -11,13 +11,16 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.time.Instant;
+
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
 import vn.ueh.kltn.restaurant.enums.ReservationStatus;
 import vn.ueh.kltn.restaurant.exception.BusinessException;
 import vn.ueh.kltn.restaurant.exception.ErrorCode;
+
+import java.time.Instant;
 
 @Entity
 @Table(name = "reservation")
@@ -61,23 +64,42 @@ public class Reservation {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    public Reservation(DiningTable table, Account createdBy, String customerName, String customerPhone,
-                       int guestCount, Instant startTime, Instant endTime, String note, Instant createdAt) {
-        this.table = table; this.createdBy = createdBy;
+    public Reservation(
+            DiningTable table,
+            Account createdBy,
+            String customerName,
+            String customerPhone,
+            int guestCount,
+            Instant startTime,
+            Instant endTime,
+            String note,
+            Instant createdAt) {
+        this.table = table;
+        this.createdBy = createdBy;
         this.customerName = customerName;
-        this.customerPhone = customerPhone; this.guestCount = guestCount;
+        this.customerPhone = customerPhone;
+        this.guestCount = guestCount;
         this.startTime = startTime;
-        this.endTime = endTime; this.note = note; this.createdAt = createdAt;
+        this.endTime = endTime;
+        this.note = note;
+        this.createdAt = createdAt;
         this.status = ReservationStatus.CONFIRMED;
     }
+
     public void cancel() {
         if (status == ReservationStatus.CANCELLED) return;
-        requireConfirmed(); status = ReservationStatus.CANCELLED;
+        requireConfirmed();
+        status = ReservationStatus.CANCELLED;
     }
+
     public void confirmSeated() {
-        requireConfirmed(); status = ReservationStatus.SEATED;
+        requireConfirmed();
+        status = ReservationStatus.SEATED;
     }
+
     private void requireConfirmed() {
-        if (status != ReservationStatus.CONFIRMED) throw new BusinessException(ErrorCode.INVALID_STATE, "Đặt bàn không còn ở trạng thái đã xác nhận");
+        if (status != ReservationStatus.CONFIRMED)
+            throw new BusinessException(
+                    ErrorCode.INVALID_STATE, "Đặt bàn không còn ở trạng thái đã xác nhận");
     }
 }

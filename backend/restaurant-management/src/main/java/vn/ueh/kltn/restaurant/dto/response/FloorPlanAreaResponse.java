@@ -1,3 +1,5 @@
 package vn.ueh.kltn.restaurant.dto.response;
 
-public record FloorPlanAreaResponse(Long id, String name, java.util.List<FloorPlanTableResponse> tables) { }
+import java.util.List;
+
+public record FloorPlanAreaResponse(Long id, String name, List<FloorPlanTableResponse> tables) {}

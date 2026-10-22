@@ -111,6 +111,13 @@ phase hoàn thành chỉ dựa vào build.
 Lệnh chạy lại test và kiểm tra API/Chrome sau review Phase 0:
 [phase-0-review.md](docs/phase_results/phase-0-review.md).
 
+Sửa review Phase 1 và lệnh kiểm tra hồi quy:
+[phase-1-review.md](docs/phase_results/phase-1-review.md).
+Chạy `node scripts/phase1-demo-readiness.mjs` để kiểm chỉ đọc trước demo/QA.
+Các script QA ghi dữ liệu cần `$env:PHASE1_QA_ALLOW_WRITES = 'main'` cho lần chạy
+đó; chúng không tự reset. Script kiểm thử mở phiên sẽ chiếm bàn đến khi dữ liệu
+được khôi phục hoặc Phase 3 có luồng thanh toán/đóng phiên.
+
 ## Backup/restore Neon
 
 Demo dùng Neon `main` theo lựa chọn của chủ dự án; không bắt buộc tạo branch.

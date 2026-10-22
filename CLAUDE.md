@@ -20,6 +20,11 @@ The four routes /accounts, /menu, /floor-plan and /reservations are implemented;
 other business screens and /sessions/:id remain placeholders. No Phase 2 work has started.
 Verification is recorded in `docs/phase_results/phase-1.md` (75 backend tests, 13 frontend tests,
 186 live API assertions, 17 functional browser checks and 5 visual/validation checks).
+The Phase 1 review fixes are recorded separately in `docs/phase_results/phase-1-review.md`:
+recipe replacements lock the parent menu item, retained inactive ingredients remain editable,
+the session picker filters reservations server-side and never blocks walk-ins,
+and mutating QA scripts require an explicit environment flag. Review verification:
+83 backend tests, 46 live API checks, 7 mocked-API browser checks and 4 QA-guard tests.
 The Java root package is `vn.ueh.kltn.restaurant`.
 
 - `CODEX_MASTER_SPEC_KLTN_SPRING_REACT.md`: **the source of truth**, written in Vietnamese. Section numbers below (§N) refer to this file.
@@ -115,6 +120,10 @@ Tests are JUnit 5 + Mockito unit tests that need no DB (§21.1).
 **Demo seed (§20, owner approved 22/10/2026):** work on the existing Neon `main`, without an automatic reset. The base `DataSeeder` is `@Order(0)`, gated by `app.seed` and an empty account table. Future phase runners have their own ordered, transactional, table-specific gates; existing accounts must not block menu/ingredient/reservation seed. Never overwrite historical data to refresh relative demo dates; inspect freshness before the demo and create new records through the implemented workflows.
 
 **Phase 1 QA override (owner approved 22/10/2026):** run QA directly on Neon `main`; do not create a QA branch. The owner explicitly permits resetting and initializing demo data again if errors require it. Normal startup still preserves existing rows. Use `[QA]` prefixes for test data, never print secrets, and record QA/reset actions in the phase report. Sessions opened during QA remain active until a later phase implements payment/closing.
+
+The approval comes from the owner's instruction: “cứ làm trên branch main của Neon không cần tạo thêm gì nữa hết. Nếu lỗi cứ reset và init lại data”. It does not instruct scripts to reset automatically. Mutating Phase 1 QA scripts require `PHASE1_QA_ALLOW_WRITES=main` for that run; inspect readiness with the read-only `node scripts/phase1-demo-readiness.mjs` first.
+
+**Recipe review policy (requested 22/10/2026):** new recipe lines require an ACTIVE ingredient; an existing line may remain or change quantity after its ingredient becomes INACTIVE. Serialize full replacements by locking MenuItem before reading recipe rows. The reservation picker uses optional `tableId` and `unexpired=true` filters; ordinary lists keep historical data by default.
 
 **Real-time (§14):** Server-Sent Events, with SSE only as an invalidation signal.
 - A `ServiceImpl` publishes a `RealtimeEvent`.

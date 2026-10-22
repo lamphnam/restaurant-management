@@ -2,6 +2,9 @@ import assert from 'node:assert/strict'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { requireWriteApproval } from './qa-write-guard.mjs'
+
+requireWriteApproval('phase1-browser-check')
 
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE ? pathToFileURL(path.resolve(process.env.PLAYWRIGHT_MODULE)).href : 'playwright')
 const base = process.env.FRONTEND_URL ?? 'http://127.0.0.1:5173'

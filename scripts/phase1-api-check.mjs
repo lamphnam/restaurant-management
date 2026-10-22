@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict'
 import { mkdir, writeFile } from 'node:fs/promises'
+import { requireWriteApproval } from './qa-write-guard.mjs'
+
+requireWriteApproval('phase1-api-check')
 
 // Writes demo/QA records on the configured Neon main, explicitly authorized on 22/10/2026.
 // Does not reset the DB, edit historical rows, print credentials, or implement closing sessions.

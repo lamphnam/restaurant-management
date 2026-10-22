@@ -112,6 +112,7 @@ Ghi nhận tại thời điểm kết thúc Phase 0; tiến độ hiện tại �
 - FR-03/BR-12: UC7 tạo/tra cứu/hủy có kiểm sức chứa, trùng lịch, chạm biên, phân trang và lịch sử hủy. Không thêm API sửa đặt bàn.
 - FR-04: chỉ UC8.1 mở phiên walk-in/gắn reservation đã xong; thanh toán/đóng phiên UC11.1 chờ Phase 3. Chưa có GET chi tiết phiên (Phase 2).
 - FR-18: chỉ phần GET/PUT định lượng bằng diff đã xong. Tiêu hao/StockMovement vẫn chờ Phase 2; không đánh dấu toàn FR-18 hoàn tất.
+- Review Phase 1 (22/10/2026): PUT định lượng khóa MenuItem và cho giữ dòng NVL đã ngừng; bộ chọn đặt bàn lọc theo bàn/chưa hết giờ, walk-in độc lập query đặt bàn. Test và giới hạn kiểm chứng xem [phase-1-review.md](phase_results/phase-1-review.md). Không mở rộng hiện trạng sang nghiệp vụ Phase 2.
 - TR-05/06/08, NFR-03/06/08: audit người/thời điểm và transaction/khóa dòng đã dùng trong đặt bàn/mở phiên; race trên Neon đúng một thành công. Các workflow kho/thanh toán vẫn chưa được hiện thực.
 - BR-10/TR-07/NFR-04: @PreAuthorize trên 19 endpoint Phase 1 đã kiểm ma trận 6 vai trò bằng test controller và API thật. Rule URL account đã gỡ; các endpoint phase sau chưa có.
 - TR-10/NFR-07/NFR-10: Chrome headless đã kiểm 4 màn Phase 1 và sơ đồ bàn tablet/mobile. Chưa nghiệm thu Edge hoặc màn Bếp/Phục vụ tương lai.
