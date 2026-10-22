@@ -4,7 +4,7 @@ Prototype hỗ trợ vận hành bán hàng tại bàn và quản lý nguyên v�
 Yêu cầu nghiệp vụ: `CODEX_MASTER_SPEC_KLTN_SPRING_REACT.md`.
 Kế hoạch triển khai: `docs/phase_instructions/`.
 
-## Trạng thái hiện tại — Phase 1 chờ review
+## Trạng thái hiện tại — Phase 1 đã sửa review, chuẩn bị Phase 2
 
 - Backend: Java 21, Spring Boot 4.1.1, Maven wrapper; đã có các dependencies
   theo spec, cấu hình Neon, Flyway và JPA `ddl-auto: validate`.
@@ -21,6 +21,16 @@ Kế hoạch triển khai: `docs/phase_instructions/`.
   Được reset/init demo khi lỗi cần đến, nhưng lần triển khai này không reset.
   Các phiên QA còn ACTIVE vì chưa có thanh toán/đóng phiên.
 - Kết quả, checklist từng mục và lệnh kiểm thử: [Phase 1](docs/phase_results/phase-1.md).
+- Cả 7 mục review PR #1 đã được xử lý; kết quả mới: **83 test backend**, **13 test
+  frontend**, **46 kiểm tra API Neon**, **7 kiểm tra Chrome dùng API mock**,
+  **4 test guard QA**. Build backend, frontend và lint đã pass trong đợt sửa review.
+  Chi tiết và giới hạn: [review Phase 1](docs/phase_results/phase-1-review.md).
+- Phase 2 **chưa triển khai**. Bản bàn giao: [PHASE_2_HANDOFF](docs/PHASE_2_HANDOFF.md).
+  Hướng dẫn: [phase-2.md](docs/phase_instructions/phase-2.md).
+  Prompt sẵn để giao việc: [phase-2-prompt.md](docs/phase_instructions/phase-2-prompt.md).
+
+Tra cứu tài liệu từ [docs/README.md](docs/README.md). Các số liệu nghiệm thu ban đầu,
+sửa review và snapshot dữ liệu có mốc thời gian riêng; không cộng chúng thành một lần chạy.
 
 ## Yêu cầu môi trường
 
@@ -57,9 +67,10 @@ API dùng JWT stateless, không dùng đăng nhập HTTP Basic hay session cooki
 ```
 
 Test `contextLoads()` mặc định đã được bỏ để build không phụ thuộc Neon.
-Hiện có 9 unit test cho đăng nhập và JWT, không cần DB. Sáu nhóm unit test nghiệp
-vụ trong §21.1 sẽ được bổ sung theo kế hoạch; không được xem các test auth này
-là thay thế cho các nhóm đó.
+Mốc kiểm chứng sau review Phase 1 là **83 test backend**, không cần DB: auth/JWT,
+validation/exception handler, phân quyền, đặt bàn/mở phiên, tài khoản, định lượng,
+sơ đồ bàn, seed gate và entity guard của Reservation. Các nhóm tổng tiền,
+chuyển trạng thái OrderItem và tiêu hao thuộc Phase 2; kiểm kê/loại bỏ thuộc Phase 3.
 Flyway quản lý schema; không dùng `ddl-auto: update` để tự sinh bảng.
 
 ## Chạy frontend
@@ -76,6 +87,7 @@ Ant Design và dayjs dùng locale tiếng Việt. Commit `bun.lock` cùng source
 ```powershell
 bun run build
 bun run lint
+bun run test
 ```
 
 ## Tài khoản demo và truy vết

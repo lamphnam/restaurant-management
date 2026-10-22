@@ -3,6 +3,11 @@
 Ngày kiểm tra: 22/10/2026, Asia/Ho_Chi_Minh. Branch: `feat/phase-1-implement`.
 Đã xử lý 7 mục review. Chưa commit/push các thay đổi lần này; không triển khai Phase 2.
 
+Đã chuẩn bị tài liệu nối tiếp: [PHASE_2_HANDOFF](../PHASE_2_HANDOFF.md),
+[hướng dẫn Phase 2](../phase_instructions/phase-2.md) và
+[prompt triển khai](../phase_instructions/phase-2-prompt.md).
+Việc chuẩn bị tài liệu không chạy lại QA hoặc thay đổi dữ liệu; số liệu dưới đây thuộc đợt sửa review.
+
 ## Kế hoạch và phạm vi
 
 Giữ FR-01/UC4, FR-02/UC5, FR-03/UC7, FR-04/UC8.1 và FR-18 trong phạm vi Phase 1.

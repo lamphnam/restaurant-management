@@ -2,7 +2,13 @@
 
 Kết quả sửa sau review PR #1 và kiểm thử mới nằm ở [phase-1-review.md](phase-1-review.md). Các số liệu bên dưới là lần nghiệm thu ban đầu; trạng thái Neon mới nhất và guard QA xem báo cáo review.
 
-Ngày kiểm tra: 22/10/2026, Asia/Ho_Chi_Minh. Trạng thái: đã triển khai, chờ review. Chưa commit/push; chưa bắt đầu Phase 2.
+Ngày kiểm tra ban đầu: 22/10/2026, Asia/Ho_Chi_Minh. Phase 1 đã triển khai và xử lý 7 mục review;
+đang bàn giao tài liệu để chuẩn bị Phase 2. Phase 2 chưa bắt đầu. Số test/QA trong báo cáo này
+giữ nguyên theo đợt nghiệm thu ban đầu; số sau sửa xem báo cáo review phía trên.
+
+Bàn giao code/quyết định/dữ liệu: [PHASE_2_HANDOFF](../PHASE_2_HANDOFF.md).
+Hướng dẫn và prompt tiếp theo: [phase-2.md](../phase_instructions/phase-2.md),
+[phase-2-prompt.md](../phase_instructions/phase-2-prompt.md).
 
 ## Phạm vi hoàn thành
 

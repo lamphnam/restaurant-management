@@ -1,6 +1,8 @@
-# File s?a sau review Phase 1
+# File sửa sau review Phase 1
 
-So v?i commit 4515b2d. Kh?ng g?m cache, build output ho?c c?u h?nh local.
+So với commit 4515b2d tại thời điểm kết thúc sửa review. Không gồm cache, build output hoặc cấu hình local.
+Đây là danh sách của đợt sửa review; các tài liệu bàn giao được bổ sung sau đó xem
+[PHASE_2_HANDOFF](../PHASE_2_HANDOFF.md).
 
 - `CLAUDE.md`
 - `CODEX_MASTER_SPEC_KLTN_SPRING_REACT.md`

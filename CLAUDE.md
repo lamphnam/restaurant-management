@@ -6,13 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a graduation-thesis (KLTN, UEH) prototype: an internal web app for a ~30–50 table dine-in restaurant. It covers two business chains, **table service and sales** and **ingredient inventory**, and both must demo end to end. Hard deadline: **2026-10-27**.
 
-The Git repository has been initialized. Backend scaffold is in
-`backend/restaurant-management/` (Java 21, Boot 4.1.1); frontend scaffold is in
+The Git repository has been initialized. Backend is in
+`backend/restaurant-management/` (Java 21, Boot 4.1.1); frontend is in
 `frontend/` (React, TypeScript, Vite, Bun). Neon direct connectivity and both
 builds have been verified. Phase 0 now includes the V1 migration (18 domain
 tables), entities/repositories, JWT login and `/me`, frontend authentication,
 role guards and navigation, shared status labels, and account/area/table seed.
-Phase 0 and its review fixes are complete. Phase 1 is implemented and awaiting review:
+Phase 0 is complete. Phase 1 and all seven PR #1 review fixes are implemented;
+the owner requested documentation and preparation for Phase 2, which has not started:
 AccountController/AccountService, MenuController/MenuService (including recipe diff),
 InventoryController/IngredientService (read only), TableController/TableService/ReservationService,
 and ServiceSessionController/ServiceSessionService (opening only). PhaseOneSeeder has independent gates.
@@ -25,6 +26,13 @@ recipe replacements lock the parent menu item, retained inactive ingredients rem
 the session picker filters reservations server-side and never blocks walk-ins,
 and mutating QA scripts require an explicit environment flag. Review verification:
 83 backend tests, 46 live API checks, 7 mocked-API browser checks and 4 QA-guard tests.
+Frontend baseline: 13 tests / 27 assertions, production build and lint passed.
+Start the next task by reading `docs/PHASE_2_HANDOFF.md`, then
+`docs/phase_instructions/phase-2.md`. A ready-to-use implementation prompt is in
+`docs/phase_instructions/phase-2-prompt.md`; creating these documents is not permission
+to begin Phase 2. Do not commit/push until the owner requests it.
+The latest recorded Neon snapshot is 9 ACTIVE sessions / 3 free tables, with no
+confirmed booking for 27/10; this is dated evidence, not a live availability guarantee.
 The Java root package is `vn.ueh.kltn.restaurant`.
 
 - `CODEX_MASTER_SPEC_KLTN_SPRING_REACT.md`: **the source of truth**, written in Vietnamese. Section numbers below (§N) refer to this file.
@@ -56,7 +64,7 @@ The Java root package is `vn.ueh.kltn.restaurant`.
   - Redux, Next.js.
 - The user writes in Vietnamese. Reply in the language they use.
 
-## Commands (from §23, once scaffolded)
+## Commands (from §23)
 
 Backend (`backend/restaurant-management/`, Spring Boot 4, Java 21, Maven wrapper, Windows PowerShell):
 
@@ -91,6 +99,12 @@ Tests are JUnit 5 + Mockito unit tests that need no DB (§21.1).
 - **ServiceImpl:** owns workflows, `@Transactional` boundaries, row locks and real-time event publishing.
 - **Entities:** carry the class-diagram state-transition methods (e.g. `OrderItem.markReady()`, `Reservation.confirmSeated()`, §8). An invalid transition throws `BusinessException`.
 - **Mapping:** entities are never returned from the API. They are mapped to response DTOs by hand.
+- **Java style after the Phase 1 review:** explicit imports and explicit types for repository
+  results, collections returned by methods, Optional and time values; keep `var` only where
+  the right-hand side is an obvious `new X(...)`. Avoid inline fully qualified class names,
+  wildcard imports and multiple statements per line. Phase 1 was formatted with
+  google-java-format 1.28.0, AOSP mode (four-space indentation); do not add a project
+  dependency just to format code.
 
 **Schema:** owned by **Flyway** (`db/migration/V1__init_schema.sql`). JPA runs with `ddl-auto: validate`, so schema changes go into migrations, never into entity annotations alone.
 
