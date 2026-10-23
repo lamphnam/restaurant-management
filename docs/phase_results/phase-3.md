@@ -1,6 +1,13 @@
 # Kết quả Phase 3 — Thanh toán, Hóa đơn và Quản lý Kho Nguyên vật liệu
 
-Ngày thực hiện: **23/10/2026**, Asia/Ho_Chi_Minh. Branch: `feat/phase-1-implement`.  
+> **Báo cáo triển khai ban đầu.** Các số 176 backend tests, 25 frontend tests/76 assertions
+> và 111 API checks là bằng chứng của lượt này. Hiện trạng sau 9 sửa PR #3:
+> [review Phase 3](phase-3-review.md), 187 backend tests, 26 frontend tests/77 assertions.
+> Seed/form/locks/query đã thay đổi sau review; mục 2/3 bên dưới không thay thế code mới.
+> Công việc tiếp theo dùng [bàn giao Phase 4](../PHASE_4_HANDOFF.md).
+
+Ngày thực hiện: **23/10/2026**, Asia/Ho_Chi_Minh. Code Phase 3 được đối chiếu trong
+PR #3 trên branch `feat/phase-3-implement`, commit `72d1bdc` trước sửa review.
 Phase 3 đã được triển khai và nghiệm thu đầy đủ theo đặc tả `CODEX_MASTER_SPEC_KLTN_SPRING_REACT.md` (§13.8, §13.9, §12.14–§12.17) và hướng dẫn `docs/phase_instructions/phase-3.md`.
 
 ---
@@ -10,7 +17,7 @@ Phase 3 đã được triển khai và nghiệm thu đầy đủ theo đặc t�
 - **FR-04, FR-09 / UC11.1 (Thanh toán & Hóa đơn):**
   - Màn hình thanh toán trực tiếp: hiển thị danh sách phiên đang hoạt động (`ACTIVE`) kèm tạm tính và cờ cảnh báo món đang chế biến/chờ chế biến (`hasPendingOrCookingItems`).
   - Xem trước hóa đơn (`PaymentPreviewResponse`): liệt kê mọi đợt gọi món, lọc bỏ các món đã hủy (`CANCELLED`) hoặc hết hàng (`UNAVAILABLE`), tính lại tổng tiền trên server; trả về danh sách `blockingItems` chặn thanh toán nếu có món `PENDING` hoặc `COOKING`.
-  - Nghiệp vụ thanh toán (`POST /api/payments`): khóa bi quan dòng `ServiceSession` (`findLockedById`), kiểm tra trạng thái `ACTIVE`, kiểm tra không có hóa đơn trước đó (tránh trùng thanh toán), kiểm tra không còn món đang chờ/đang nấu, tính lại tổng tiền từ chi tiết món, tạo bản ghi `Invoice` với số tiền chính xác, đóng phiên phục vụ (`status = COMPLETED`, `closedAt = now`), giải phóng bàn ăn (`DiningTable status = AVAILABLE`, `activeSessionId = null`), và phát tín hiệu SSE `FLOOR_PLAN` sau khi commit.
+  - Nghiệp vụ thanh toán (`POST /api/payments`): khóa bi quan dòng `ServiceSession` (`findLockedById`), kiểm tra trạng thái `ACTIVE`, kiểm tra không có hóa đơn trước đó (tránh trùng thanh toán), kiểm tra không còn món đang chờ/đang nấu, tính lại tổng tiền từ chi tiết món, tạo bản ghi `Invoice` với số tiền chính xác, đóng phiên phục vụ (`status = CLOSED`, `closedAt = now`), giải phóng bàn ăn (`DiningTable status = AVAILABLE`, `activeSessionId = null`), và phát tín hiệu SSE `FLOOR_PLAN` sau khi commit.
   - **Quy tắc D8:** Cho phép thanh toán phiên có tổng tiền 0đ (không gọi món hoặc mọi món đều bị hủy/hết hàng); món ở trạng thái `READY` vẫn được tính tiền hợp lệ.
   - Tránh thanh toán trùng: thanh toán lần thứ hai trên cùng một phiên trả về HTTP 409 `SESSION_ALREADY_PAID`.
 
@@ -24,7 +31,7 @@ Phase 3 đã được triển khai và nghiệm thu đầy đủ theo đặc t�
 
 - **FR-13 / UC6.2 (Tồn kho, Cảnh báo & Lô chú ý):**
   - Tồn kho tức thời được tính toán động từ tổng biến động kho: `SUM(stock_movement.quantity_change)` theo nguyên tắc bất biến của hệ thống (không dùng bảng snapshot/balance lưu riêng).
-  - Cảnh báo tồn thấp: gắn cờ `belowMinStock = true` khi `currentStock <= minStock`; hiển thị thẻ đỏ khi tồn âm (cho phép tồn âm theo D5).
+  - Cảnh báo tồn thấp: gắn cờ `belowMinStock = true` khi `currentStock < minStock`; hiển thị thẻ đỏ khi tồn âm (cho phép tồn âm theo D5).
   - Cảnh báo lô chú ý (`GET /api/inventory/lots/attention`): lọc các lô có `expiryDate <= today + 3 days` (múi giờ `Asia/Ho_Chi_Minh`), phân loại chính xác `EXPIRED` (đã hết hạn) và `EXPIRING_SOON` (sắp hết hạn), kèm số ngày còn lại (`daysRemaining`).
 
 - **FR-14 / UC10.1 (Kiểm kê kho & Điều chỉnh):**
@@ -142,7 +149,7 @@ Phase 3 đã được triển khai và nghiệm thu đầy đủ theo đặc t�
 
 - **Mục 27 (Cảnh báo tồn thấp và lô sắp/đã hết hạn):**  
   - *Yêu cầu:* Cảnh báo chính xác NVL có tồn thấp và lô hết hạn hoặc sắp hết hạn trong vòng 3 ngày theo múi giờ Việt Nam.
-  - *Bằng chứng:* `PhaseThreeSeeder` tạo dữ liệu mẫu với 2 NVL có tồn $\le$ ngưỡng minStock (API trả về `belowMinStock = true`). API `GET /api/inventory/lots/attention` trả về chính xác lô `LOT-TB-001` (`status = EXPIRED`, `daysRemaining = -3`) và lô `LOT-TB-002` (`status = EXPIRING_SOON`, `daysRemaining = 2`).
+  - *Bằng chứng:* `PhaseThreeSeeder` tạo dữ liệu mẫu với 2 NVL có tồn dưới ngưỡng minStock (API trả về `belowMinStock = true`). API `GET /api/inventory/lots/attention` trả về chính xác lô `LOT-TB-001` (`status = EXPIRED`, `daysRemaining = -3`) và lô `LOT-TB-002` (`status = EXPIRING_SOON`, `daysRemaining = 2`).
 
 - **Mục 28 (Lịch sử biến động hiển thị đủ 4 loại kèm nguồn):**  
   - *Yêu cầu:* Biến động hiển thị đủ 4 loại `RECEIPT`, `CONSUMPTION`, `STOCKTAKE_ADJUSTMENT`, `DISPOSAL` kèm nguồn liên kết.
@@ -165,7 +172,7 @@ Phase 3 đã được triển khai và nghiệm thu đầy đủ theo đặc t�
   - *Bằng chứng:* Thử gọi `POST /api/payments` lần thứ hai cho phiên vừa thanh toán bị từ chối ngay lập tức với HTTP 409 `SESSION_ALREADY_PAID`. Kiểm tra database bảng `invoice` có partial unique index bảo đảm mỗi phiên chỉ có duy nhất 1 hóa đơn.
 
 - **Mục 32 (Thanh toán hoàn tất: đóng phiên & giải phóng bàn):**  
-  - *Yêu cầu:* Sau khi thanh toán, phiên chuyển sang `COMPLETED`, bàn chuyển về `AVAILABLE` và phát tín hiệu SSE.
+  - *Yêu cầu:* Sau khi thanh toán, phiên chuyển sang `CLOSED`, bàn chuyển về `AVAILABLE` và phát tín hiệu SSE.
   - *Bằng chứng:* Sau khi thanh toán cho Session 11 trên Bàn T02 và Session 12 trên Bàn T03, gọi `GET /api/tables/floor-plan` xác nhận cả hai bàn đều đã chuyển sang trạng thái `AVAILABLE` với `activeSessionId = null`.
 
 ---
@@ -186,7 +193,7 @@ Snapshot đọc trực tiếp qua `PhaseThreeDbCheck`:
   "stock_movement": 42
 }
 ```
-- Đã xuất sắc thanh toán và đóng 4 phiên phục vụ (gồm cả phiên 336,000đ có 23 món, phiên 100,000đ live và các phiên 0đ theo quy tắc D8).
+- Đã thanh toán và đóng 4 phiên phục vụ (gồm cả phiên 336,000đ có 23 món, phiên 100,000đ live và các phiên 0đ theo quy tắc D8).
 - Giải phóng các bàn ăn tương ứng về trạng thái `AVAILABLE`.
 - 18 bảng domain nguyên vẹn, tuân thủ tuyệt đối quy định không tạo bảng thứ 19.
 
@@ -194,10 +201,14 @@ Snapshot đọc trực tiếp qua `PhaseThreeDbCheck`:
 
 ## 6. Bàn giao sang Phase 4
 
-- Phase 3 đã hoàn thành 100% mục tiêu, build sạch cả 2 phía backend/frontend, QA toàn diện.
-- Toàn bộ thay đổi của Phase 3 hiện vẫn nằm trên working directory, **chưa commit và chưa push** theo đúng nguyên tắc làm việc.
+- Đây là kết quả triển khai ban đầu; các lỗi phát hiện sau và giới hạn kiểm chứng đã ghi ở [review Phase 3](phase-3-review.md).
+- Code ban đầu đã nằm trong commit `72d1bdc`/PR #3; các sửa review và bộ tài liệu chuẩn bị Phase 4 hiện chưa commit/push.
 - Các nội dung còn lại dành cho **Phase 4 (Hoàn thiện & Đối soát)**:
   - UC11.2: Đối soát doanh thu cuối ca (`/api/reconciliations/**`).
   - UC6.1 / FR-17: Màn hình Báo cáo tổng hợp quản trị (`/api/payments/summary`).
   - Chạy lại toàn bộ bộ kiểm thử checklist tổng thể từ 1–36.
   - Cập nhật tài liệu cuối khóa luận (`README.md`, `TRACEABILITY.md`).
+
+Bộ giao việc hiện tại: [PHASE_4_HANDOFF](../PHASE_4_HANDOFF.md),
+[hướng dẫn](../phase_instructions/phase-4.md), [prompt](../phase_instructions/phase-4-prompt.md),
+[checklist chưa chạy](../phase_instructions/phase-4-checklist.md). Chưa bắt đầu code Phase 4.

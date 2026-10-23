@@ -1,5 +1,9 @@
 # Phase 0 — Nền tảng (22/10 tối – 23/10 sáng)
 
+> **Hướng dẫn lịch sử:** Phase 0–3 và các review đã triển khai.
+> Không khởi tạo lại project/schema theo file này. Trạng thái và công việc tiếp theo:
+> [bàn giao Phase 4](../PHASE_4_HANDOFF.md), [hướng dẫn](phase-4.md).
+
 **Đọc trước:** §3, §4, §5, §7, §9, §16, §17, §20, §23 và Phụ lục A.
 **Requirement:** FR-01 (UC1.1), TR-02/03/04/07, NFR-05/11.
 **Checklist cuối phase:** 1–4 (§21.2).

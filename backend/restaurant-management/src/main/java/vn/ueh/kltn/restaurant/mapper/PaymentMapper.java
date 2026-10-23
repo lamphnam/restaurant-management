@@ -3,6 +3,8 @@ package vn.ueh.kltn.restaurant.mapper;
 import vn.ueh.kltn.restaurant.dto.response.InvoiceResponse;
 import vn.ueh.kltn.restaurant.dto.response.OpenSessionPaymentResponse;
 import vn.ueh.kltn.restaurant.dto.response.PaymentPreviewResponse;
+import vn.ueh.kltn.restaurant.entity.DiningArea;
+import vn.ueh.kltn.restaurant.entity.DiningTable;
 import vn.ueh.kltn.restaurant.entity.FoodOrder;
 import vn.ueh.kltn.restaurant.entity.Invoice;
 import vn.ueh.kltn.restaurant.entity.OrderItem;
@@ -17,9 +19,9 @@ public final class PaymentMapper {
     private PaymentMapper() {}
 
     public static InvoiceResponse toInvoiceResponse(Invoice invoice) {
-        var session = invoice.getSession();
-        var table = session.getTable();
-        var area = table.getArea();
+        ServiceSession session = invoice.getSession();
+        DiningTable table = session.getTable();
+        DiningArea area = table.getArea();
         return new InvoiceResponse(
                 invoice.getId(),
                 session.getId(),
@@ -37,8 +39,8 @@ public final class PaymentMapper {
             BigDecimal provisionalTotal,
             boolean hasPendingOrCookingItems,
             int totalItems) {
-        var table = session.getTable();
-        var area = table.getArea();
+        DiningTable table = session.getTable();
+        DiningArea area = table.getArea();
         return new OpenSessionPaymentResponse(
                 session.getId(),
                 table.getId(),
@@ -56,8 +58,8 @@ public final class PaymentMapper {
             BigDecimal total,
             boolean hasPendingOrCooking,
             List<PaymentPreviewResponse.BlockingItemResponse> blockingItems) {
-        var table = session.getTable();
-        var area = table.getArea();
+        DiningTable table = session.getTable();
+        DiningArea area = table.getArea();
 
         List<PaymentPreviewResponse.OrderPreviewResponse> orderResponses = new ArrayList<>();
         for (FoodOrder order : orders) {

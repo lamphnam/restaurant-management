@@ -1,5 +1,9 @@
 # Phase 1 — Danh mục + Đặt bàn + Mở phiên (23/10)
 
+> **Hướng dẫn lịch sử:** Phase 1 và cả 7 sửa review đã có trong code; Phase 0–3 đã triển khai.
+> Giữ các quyết định review thay vì viết lại workflow. Tiếp theo dùng
+> [bàn giao Phase 4](../PHASE_4_HANDOFF.md), [hướng dẫn](phase-4.md).
+
 **Đọc trước:** §5, §10.2 (D1–D3, D11, D12), §12.2–§12.8, §13.3–§13.5, §13.7, §15, §16.3.
 **Requirement:** FR-01 (UC4), FR-02 (UC5), FR-03 (UC7), FR-04 (UC8.1), FR-18 (định lượng).
 **Checklist cuối phase:** 5–13, 15–16 (§21.2).

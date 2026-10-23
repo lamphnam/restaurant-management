@@ -3,14 +3,14 @@ package vn.ueh.kltn.restaurant.service.impl;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import static vn.ueh.kltn.restaurant.TestFixtures.CLOCK;
@@ -21,6 +21,7 @@ import static vn.ueh.kltn.restaurant.TestFixtures.ingredient;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -40,7 +41,6 @@ import vn.ueh.kltn.restaurant.dto.response.PageResponse;
 import vn.ueh.kltn.restaurant.dto.response.StockMovementResponse;
 import vn.ueh.kltn.restaurant.dto.response.StockReceiptResponse;
 import vn.ueh.kltn.restaurant.dto.response.StocktakeResponse;
-import vn.ueh.kltn.restaurant.dto.response.StocktakeTemplateItemResponse;
 import vn.ueh.kltn.restaurant.entity.Account;
 import vn.ueh.kltn.restaurant.entity.Ingredient;
 import vn.ueh.kltn.restaurant.entity.IngredientLot;
@@ -49,7 +49,6 @@ import vn.ueh.kltn.restaurant.entity.StockReceipt;
 import vn.ueh.kltn.restaurant.entity.StockReceiptItem;
 import vn.ueh.kltn.restaurant.entity.Stocktake;
 import vn.ueh.kltn.restaurant.entity.StocktakeItem;
-import vn.ueh.kltn.restaurant.enums.IngredientStatus;
 import vn.ueh.kltn.restaurant.enums.MovementType;
 import vn.ueh.kltn.restaurant.exception.BusinessException;
 import vn.ueh.kltn.restaurant.exception.ErrorCode;
@@ -111,8 +110,10 @@ class InventoryServiceImplTest {
 
     @Test
     void listIngredientsCalculatesStockAndFiltersBelowMin() {
-        Ingredient ing1 = id(new Ingredient("Thịt bò", "kg", new BigDecimal("5"), false, false), 1L);
-        Ingredient ing2 = id(new Ingredient("Rau thơm", "kg", new BigDecimal("1"), false, false), 2L);
+        Ingredient ing1 =
+                id(new Ingredient("Thịt bò", "kg", new BigDecimal("5"), false, false), 1L);
+        Ingredient ing2 =
+                id(new Ingredient("Rau thơm", "kg", new BigDecimal("1"), false, false), 2L);
 
         when(ingredients.findAll(any(Specification.class), any(Sort.class)))
                 .thenReturn(List.of(ing1, ing2));
@@ -216,8 +217,7 @@ class InventoryServiceImplTest {
 
     @Test
     void createReceiptAtomicallyCreatesLotItemAndMovement() {
-        Ingredient ing =
-                id(new Ingredient("Thịt bò", "kg", BigDecimal.ONE, true, true), 1L);
+        Ingredient ing = id(new Ingredient("Thịt bò", "kg", BigDecimal.ONE, true, true), 1L);
         when(ingredients.findById(1L)).thenReturn(Optional.of(ing));
 
         Account actor = account();
@@ -251,15 +251,15 @@ class InventoryServiceImplTest {
 
     @Test
     void createReceiptRejectsInactiveIngredient() {
-        Ingredient ing =
-                id(new Ingredient("Thịt bò", "kg", BigDecimal.ONE, false, false), 1L);
+        Ingredient ing = id(new Ingredient("Thịt bò", "kg", BigDecimal.ONE, false, false), 1L);
         ing.deactivate();
         when(ingredients.findById(1L)).thenReturn(Optional.of(ing));
 
         Account actor = account();
         when(currentUser.accountId()).thenReturn(actor.getId());
         when(accounts.findById(actor.getId())).thenReturn(Optional.of(actor));
-        when(stockReceipts.save(any(StockReceipt.class))).thenAnswer(inv -> id(inv.getArgument(0), 10L));
+        when(stockReceipts.save(any(StockReceipt.class)))
+                .thenAnswer(inv -> id(inv.getArgument(0), 10L));
 
         BusinessException ex =
                 assertThrows(
@@ -276,14 +276,14 @@ class InventoryServiceImplTest {
 
     @Test
     void createReceiptRejectsMissingExpiryDateWhenTrackExpiryIsTrue() {
-        Ingredient ing =
-                id(new Ingredient("Sữa tươi", "hộp", BigDecimal.ONE, true, true), 1L);
+        Ingredient ing = id(new Ingredient("Sữa tươi", "hộp", BigDecimal.ONE, true, true), 1L);
         when(ingredients.findById(1L)).thenReturn(Optional.of(ing));
 
         Account actor = account();
         when(currentUser.accountId()).thenReturn(actor.getId());
         when(accounts.findById(actor.getId())).thenReturn(Optional.of(actor));
-        when(stockReceipts.save(any(StockReceipt.class))).thenAnswer(inv -> id(inv.getArgument(0), 10L));
+        when(stockReceipts.save(any(StockReceipt.class)))
+                .thenAnswer(inv -> id(inv.getArgument(0), 10L));
 
         // expiryDate is null
         BusinessException ex =
@@ -294,7 +294,10 @@ class InventoryServiceImplTest {
                                         new CreateStockReceiptRequest(
                                                 List.of(
                                                         new StockReceiptItemRequest(
-                                                                1L, BigDecimal.ONE, "LOT-1", null)))));
+                                                                1L,
+                                                                BigDecimal.ONE,
+                                                                "LOT-1",
+                                                                null)))));
 
         assertEquals(ErrorCode.EXPIRY_DATE_REQUIRED, ex.getErrorCode());
     }
@@ -302,14 +305,13 @@ class InventoryServiceImplTest {
     @Test
     void createStocktakeCalculatesDifferenceUsingD7LedgerSumAndCreatesMovement() {
         Ingredient ing = id(new Ingredient("Trứng", "quả", BigDecimal.TEN, false, false), 1L);
-        when(ingredients.findById(1L)).thenReturn(Optional.of(ing));
+        when(ingredients.findLockedById(1L)).thenReturn(Optional.of(ing));
 
         Account actor = account();
         when(currentUser.accountId()).thenReturn(actor.getId());
         when(accounts.findById(actor.getId())).thenReturn(Optional.of(actor));
 
-        when(stocktakes.save(any(Stocktake.class)))
-                .thenAnswer(inv -> id(inv.getArgument(0), 10L));
+        when(stocktakes.save(any(Stocktake.class))).thenAnswer(inv -> id(inv.getArgument(0), 10L));
         when(stocktakeItems.save(any(StocktakeItem.class)))
                 .thenAnswer(inv -> id(inv.getArgument(0), 20L));
 
@@ -337,14 +339,13 @@ class InventoryServiceImplTest {
     @Test
     void createStocktakeCreatesNoMovementWhenDifferenceIsZero() {
         Ingredient ing = id(new Ingredient("Gạo", "kg", BigDecimal.TEN, false, false), 2L);
-        when(ingredients.findById(2L)).thenReturn(Optional.of(ing));
+        when(ingredients.findLockedById(2L)).thenReturn(Optional.of(ing));
 
         Account actor = account();
         when(currentUser.accountId()).thenReturn(actor.getId());
         when(accounts.findById(actor.getId())).thenReturn(Optional.of(actor));
 
-        when(stocktakes.save(any(Stocktake.class)))
-                .thenAnswer(inv -> id(inv.getArgument(0), 10L));
+        when(stocktakes.save(any(Stocktake.class))).thenAnswer(inv -> id(inv.getArgument(0), 10L));
         when(stocktakeItems.save(any(StocktakeItem.class)))
                 .thenAnswer(inv -> id(inv.getArgument(0), 21L));
 
@@ -354,7 +355,9 @@ class InventoryServiceImplTest {
         StocktakeResponse resp =
                 service.createStocktake(
                         new CreateStocktakeRequest(
-                                List.of(new StocktakeItemRequest(2L, new BigDecimal("20.000"), null))));
+                                List.of(
+                                        new StocktakeItemRequest(
+                                                2L, new BigDecimal("20.000"), null))));
 
         assertNotNull(resp);
         assertEquals(0, resp.items().get(0).difference().compareTo(BigDecimal.ZERO));
@@ -378,7 +381,10 @@ class InventoryServiceImplTest {
                         () ->
                                 service.createDisposal(
                                         new CreateStockDisposalRequest(
-                                                1L, null, new BigDecimal("8.000"), "Hỏng do mất điện")));
+                                                1L,
+                                                null,
+                                                new BigDecimal("8.000"),
+                                                "Hỏng do mất điện")));
 
         assertEquals(ErrorCode.INSUFFICIENT_STOCK, ex.getErrorCode());
     }
@@ -405,6 +411,123 @@ class InventoryServiceImplTest {
         assertEquals(MovementType.DISPOSAL, resp.movementType());
         assertEquals("Ôi thiu", resp.reason());
         assertEquals("Xuất hủy", resp.source());
+    }
+
+    @Test
+    void stocktakeLocksAllIngredientsInAscendingOrderBeforeReadingLedger() {
+        Ingredient first = id(new Ingredient("Gạo", "kg", BigDecimal.ONE, false, false), 1L);
+        Ingredient second = id(new Ingredient("Trứng", "quả", BigDecimal.TEN, false, false), 2L);
+        when(ingredients.findLockedById(1L)).thenReturn(Optional.of(first));
+        when(ingredients.findLockedById(2L)).thenReturn(Optional.of(second));
+        when(stockMovements.sumQuantityByIngredientId(any())).thenReturn(BigDecimal.TEN);
+        when(stocktakes.save(any())).thenAnswer(inv -> id(inv.getArgument(0), 10L));
+        when(stocktakeItems.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        StocktakeResponse response =
+                service.createStocktakeForSeed(
+                        new CreateStocktakeRequest(
+                                List.of(
+                                        new StocktakeItemRequest(2L, BigDecimal.TEN, null),
+                                        new StocktakeItemRequest(1L, BigDecimal.TEN, null))),
+                        account());
+        InOrder ordered = inOrder(ingredients, stockMovements);
+        ordered.verify(ingredients).findLockedById(1L);
+        ordered.verify(ingredients).findLockedById(2L);
+        ordered.verify(stockMovements).sumQuantityByIngredientId(2L);
+        ordered.verify(stockMovements).sumQuantityByIngredientId(1L);
+        assertEquals(
+                List.of(2L, 1L),
+                response.items().stream().map(item -> item.ingredientId()).toList());
+        verifyNoInteractions(currentUser);
+    }
+
+    @Test
+    void stocktakeRejectsDuplicateIngredientBeforeLocksOrWrites() {
+        BusinessException error =
+                assertThrows(
+                        BusinessException.class,
+                        () ->
+                                service.createStocktakeForSeed(
+                                        new CreateStocktakeRequest(
+                                                List.of(
+                                                        new StocktakeItemRequest(
+                                                                1L, BigDecimal.TEN, null),
+                                                        new StocktakeItemRequest(
+                                                                1L, BigDecimal.ONE, null))),
+                                        account()));
+        assertEquals(ErrorCode.INVALID_STOCKTAKE, error.getErrorCode());
+        assertEquals("Nguyên vật liệu bị trùng trong phiếu kiểm kê", error.getMessage());
+        verifyNoInteractions(ingredients, stocktakes, stocktakeItems, stockMovements);
+    }
+
+    @Test
+    void stocktakeRejectsInactiveIngredientBeforeLedgerOrWrites() {
+        Ingredient ingredient = ingredient(1L);
+        ingredient.deactivate();
+        when(ingredients.findLockedById(ingredient.getId())).thenReturn(Optional.of(ingredient));
+        BusinessException error =
+                assertThrows(
+                        BusinessException.class,
+                        () ->
+                                service.createStocktakeForSeed(
+                                        new CreateStocktakeRequest(
+                                                List.of(
+                                                        new StocktakeItemRequest(
+                                                                ingredient.getId(),
+                                                                BigDecimal.ONE,
+                                                                null))),
+                                        account()));
+        assertEquals(ErrorCode.INGREDIENT_INACTIVE, error.getErrorCode());
+        verifyNoInteractions(stocktakes, stocktakeItems, stockMovements);
+    }
+
+    @Test
+    void seedStocktakeAcceptsPositiveActualAgainstNegativeLedgerWithoutJwt() {
+        Ingredient ingredient = ingredient(1L);
+        when(ingredients.findLockedById(ingredient.getId())).thenReturn(Optional.of(ingredient));
+        when(stockMovements.sumQuantityByIngredientId(ingredient.getId()))
+                .thenReturn(new BigDecimal("-3.000"));
+        when(stocktakes.save(any())).thenAnswer(inv -> id(inv.getArgument(0), 10L));
+        when(stocktakeItems.save(any())).thenAnswer(inv -> id(inv.getArgument(0), 20L));
+        StocktakeResponse result =
+                service.createStocktakeForSeed(
+                        new CreateStocktakeRequest(
+                                List.of(
+                                        new StocktakeItemRequest(
+                                                ingredient.getId(),
+                                                new BigDecimal("0.500"),
+                                                null))),
+                        account());
+        assertEquals(new BigDecimal("-3.000"), result.items().get(0).systemQuantity());
+        assertEquals(new BigDecimal("0.500"), result.items().get(0).actualQuantity());
+        assertEquals(new BigDecimal("3.500"), result.items().get(0).difference());
+        verifyNoInteractions(currentUser, accounts);
+        verify(stockMovements).save(any(StockMovement.class));
+    }
+
+    @Test
+    void receiptHistoryFetchesOnlyPageDetailsAndPreservesPageOrder() {
+        StockReceipt first = id(new StockReceipt(account(), NOW), 20L);
+        StockReceipt second = id(new StockReceipt(account(), NOW), 10L);
+        when(stockReceipts.findAll(any(Specification.class), any(PageRequest.class)))
+                .thenReturn(new PageImpl<>(List.of(first, second), PageRequest.of(0, 2), 7));
+        when(stockReceipts.findDetailsByIdIn(List.of(20L, 10L))).thenReturn(List.of(second, first));
+        PageResponse<StockReceiptResponse> result = service.listReceipts(null, null, 0, 2);
+        assertEquals(7, result.total());
+        assertEquals(
+                List.of(20L, 10L), result.items().stream().map(StockReceiptResponse::id).toList());
+    }
+
+    @Test
+    void stocktakeHistoryFetchesOnlyPageDetailsAndPreservesPageOrder() {
+        Stocktake first = id(new Stocktake(account(), NOW), 20L);
+        Stocktake second = id(new Stocktake(account(), NOW), 10L);
+        when(stocktakes.findAll(any(Specification.class), any(PageRequest.class)))
+                .thenReturn(new PageImpl<>(List.of(first, second), PageRequest.of(0, 2), 7));
+        when(stocktakes.findDetailsByIdIn(List.of(20L, 10L))).thenReturn(List.of(second, first));
+        PageResponse<StocktakeResponse> result = service.listStocktakes(null, null, 0, 2);
+        assertEquals(7, result.total());
+        assertEquals(
+                List.of(20L, 10L), result.items().stream().map(StocktakeResponse::id).toList());
     }
 
     @Test

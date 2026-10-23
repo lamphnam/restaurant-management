@@ -1,5 +1,9 @@
 package vn.ueh.kltn.restaurant.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -11,6 +15,10 @@ import java.util.Optional;
 
 public interface InvoiceRepository
         extends JpaRepository<Invoice, Long>, JpaSpecificationExecutor<Invoice> {
+
+    @Override
+    @EntityGraph(attributePaths = {"session.table.area", "cashier"})
+    Page<Invoice> findAll(Specification<Invoice> spec, Pageable pageable);
 
     boolean existsBySessionId(Long sessionId);
 

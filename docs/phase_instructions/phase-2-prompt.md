@@ -1,8 +1,9 @@
 # Prompt triển khai Phase 2
 
 > Nguồn yêu cầu lịch sử: Phase 2 đã triển khai và sửa review/popup. Snapshot trong prompt
-> là mốc trước Phase 2. Công việc tiếp theo xem [bàn giao Phase 3](../PHASE_3_HANDOFF.md)
-> và [prompt Phase 3](phase-3-prompt.md); không chạy lại Phase 2 hoặc tự bắt đầu Phase 3.
+> là mốc trước Phase 2. Phase 3/review cũng đã triển khai. Công việc tiếp theo xem
+> [bàn giao Phase 4](../PHASE_4_HANDOFF.md) và [prompt Phase 4](phase-4-prompt.md);
+> không chạy lại Phase 2/3 hoặc tự bắt đầu code Phase 4.
 
 Chỉ giao prompt này khi chủ dự án yêu cầu bắt đầu Phase 2. Việc chuẩn bị file không khởi động phase.
 

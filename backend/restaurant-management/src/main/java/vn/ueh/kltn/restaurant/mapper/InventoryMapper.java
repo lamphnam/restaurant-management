@@ -7,8 +7,11 @@ import vn.ueh.kltn.restaurant.dto.response.StockReceiptItemResponse;
 import vn.ueh.kltn.restaurant.dto.response.StockReceiptResponse;
 import vn.ueh.kltn.restaurant.dto.response.StocktakeItemResponse;
 import vn.ueh.kltn.restaurant.dto.response.StocktakeResponse;
+import vn.ueh.kltn.restaurant.entity.DiningTable;
+import vn.ueh.kltn.restaurant.entity.FoodOrder;
 import vn.ueh.kltn.restaurant.entity.Ingredient;
 import vn.ueh.kltn.restaurant.entity.IngredientLot;
+import vn.ueh.kltn.restaurant.entity.ServiceSession;
 import vn.ueh.kltn.restaurant.entity.StockMovement;
 import vn.ueh.kltn.restaurant.entity.StockReceipt;
 import vn.ueh.kltn.restaurant.entity.StockReceiptItem;
@@ -70,7 +73,7 @@ public final class InventoryMapper {
         List<StockReceiptItemResponse> items = new ArrayList<>();
         if (receipt.getItems() != null) {
             for (StockReceiptItem item : receipt.getItems()) {
-                var lot = item.getLot();
+                IngredientLot lot = item.getLot();
                 items.add(
                         new StockReceiptItemResponse(
                                 item.getId(),
@@ -124,9 +127,9 @@ public final class InventoryMapper {
                             : "Phiếu nhập";
         } else if (sm.getMovementType() == MovementType.CONSUMPTION) {
             if (sm.getOrderItem() != null) {
-                var order = sm.getOrderItem().getOrder();
-                var session = order != null ? order.getSession() : null;
-                var table = session != null ? session.getTable() : null;
+                FoodOrder order = sm.getOrderItem().getOrder();
+                ServiceSession session = order != null ? order.getSession() : null;
+                DiningTable table = session != null ? session.getTable() : null;
                 source =
                         (table != null ? "Bàn " + table.getName() + " - " : "")
                                 + sm.getOrderItem().getMenuItem().getName()
@@ -145,7 +148,7 @@ public final class InventoryMapper {
             source = sm.getMovementType().name();
         }
 
-        var lot = sm.getLot();
+        IngredientLot lot = sm.getLot();
         return new StockMovementResponse(
                 sm.getId(),
                 sm.getIngredient().getId(),

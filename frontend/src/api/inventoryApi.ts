@@ -14,7 +14,7 @@ import type {
   StocktakeTemplateItem,
   UpdateIngredientPayload,
 } from '../types/inventory'
-import type { PageResponse } from './paymentApi'
+import type { PageResponse } from '../types/tables'
 
 export const inventoryApi = {
   listIngredients: async (

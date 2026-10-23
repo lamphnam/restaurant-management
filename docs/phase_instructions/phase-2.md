@@ -1,5 +1,9 @@
 # Phase 2 — Gọi món + Bếp + Real-time (24/10)
 
+> **Hướng dẫn lịch sử:** Phase 0–3/review đã triển khai. Code tiếp theo dùng
+> [bàn giao Phase 4](../PHASE_4_HANDOFF.md), [hướng dẫn](phase-4.md);
+> các mốc Phase 2 dưới đây là nguồn hồi quy, không phải lệnh triển khai lại.
+
 **Trạng thái:** đã triển khai ngày 23/10/2026 theo yêu cầu chủ dự án;
 kết quả và giới hạn ở [báo cáo Phase 2](../phase_results/phase-2.md).
 Ngày 24/10 trong tiêu đề là lịch dự kiến ban đầu.

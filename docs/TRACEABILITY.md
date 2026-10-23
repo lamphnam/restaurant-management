@@ -3,13 +3,18 @@
 Nguồn: `CODEX_MASTER_SPEC_KLTN_SPRING_REACT.md` (§1, §2, §19).
 Tên Việt (khóa luận) ↔ tên code: xem Phụ lục A của spec.
 
-**Phạm vi theo §19 (khi hoàn tất):** `Đã làm` / `Đơn giản hóa` (phần cắt theo §1.2) / `Chưa hiện thực` (cắt, §1.3). Cột Phạm vi mô tả mục tiêu bàn giao, không phải tiến độ hiện tại. Cột Hiện trạng theo dõi riêng bằng `Chưa làm`, `Đang làm (Phase N)` hoặc `Đã làm`; khi chốt báo cáo Phase 4 phải đối chiếu kết quả thực tế với ba giá trị §19. `Đang làm` nghĩa đã hiện thực một phần, không có nghĩa agent đang triển khai phase đó.
+**Phạm vi theo §19 (khi hoàn tất):** `Đã làm` / `Đơn giản hóa` (phần cắt theo §1.2) / `Chưa hiện thực` (cắt, §1.3). Cột Phạm vi là mục tiêu bàn giao, không phải tiến độ. Cột Hiện trạng dùng `Chưa làm`, `Một phần — chờ Phase 4`, `Đã làm` hoặc giới hạn kiểm chứng cụ thể. Các mục lịch sử 6–10 mô tả mốc trước đây, không ghi đè trạng thái đầu tài liệu.
 Cột *Phase* là phase dự kiến hiện thực (docs/phase_instructions). Cập nhật cột *Hiện trạng* khi xong từng phase.
 
-Mốc 23/10/2026: Phase 3 đã triển khai, kiểm thử và nghiệm thu hoàn tất.
+Mốc 23/10/2026: Phase 0–3 đã triển khai; 3 critical và 6 optional PR #3 đã sửa.
 Hệ thống đã có đầy đủ chuỗi thanh toán, hóa đơn, giải phóng bàn, quản lý danh mục NVL,
 nhập kho, kiểm kê D7, xuất hủy, lô chú ý, lịch sử biến động và D8/D12 rules.
-Xem [Báo cáo Phase 3](phase_results/phase-3.md). Chỉ còn FR-10 (đối soát ca) và FR-17 (báo cáo) cho Phase 4.
+Xem [Phase 3 ban đầu](phase_results/phase-3.md) và [review mới nhất](phase_results/phase-3-review.md):
+187 backend tests, 26 frontend tests / 77 assertions; hai build/lint PASS.
+FR-10/FR-17 chưa triển khai; bộ [bàn giao Phase 4](PHASE_4_HANDOFF.md),
+[hướng dẫn](phase_instructions/phase-4.md), [prompt](phase_instructions/phase-4-prompt.md)
+và [checklist chưa chạy](phase_instructions/phase-4-checklist.md) đã sẵn sàng.
+Hồi quy toàn bộ/Edge/backup-restore còn cần bằng chứng, không suy hoàn thành từ build.
 
 ## 1. Functional Requirements
 
@@ -53,12 +58,12 @@ Xem [Báo cáo Phase 3](phase_results/phase-3.md). Chỉ còn FR-10 (đối soá
 | BR-02 | Số hóa quy trình đặt/bố trí bàn → thanh toán | FR-03, FR-04, FR-05, FR-09 | Đã làm |
 | BR-03 | Chia sẻ trạng thái món phục vụ ↔ bếp | FR-07, FR-08, SSE | Đã làm |
 | BR-04 | Các lần gọi món cùng phiên | `FoodOrder` nhiều/`ServiceSession` | Đã làm |
-| BR-05 | Doanh thu, đối soát theo ca | FR-09, FR-10 | Đang làm (Phase 3) |
+| BR-05 | Doanh thu, đối soát theo ca | FR-09, FR-10 | Một phần — chờ Phase 4 |
 | BR-06 | Số hóa nhập, tồn, kiểm kê | FR-12, FR-13, FR-14 | Đã làm |
 | BR-07 | Quản lý lô và HSD | FR-13 (lô ghi khi nhập, cảnh báo HSD) | Đã làm |
 | BR-08 | Thông tin tổng hợp | FR-17 | Chưa làm |
 | BR-09 | Truy xuất giao dịch | FR-16 | Đã làm |
-| BR-10 | Quyền theo vai trò | FR-01, `@PreAuthorize` | Đang làm (Phase 3) |
+| BR-10 | Quyền theo vai trò | FR-01, `@PreAuthorize` | Đã kiểm Phase 0–3; quyền API Phase 4 chưa làm |
 | BR-11 | Món → định lượng → tiêu hao → biến động tồn | FR-18, `StockMovement` | Đã làm |
 | BR-12 | Quản lý tập trung đặt bàn | FR-03 | Đã làm |
 
@@ -70,16 +75,16 @@ Xem [Báo cáo Phase 3](phase_results/phase-3.md). Chỉ còn FR-10 (đối soá
 | TR-02, TR-03 | PostgreSQL (Neon), Flyway | Đã làm |
 | TR-04 | PK `BIGINT` identity, trừ `RecipeItem` dùng PK kép | Đã làm |
 | TR-05, TR-06 | Cột thời gian và `*_by_id` theo ERD | Đã làm |
-| TR-07, NFR-04 | JWT + `@PreAuthorize` | Đang làm (Phase 3) |
-| TR-08, NFR-03 | `@Transactional` + khóa dòng + unique/CHECK (§16.3) | Đã làm |
-| TR-09 | Neon restore/branch + `pg_dump` (README) | Chưa làm |
+| TR-07, NFR-04 | JWT + `@PreAuthorize` | Đã kiểm Phase 0–3; Phase 4 chưa làm |
+| TR-08, NFR-03 | `@Transactional` + khóa dòng + unique/CHECK (§16.3) | Đã kiểm workflow Phase 0–3; Phase 4 chưa làm |
+| TR-09 | Hướng dẫn backup/restore Neon + `pg_dump` (README) | Có hướng dẫn; chưa có bằng chứng thực diễn restore |
 | TR-10, NFR-07 | Ant Design, ưu tiên tablet cho Bếp/Phục vụ/Sơ đồ bàn | Đã làm |
 | TR-11, NFR-02 | SSE sau commit + invalidation/reconnect/polling | Đã làm |
-| NFR-01, NFR-09 | Projection, index, phân trang (§18) | Đang làm (Phase 3) |
+| NFR-01, NFR-09 | Projection/index/page, list Phase 3 tối đa 2–3 SQL/trang | Đã đo Phase 0–3; chưa benchmark nhiều user/summary Phase 4 |
 | NFR-05 | BCrypt | Đã làm |
 | NFR-06 | Lưu người/thời điểm trên giao dịch | Đã làm |
 | NFR-08 | Dữ liệu commit trong PostgreSQL | Đã làm |
-| NFR-10 | Trình duyệt phổ biến (Chrome/Edge) | Đã làm |
+| NFR-10 | Trình duyệt phổ biến (Chrome/Edge) | Chrome/headless viewport đã kiểm; Edge/tablet thật chưa nghiệm thu |
 | NFR-11 | Phân lớp controller → service → impl → repository | Đã làm |
 | NFR-12 | Nhãn trạng thái dùng chung `labels.ts` (§6) | Đã làm |
 
@@ -179,7 +184,7 @@ không làm HTTP request đã commit thất bại. Không triển khai Phase 3 h
 
 ## 10. Phần đã hiện thực ở Phase 3 (23/10/2026)
 
-Phase 3 đã triển khai đầy đủ và nghiệm thu 100% mục tiêu:
+Mốc triển khai ban đầu Phase 3; các sửa tiếp theo và giới hạn kiểm chứng ở mục 12:
 - **FR-04, FR-09 / UC11.1 (Thanh toán & Hóa đơn):** `PaymentServiceImpl.listOpenSessions/previewSession/pay/listInvoices`.
   Màn hình thanh toán trực tiếp, Drawer xem trước hóa đơn tính lại tổng trên server, loại bỏ món CANCELLED/UNAVAILABLE,
   phát hiện món PENDING/COOKING chặn thanh toán. Thanh toán khóa bi quan ServiceSession, kiểm tra ACTIVE, kiểm tra chưa có hóa đơn,
@@ -190,9 +195,10 @@ Phase 3 đã triển khai đầy đủ và nghiệm thu 100% mục tiêu:
 - **FR-12 / UC10.3 (Nhập kho & Lô):** HEAD_CHEF tạo phiếu nhập nhiều dòng, tự động tạo lô `IngredientLot` và biến động kho `RECEIPT`
   trong một transaction `@Transactional`. Ràng buộc bắt buộc nhập HSD với NVL có `trackExpiry = true`.
 - **FR-13 / UC6.2 (Tồn kho, Cảnh báo & Lô chú ý):** Tồn kho tính từ `SUM(stock_movement.quantity_change)` (không có bảng balance).
-  Cảnh báo tồn thấp khi `currentStock <= minStock`, hiển thị thẻ đỏ khi tồn âm (D5). Endpoint lô chú ý lọc lô hết hạn hoặc sắp hết hạn trong 3 ngày theo múi giờ Việt Nam.
+  Cảnh báo tồn thấp khi `currentStock < minStock`, hiển thị thẻ đỏ khi tồn âm (D5). Endpoint lô chú ý lọc lô hết hạn hoặc sắp hết hạn trong 3 ngày theo múi giờ Việt Nam.
 - **FR-14 / UC10.1 (Kiểm kê kho):** Mẫu kiểm kê tự động điền tồn hệ thống. Quy tắc D7: tính lại tổng biến động sổ sách tại thời điểm POST
-  để tính chênh lệch `difference = actualQuantity - systemQuantity`. Sinh biến động `STOCKTAKE_ADJUSTMENT` khi chênh lệch khác 0.
+  sau khi khóa Ingredient theo ID tăng dần; chỉ gửi số thực đếm đã nhập, chặn ID trùng/NVL ngừng dùng.
+  Tính `difference = actualQuantity - systemQuantity`; sinh `STOCKTAKE_ADJUSTMENT` khi chênh lệch khác 0.
 - **FR-15 / UC10.2 (Xuất hủy NVL):** Khóa dòng `Ingredient`, kiểm tra số lượng hủy không vượt quá tồn kho (nếu vượt trả 400 `INSUFFICIENT_STOCK`),
   ghi nhận biến động `DISPOSAL` với `quantityChange = -quantity`.
 - **FR-16 / UC6.3 (Lịch sử biến động & Hóa đơn):** Tra cứu biến động kho đủ 4 loại (`RECEIPT`, `CONSUMPTION`, `STOCKTAKE_ADJUSTMENT`, `DISPOSAL`)
@@ -212,3 +218,17 @@ Nội dung còn lại của hệ thống:
 - Chạy lại toàn bộ bộ kiểm thử checklist tổng thể từ 1–36.
 - Cập nhật tài liệu cuối khóa luận (`README.md`, `TRACEABILITY.md`).
 - **Không tự ý bắt đầu Phase 4 khi chưa có yêu cầu từ người dùng.**
+
+Bộ giao việc: [bàn giao](PHASE_4_HANDOFF.md), [hướng dẫn](phase_instructions/phase-4.md),
+[prompt](phase_instructions/phase-4-prompt.md), [checklist 1–36 chưa chạy](phase_instructions/phase-4-checklist.md).
+Ghi checklist 33/34 đối soát và các ca bổ sung D9/report/confirm race/security/TR-09;
+không tạo báo cáo `phase_results/phase-4.md` hoặc đổi FR-10/17 thành Đã làm trước code/QA.
+
+## 12. Review PR #3 — 23/10/2026
+
+Đã sửa 3 critical và 6 optional theo [báo cáo review Phase 3](phase_results/phase-3-review.md).
+187 backend tests, 26 frontend tests / 77 assertions; build/lint PASS.
+16 nhóm ca browser mocked API; 10 checks Neon chỉ đọc và 22 checks service/transaction thật.
+Thanh toán FLOOR_PLAN invalidate cả món chờ phục vụ; bốn danh sách hóa đơn/kho dùng tối đa 2–3 SQL/trang.
+Seed tồn đầu không âm, qua InventoryService, giữ D7 trên ledger có sẵn; không reset dữ liệu.
+Phạm vi FR-10/17 tiếp tục chờ Phase 4. Chưa commit/push.

@@ -1,5 +1,10 @@
 # Phase 3 — Thanh toán + Kho (kế hoạch 25/10)
 
+> **Nguồn yêu cầu lịch sử.** Phase 3 và 9 sửa review PR #3 đã triển khai.
+> Xem [review hiện tại](../phase_results/phase-3-review.md) và
+> [bàn giao Phase 4](../PHASE_4_HANDOFF.md). Các dòng “chưa triển khai” bên dưới là mốc chuẩn bị cũ.
+> Mục tương thích IngredientService đã được thay bằng InventoryService sau review; không khôi phục bean cũ.
+
 **Trạng thái 23/10/2026:** mới chuẩn bị tài liệu theo yêu cầu chủ dự án, chưa triển khai.
 Ngày trong tiêu đề là lịch dự kiến. Chỉ bắt đầu code khi chủ dự án yêu cầu riêng.
 

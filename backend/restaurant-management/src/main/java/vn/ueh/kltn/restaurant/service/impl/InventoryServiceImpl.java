@@ -20,7 +20,6 @@ import vn.ueh.kltn.restaurant.dto.request.StockReceiptItemRequest;
 import vn.ueh.kltn.restaurant.dto.request.StocktakeItemRequest;
 import vn.ueh.kltn.restaurant.dto.request.UpdateIngredientRequest;
 import vn.ueh.kltn.restaurant.dto.response.IngredientLotAttentionResponse;
-import vn.ueh.kltn.restaurant.dto.response.IngredientOptionResponse;
 import vn.ueh.kltn.restaurant.dto.response.IngredientResponse;
 import vn.ueh.kltn.restaurant.dto.response.PageResponse;
 import vn.ueh.kltn.restaurant.dto.response.StockMovementResponse;
@@ -39,7 +38,6 @@ import vn.ueh.kltn.restaurant.enums.IngredientStatus;
 import vn.ueh.kltn.restaurant.enums.MovementType;
 import vn.ueh.kltn.restaurant.exception.BusinessException;
 import vn.ueh.kltn.restaurant.exception.ErrorCode;
-import vn.ueh.kltn.restaurant.mapper.IngredientMapper;
 import vn.ueh.kltn.restaurant.mapper.InventoryMapper;
 import vn.ueh.kltn.restaurant.repository.AccountRepository;
 import vn.ueh.kltn.restaurant.repository.IngredientLotRepository;
@@ -63,7 +61,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Set;
+import java.util.TreeSet;
 
 @Service
 @RequiredArgsConstructor
@@ -83,16 +82,6 @@ public class InventoryServiceImpl implements InventoryService {
     private final AppProperties properties;
 
     @Override
-    public List<IngredientOptionResponse> list(IngredientStatus status) {
-        return (status == null
-                        ? ingredients.findAllByOrderByNameAsc()
-                        : ingredients.findByStatusOrderByNameAsc(status))
-                .stream()
-                .map(IngredientMapper::toOption)
-                .toList();
-    }
-
-    @Override
     public List<IngredientResponse> listIngredients(
             String q, IngredientStatus status, Boolean belowMinStockOnly) {
         Specification<Ingredient> spec =
@@ -108,8 +97,7 @@ public class InventoryServiceImpl implements InventoryService {
                     return cb.and(predicates.toArray(Predicate[]::new));
                 };
 
-        List<Ingredient> list =
-                ingredients.findAll(spec, Sort.by(Sort.Direction.ASC, "name"));
+        List<Ingredient> list = ingredients.findAll(spec, Sort.by(Sort.Direction.ASC, "name"));
         Map<Long, BigDecimal> stockMap = getStockMapGrouped();
 
         List<IngredientResponse> results = new ArrayList<>();
@@ -130,8 +118,7 @@ public class InventoryServiceImpl implements InventoryService {
     public IngredientResponse createIngredient(CreateIngredientRequest request) {
         String name = request.name().trim();
         if (ingredients.existsByNameIgnoreCase(name)) {
-            throw new BusinessException(
-                    ErrorCode.DATA_CONFLICT, "Tên nguyên vật liệu đã tồn tại");
+            throw new BusinessException(ErrorCode.DATA_CONFLICT, "Tên nguyên vật liệu đã tồn tại");
         }
 
         Ingredient ingredient =
@@ -149,7 +136,8 @@ public class InventoryServiceImpl implements InventoryService {
     @Transactional
     public IngredientResponse updateIngredient(Long id, UpdateIngredientRequest request) {
         Ingredient ingredient =
-                ingredients.findById(id)
+                ingredients
+                        .findById(id)
                         .orElseThrow(
                                 () ->
                                         new BusinessException(
@@ -158,8 +146,7 @@ public class InventoryServiceImpl implements InventoryService {
 
         String newName = request.name().trim();
         if (ingredients.existsByNameIgnoreCaseAndIdNot(newName, id)) {
-            throw new BusinessException(
-                    ErrorCode.DATA_CONFLICT, "Tên nguyên vật liệu đã tồn tại");
+            throw new BusinessException(ErrorCode.DATA_CONFLICT, "Tên nguyên vật liệu đã tồn tại");
         }
 
         String newUnit = request.unit().trim();
@@ -173,11 +160,7 @@ public class InventoryServiceImpl implements InventoryService {
         }
 
         ingredient.updateInfo(
-                newName,
-                newUnit,
-                request.minStock(),
-                request.trackLot(),
-                request.trackExpiry());
+                newName, newUnit, request.minStock(), request.trackLot(), request.trackExpiry());
 
         BigDecimal currentStock = stockMovements.sumQuantityByIngredientId(id);
         return InventoryMapper.toIngredientResponse(ingredient, currentStock);
@@ -187,7 +170,8 @@ public class InventoryServiceImpl implements InventoryService {
     @Transactional
     public IngredientResponse deactivateIngredient(Long id) {
         Ingredient ingredient =
-                ingredients.findById(id)
+                ingredients
+                        .findById(id)
                         .orElseThrow(
                                 () ->
                                         new BusinessException(
@@ -202,7 +186,8 @@ public class InventoryServiceImpl implements InventoryService {
     @Transactional
     public IngredientResponse activateIngredient(Long id) {
         Ingredient ingredient =
-                ingredients.findById(id)
+                ingredients
+                        .findById(id)
                         .orElseThrow(
                                 () ->
                                         new BusinessException(
@@ -247,6 +232,18 @@ public class InventoryServiceImpl implements InventoryService {
         Account actor =
                 accounts.findById(currentUser.accountId())
                         .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
+        return createReceiptWithActor(request, actor);
+    }
+
+    @Override
+    @Transactional
+    public StockReceiptResponse createReceiptForSeed(
+            CreateStockReceiptRequest request, Account actor) {
+        return createReceiptWithActor(request, actor);
+    }
+
+    private StockReceiptResponse createReceiptWithActor(
+            CreateStockReceiptRequest request, Account actor) {
         Instant now = clock.instant();
 
         StockReceipt receipt = new StockReceipt(actor, now);
@@ -254,7 +251,8 @@ public class InventoryServiceImpl implements InventoryService {
 
         for (StockReceiptItemRequest itemReq : request.items()) {
             Ingredient ingredient =
-                    ingredients.findById(itemReq.ingredientId())
+                    ingredients
+                            .findById(itemReq.ingredientId())
                             .orElseThrow(
                                     () ->
                                             new BusinessException(
@@ -288,8 +286,7 @@ public class InventoryServiceImpl implements InventoryService {
                 lot = ingredientLots.save(lot);
             }
 
-            StockReceiptItem item =
-                    new StockReceiptItem(ingredient, lot, itemReq.quantity());
+            StockReceiptItem item = new StockReceiptItem(ingredient, lot, itemReq.quantity());
             savedReceipt.addItem(item);
             StockReceiptItem savedItem = stockReceiptItems.save(item);
 
@@ -329,8 +326,17 @@ public class InventoryServiceImpl implements InventoryService {
         PageRequest pageRequest =
                 PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt", "id"));
         Page<StockReceipt> receiptPage = stockReceipts.findAll(spec, pageRequest);
-
-        return PageResponse.from(receiptPage.map(InventoryMapper::toReceiptResponse));
+        if (receiptPage.isEmpty())
+            return PageResponse.from(receiptPage.map(InventoryMapper::toReceiptResponse));
+        List<Long> ids = receiptPage.getContent().stream().map(StockReceipt::getId).toList();
+        Map<Long, StockReceipt> details = new HashMap<>();
+        stockReceipts
+                .findDetailsByIdIn(ids)
+                .forEach(receipt -> details.put(receipt.getId(), receipt));
+        return PageResponse.from(
+                receiptPage.map(
+                        receipt ->
+                                InventoryMapper.toReceiptResponse(details.get(receipt.getId()))));
     }
 
     @Override
@@ -356,19 +362,49 @@ public class InventoryServiceImpl implements InventoryService {
         Account actor =
                 accounts.findById(currentUser.accountId())
                         .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
+        return createStocktakeWithActor(request, actor);
+    }
+
+    @Override
+    @Transactional
+    public StocktakeResponse createStocktakeForSeed(CreateStocktakeRequest request, Account actor) {
+        return createStocktakeWithActor(request, actor);
+    }
+
+    private StocktakeResponse createStocktakeWithActor(
+            CreateStocktakeRequest request, Account actor) {
+        Set<Long> ingredientIds = new TreeSet<>();
+        for (StocktakeItemRequest item : request.items()) {
+            if (!ingredientIds.add(item.ingredientId())) {
+                throw new BusinessException(
+                        ErrorCode.INVALID_STOCKTAKE,
+                        "Nguyên vật liệu bị trùng trong phiếu kiểm kê");
+            }
+        }
+        // Acquire every parent lock in a stable order before reading any ledger sum.
+        Map<Long, Ingredient> lockedIngredients = new HashMap<>();
+        for (Long ingredientId : ingredientIds) {
+            Ingredient ingredient =
+                    ingredients
+                            .findLockedById(ingredientId)
+                            .orElseThrow(
+                                    () ->
+                                            new BusinessException(
+                                                    ErrorCode.NOT_FOUND,
+                                                    "Không tìm thấy nguyên vật liệu"));
+            if (ingredient.getStatus() != IngredientStatus.ACTIVE) {
+                throw new BusinessException(
+                        ErrorCode.INGREDIENT_INACTIVE, "Nguyên vật liệu đã ngừng sử dụng");
+            }
+            lockedIngredients.put(ingredientId, ingredient);
+        }
         Instant now = clock.instant();
 
         Stocktake stocktake = new Stocktake(actor, now);
         Stocktake savedStocktake = stocktakes.save(stocktake);
 
         for (StocktakeItemRequest itemReq : request.items()) {
-            Ingredient ingredient =
-                    ingredients.findById(itemReq.ingredientId())
-                            .orElseThrow(
-                                    () ->
-                                            new BusinessException(
-                                                    ErrorCode.NOT_FOUND,
-                                                    "Không tìm thấy nguyên vật liệu"));
+            Ingredient ingredient = lockedIngredients.get(itemReq.ingredientId());
 
             if (itemReq.actualQuantity().compareTo(BigDecimal.ZERO) < 0) {
                 throw new BusinessException(
@@ -385,8 +421,7 @@ public class InventoryServiceImpl implements InventoryService {
                     stockMovements.sumQuantityByIngredientId(ingredient.getId());
 
             StocktakeItem item =
-                    new StocktakeItem(
-                            ingredient, systemQuantity, itemReq.actualQuantity(), note);
+                    new StocktakeItem(ingredient, systemQuantity, itemReq.actualQuantity(), note);
             savedStocktake.addItem(item);
             StocktakeItem savedItem = stocktakeItems.save(item);
 
@@ -429,15 +464,26 @@ public class InventoryServiceImpl implements InventoryService {
         PageRequest pageRequest =
                 PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt", "id"));
         Page<Stocktake> stocktakePage = stocktakes.findAll(spec, pageRequest);
-
-        return PageResponse.from(stocktakePage.map(InventoryMapper::toStocktakeResponse));
+        if (stocktakePage.isEmpty())
+            return PageResponse.from(stocktakePage.map(InventoryMapper::toStocktakeResponse));
+        List<Long> ids = stocktakePage.getContent().stream().map(Stocktake::getId).toList();
+        Map<Long, Stocktake> details = new HashMap<>();
+        stocktakes
+                .findDetailsByIdIn(ids)
+                .forEach(stocktake -> details.put(stocktake.getId(), stocktake));
+        return PageResponse.from(
+                stocktakePage.map(
+                        stocktake ->
+                                InventoryMapper.toStocktakeResponse(
+                                        details.get(stocktake.getId()))));
     }
 
     @Override
     @Transactional
     public StockMovementResponse createDisposal(CreateStockDisposalRequest request) {
         Ingredient ingredient =
-                ingredients.findLockedById(request.ingredientId())
+                ingredients
+                        .findLockedById(request.ingredientId())
                         .orElseThrow(
                                 () ->
                                         new BusinessException(
@@ -450,14 +496,14 @@ public class InventoryServiceImpl implements InventoryService {
         }
 
         if (request.reason() == null || request.reason().isBlank()) {
-            throw new BusinessException(
-                    ErrorCode.INVALID_INPUT, "Vui lòng nhập lý do xuất hủy");
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "Vui lòng nhập lý do xuất hủy");
         }
 
         IngredientLot lot = null;
         if (request.lotId() != null) {
             lot =
-                    ingredientLots.findById(request.lotId())
+                    ingredientLots
+                            .findById(request.lotId())
                             .orElseThrow(
                                     () ->
                                             new BusinessException(
@@ -470,8 +516,7 @@ public class InventoryServiceImpl implements InventoryService {
             }
         }
 
-        BigDecimal totalStock =
-                stockMovements.sumQuantityByIngredientId(ingredient.getId());
+        BigDecimal totalStock = stockMovements.sumQuantityByIngredientId(ingredient.getId());
         if (request.quantity().compareTo(totalStock) > 0) {
             throw new BusinessException(
                     ErrorCode.INSUFFICIENT_STOCK, "Số lượng tồn kho không đủ để xuất hủy");
@@ -511,8 +556,7 @@ public class InventoryServiceImpl implements InventoryService {
                 (root, query, cb) -> {
                     List<Predicate> predicates = new ArrayList<>();
                     if (ingredientId != null) {
-                        predicates.add(
-                                cb.equal(root.get("ingredient").get("id"), ingredientId));
+                        predicates.add(cb.equal(root.get("ingredient").get("id"), ingredientId));
                     }
                     if (movementType != null) {
                         predicates.add(cb.equal(root.get("movementType"), movementType));

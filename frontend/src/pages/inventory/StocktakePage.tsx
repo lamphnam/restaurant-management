@@ -30,7 +30,7 @@ interface FormItemState {
   ingredientName: string
   unit: string
   systemQuantity: number
-  actualQuantity: number
+  actualQuantity: number | null
   note?: string
 }
 
@@ -40,7 +40,7 @@ export default function StocktakePage() {
   const [form] = Form.useForm()
 
   const [overrides, setOverrides] = useState<
-    Record<number, { actualQuantity?: number; note?: string }>
+    Record<number, { actualQuantity?: number | null; note?: string }>
   >({})
   const [page, setPage] = useState<number>(0)
   const [pageSize, setPageSize] = useState<number>(10)
@@ -72,10 +72,16 @@ export default function StocktakePage() {
     ingredientName: t.ingredientName,
     unit: t.unit,
     systemQuantity: Number(t.currentStock),
-    actualQuantity:
-      overrides[t.ingredientId]?.actualQuantity ?? Number(t.currentStock),
+    actualQuantity: overrides[t.ingredientId]?.actualQuantity ?? null,
     note: overrides[t.ingredientId]?.note ?? '',
   }))
+  const payloadItems = items.flatMap((item) =>
+    item.actualQuantity == null ? [] : [{
+      ingredientId: item.ingredientId,
+      actualQuantity: item.actualQuantity,
+      note: item.note,
+    }]
+  )
 
   const createStocktakeMutation = useMutation({
     mutationFn: (payload: CreateStocktakePayload) => inventoryApi.createStocktake(payload),
@@ -86,11 +92,12 @@ export default function StocktakePage() {
     },
     onError: (err) => report(err, form),
   })
+  const cannotSubmit = payloadItems.length === 0 || createStocktakeMutation.isPending
 
   const handleActualChange = (ingredientId: number, val: number | null) => {
     setOverrides((prev) => ({
       ...prev,
-      [ingredientId]: { ...prev[ingredientId], actualQuantity: val ?? 0 },
+      [ingredientId]: { ...prev[ingredientId], actualQuantity: val },
     }))
   }
 
@@ -106,6 +113,7 @@ export default function StocktakePage() {
       title: 'Tên nguyên vật liệu',
       dataIndex: 'ingredientName',
       key: 'ingredientName',
+      width: 200,
       render: (name: string, record) => (
         <Space orientation="vertical" size={0}>
           <Text strong>{name}</Text>
@@ -132,6 +140,9 @@ export default function StocktakePage() {
       width: 200,
       render: (_, record) => (
         <InputNumber
+          aria-label={`Số lượng thực tế ${record.ingredientName}`}
+          placeholder="Chưa nhập số thực đếm"
+          disabled={createStocktakeMutation.isPending}
           min={0}
           precision={3}
           style={{ width: '100%' }}
@@ -146,6 +157,7 @@ export default function StocktakePage() {
       width: 150,
       align: 'right',
       render: (_, record) => {
+        if (record.actualQuantity == null) return <Text type="secondary">Chưa kiểm kê</Text>
         const diff = record.actualQuantity - record.systemQuantity
         if (Math.abs(diff) < 0.0001) {
           return <Text type="secondary">0.000 {record.unit}</Text>
@@ -167,8 +179,11 @@ export default function StocktakePage() {
       title: 'Ghi chú',
       dataIndex: 'note',
       key: 'note',
+      width: 240,
       render: (_, record) => (
         <Input
+          aria-label={`Ghi chú ${record.ingredientName}`}
+          disabled={createStocktakeMutation.isPending}
           placeholder="Lý do chênh lệch (nếu có)"
           maxLength={500}
           value={record.note}
@@ -225,8 +240,8 @@ export default function StocktakePage() {
           <Alert
             type="info"
             showIcon
-            message="Quy tắc tính toán D7"
-            description="Số lượng chênh lệch sẽ được tính lại chính xác theo tổng biến động kho trên hệ thống tại thời điểm bạn bấm Xác nhận. Các mặt hàng có chênh lệch sẽ được tự động ghi nhận biến động ĐIỀU CHỈNH KIỂM KÊ."
+            message="Nhập kết quả thực đếm"
+            description="Chỉ lưu các nguyên vật liệu đã nhập số lượng thực tế. Để trống để bỏ qua; nhập 0 khi đã đếm và không còn hàng. Chênh lệch được tính lại theo tồn hệ thống tại thời điểm xác nhận."
             style={{ marginBottom: 16 }}
           />
 
@@ -236,18 +251,16 @@ export default function StocktakePage() {
             dataSource={items}
             loading={isTemplateLoading}
             pagination={false}
+            scroll={{ x: 960 }}
           />
 
           <div style={{ textAlign: 'right', marginTop: 24 }}>
             <Popconfirm
+              disabled={cannotSubmit}
               title="Xác nhận lưu kết quả kiểm kê"
-              description="Bạn có chắc chắn muốn xác nhận kiểm kê không? Hệ thống sẽ ghi nhận phiếu kiểm kê và điều chỉnh tồn kho cho các mục chênh lệch."
+              description={`Lưu kết quả thực đếm của ${payloadItems.length} nguyên vật liệu và điều chỉnh tồn kho nếu có chênh lệch?`}
               onConfirm={() => {
-                const payloadItems = items.map((i) => ({
-                  ingredientId: i.ingredientId,
-                  actualQuantity: i.actualQuantity,
-                  note: i.note,
-                }))
+                if (cannotSubmit) return
                 createStocktakeMutation.mutate({ items: payloadItems })
               }}
               okText="Xác nhận kiểm kê"
@@ -257,7 +270,7 @@ export default function StocktakePage() {
                 type="primary"
                 size="large"
                 loading={createStocktakeMutation.isPending}
-                disabled={items.length === 0}
+                disabled={cannotSubmit}
               >
                 Xác nhận & Lưu phiếu kiểm kê
               </Button>

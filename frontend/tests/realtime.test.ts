@@ -4,7 +4,7 @@ import { eventKeys, liveQueryOptions, refreshLiveQueries } from '../src/realtime
 
 test('event keys normalize session ids and retain payment compatibility', () => {
   expect(eventKeys({ type: 'ORDER', sessionId: Number('7') })).toEqual([['kitchen'], ['session', 7], ['awaiting-service'], ['payment']])
-  expect(eventKeys({ type: 'FLOOR_PLAN', sessionId: 7 })).toEqual([['floor-plan'], ['payment'], ['session', 7]])
+  expect(eventKeys({ type: 'FLOOR_PLAN', sessionId: 7 })).toEqual([['floor-plan'], ['payment'], ['session', 7], ['awaiting-service']])
   expect(eventKeys({ type: 'RESERVATION' })).toEqual([['reservations'], ['floor-plan']])
 })
 
@@ -32,5 +32,15 @@ test('reconnect invalidates every live prefix including inactive session detail'
     keys.forEach((key) => expect(cache.getQueryState(key)?.isInvalidated).toBe(true))
     expect(liveQueryOptions.refetchInterval).toBe(30_000)
     expect(liveQueryOptions.refetchOnWindowFocus).toBe(true)
+  } finally { cache.clear() }
+})
+
+test('payment floor-plan signal invalidates every filtered awaiting-service list', async () => {
+  const cache = createQueryClient()
+  try {
+    const key = ['awaiting-service', { tableId: 7 }]
+    cache.setQueryData(key, [{ id: 1, status: 'READY' }])
+    await refreshLiveQueries(cache, { type: 'FLOOR_PLAN', sessionId: 7 })
+    expect(cache.getQueryState(key)?.isInvalidated).toBe(true)
   } finally { cache.clear() }
 })

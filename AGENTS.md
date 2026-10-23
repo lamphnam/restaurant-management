@@ -4,42 +4,54 @@ This file provides guidance to Codex (claude.ai/code) when working with code in 
 
 ## Project status
 
-This is a graduation-thesis (KLTN, UEH) prototype: an internal web app for a ~30–50 table dine-in restaurant. It covers two business chains, **table service and sales** and **ingredient inventory**, and both must demo end to end. Hard deadline: **2026-10-27**.
+This is a graduation-thesis (KLTN, UEH) prototype for a ~30–50 table dine-in restaurant.
+Both table service/sales and ingredient inventory must demo end to end. Deadline: **2026-10-27**.
+Last documentation update: **2026-10-23**, Asia/Ho_Chi_Minh.
 
-The Git repository has been initialized. Backend is in
-`backend/restaurant-management/` (Java 21, Boot 4.1.1); frontend is in
-`frontend/` (React, TypeScript, Vite, Bun). Neon direct connectivity and both
-builds have been verified. Phase 0 now includes the V1 migration (18 domain
-tables), entities/repositories, JWT login and `/me`, frontend authentication,
-role guards and navigation, shared status labels, and account/area/table seed.
-Phase 0–2 are implemented; all seven PR #1 fixes remain intact. Phase 2 adds session
-detail, order batches, cancellation, kitchen transitions/current-recipe CONSUMPTION,
-serving and SSE. The seven routes /accounts, /menu, /floor-plan, /reservations,
-/sessions/:id, /kitchen and /awaiting-service are implemented.
-All five item PATCH workflows lock ServiceSession before OrderItem and require ACTIVE,
-including before no-op. Orders accept 1–50 lines and 1–99 portions per line.
-SSE broadcasts/heartbeats enqueue to a dedicated four-worker executor (queue 256),
-only after commit, with send/dispatch errors isolated; never CallerRuns.
-Phase 1 evidence is in `docs/phase_results/phase-1.md` and `phase-1-review.md`.
-Phase 2 evidence is in `docs/phase_results/phase-2.md` and `phase-2-review.md`:
-150 backend tests; 18 frontend tests / 47 assertions; clean verify/build/lint passed.
-The popup follow-up is in `docs/phase_results/phase-2-popup-fix.md`: reduced-motion
-CSS uses transition:none to preserve synchronous popup alignment; 59 mocked-API
-browser checks and 9 real read-only checks passed. The owner manually retested and
-reported it working on 23/10/2026. Do not restore global positive transition durations
-on every property, which interpolate popup left/top measurements.
-Phase 0–3 are implemented; all PR #1 and Phase 2 review/popup fixes remain intact. Phase 3
-adds PaymentService (preview, locked payment, table release, zero-amount and ready item billing D8,
-duplicate payment 409), Invoices (query, filters), and full InventoryService (ingredient CRUD,
-D12 unit change blocking, receipts with atomic lot & RECEIPT movements, D7 stocktake ledger sum
-recomputation, disposals with stock boundary validation, attention lots, movements audit log).
-PhaseThreeSeeder has independent gates and preserves prior Phase 2 CONSUMPTION movements.
-The routes /payment, /invoices, /inventory, /inventory/receipts and /inventory/stocktake are implemented.
-Phase 3 evidence is in `docs/phase_results/phase-3.md`: 176 backend tests (+26 new tests);
-25 frontend tests / 76 assertions; clean verify/build/lint passed; 111/111 live API QA checks passed.
-Phase 4 is the final phase (Reconciliation /reconciliations/**, reports /payments/summary, overall
-checklist 33-36). Preparation is not permission to code. Do not start Phase 4 on your own.
-Do not commit/push until requested. The Java root package is `vn.ueh.kltn.restaurant`.
+Backend: `backend/restaurant-management/`, Java 21, Spring Boot 4.1.1, Maven wrapper;
+root package `vn.ueh.kltn.restaurant`. Frontend: `frontend/`, React, TypeScript, Vite, **Bun**.
+Schema is Flyway V1 with exactly 18 domain tables; JPA validates it. Database: existing Neon `main`.
+
+**Phase 0–3 and all reviewed fixes are implemented. Phase 4 is prepared, not implemented.**
+Current code baseline: branch `feat/phase-3-implement`, HEAD `72d1bdc` (PR #3), plus uncommitted
+Phase 3 review fixes and documentation. Check git status/HEAD before work; preserve these changes.
+Do not commit, push, reset, stash or discard them without the user's instruction.
+
+- Phase 1: accounts, menu/locked recipe diff, ingredient lookup, floor plan, reservations/opening.
+  All seven PR #1 fixes remain, including retained inactive recipe ingredients and filtered reservation picker.
+- Phase 2: session detail, order batches/cancel, kitchen/consumption, serving, SSE.
+  All five item PATCH workflows lock ServiceSession → OrderItem and require ACTIVE before no-op.
+  Orders accept 1–50 lines and 1–99 portions per line. SSE dispatch/send is isolated AFTER_COMMIT,
+  on a dedicated four-worker executor/queue 256, never CallerRuns. Polling fallback: 30 seconds.
+  Reduced-motion CSS uses `transition: none`; never restore global positive durations that interpolate popup left/top.
+- Phase 3: locked payment, duplicate payment 409, snapshot billing, READY/zero-amount billing (D8),
+  CLOSED sessions/table release; invoice history; ingredient CRUD (D12), atomic receipts/lots,
+  stock ledger, stocktakes, disposals, attention lots and movement history.
+- PR #3 review: stocktake actual inputs start blank, only counted lines are sent, clearing omits a line,
+  explicit zero is retained. Stocktakes reject duplicate/inactive ingredients and lock all Ingredient IDs
+  ascending before SUM, sharing locks with disposal. Opening seed uses configured nonnegative actuals,
+  runs before demo receipts through InventoryService helpers with an internal Account, no fake seed JWT.
+  IngredientService/Impl were removed; InventoryService owns the lookup/workflows. Invoice/movement pages
+  fetch to-one graphs; receipt/stocktake pages fetch details for the page IDs. FLOOR_PLAN also invalidates awaiting-service.
+
+Implemented routes: `/accounts`, `/menu`, `/floor-plan`, `/reservations`, `/sessions/:id`,
+`/kitchen`, `/awaiting-service`, `/payment`, `/invoices`, `/inventory`, `/inventory/receipts`,
+`/inventory/stocktake`. `/reconciliation` (CASHIER/MANAGER) and `/reports` (OWNER) are still placeholders.
+RevenueReconciliation entity/repository exist, but there is no reconciliation workflow or payment summary API yet.
+
+Latest verification: **187 backend tests; 26 frontend tests / 77 assertions; both builds/lint passed**.
+PR #3 review: 16 mocked-browser scenarios, 10 read-only and 22 live service/transaction checks.
+Evidence: `docs/phase_results/phase-3-review.md`; original Phase 3 evidence (176 backend tests,
+25 frontend tests / 76 assertions; 111 API checks) is historical, not additive.
+QA left one review ingredient (ID 18) INACTIVE, stock 8 kg; no reset/session/invoice changes.
+Snapshots are dated evidence, not live readiness. Inspect before any later QA writes.
+
+**Start future Phase 4 work with** `docs/PHASE_4_HANDOFF.md`,
+`docs/phase_instructions/phase-4.md`, `phase-4-prompt.md`, `phase-4-checklist.md` and TRACEABILITY.
+Scope: FR-10/UC11.2 reconciliation, FR-17/UC6.1 reports, checklist 33–36 plus regression 1–36.
+Use D9 `[startTime,endTime)`, Invoice-only revenue, and the explicit §12.18 exception:
+confirming an already confirmed reconciliation returns 409 (not a generic PATCH no-op).
+Preparation is not permission to code. Do not start Phase 4 on your own.
 
 - `CODEX_MASTER_SPEC_KLTN_SPRING_REACT.md`: **the source of truth**, written in Vietnamese. Section numbers below (§N) refer to this file.
 - `CODEX_MASTER_SPEC_KLTN_ASPNET_FINAL.md`: the superseded ASP.NET version, for reference only. When the two disagree, the Spring/React spec wins.

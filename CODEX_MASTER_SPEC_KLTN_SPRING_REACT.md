@@ -15,6 +15,13 @@
 >
 > Ưu tiên cao nhất vẫn là **đúng nghiệp vụ khóa luận**, đơn giản, chạy ổn định, dễ demo, truy vết được Requirement → Use Case → dữ liệu → code.
 
+> **Mốc hiện thực 23/10/2026:** Phase 0–3 và các sửa review đã có trong code.
+> Baseline sau review PR #3: 187 backend tests, 26 frontend tests / 77 assertions,
+> hai build và lint PASS; xem [báo cáo review](docs/phase_results/phase-3-review.md).
+> Phase 4 mới chuẩn bị tại [bàn giao](docs/PHASE_4_HANDOFF.md) và
+> [hướng dẫn](docs/phase_instructions/phase-4.md), chưa triển khai.
+> Ngày ở §22 là kế hoạch gốc; tài liệu chuẩn bị không phải lệnh bắt đầu phase.
+
 ---
 
 # 0. NGUYÊN TẮC BẮT BUỘC KHI AGENT LÀM VIỆC
@@ -91,7 +98,7 @@ Web Application nội bộ cho một quán ăn phục vụ tại bàn khoảng 3
 | UC6.1 + FR-17 | Gộp **1 trang Báo cáo**: doanh thu theo khoảng, số hóa đơn, theo phương thức, top món, tồn thấp, lô cần chú ý, biến động gần đây | Dashboard riêng, biểu đồ |
 | FR-16 Lịch sử | Danh sách + bộ lọc: hóa đơn, đặt bàn, biến động kho | Màn hình lịch sử tổng hợp riêng |
 | TR-09 Backup | Restore/branch của Neon + lệnh `pg_dump` trong README | Script backup/restore riêng |
-| Kiểm thử | 6 unit test logic lõi + checklist 36 mục (mục 21) | 54 acceptance test đầy đủ |
+| Kiểm thử | Sáu nhóm unit test logic lõi §21.1 + suite hiện có + checklist 36 mục | 54 acceptance test đầy đủ |
 
 ## 1.3 BỎ — không hiện thực
 
@@ -758,7 +765,7 @@ Composition trên Class Diagram **không** có nghĩa là xóa cascade ở DB. M
 | D4 | Hủy món | Chỉ khi `PENDING` (WAITER, MANAGER). Món `COOKING` không hủy; bếp dùng “Không thể chế biến” nếu cần. |
 | D5 | Tiêu hao làm tồn âm | Vẫn cho hoàn thành món (không chặn bếp). Trang tồn kho tô đỏ tồn âm để Bếp trưởng kiểm kê. |
 | D6 | Loại bỏ | Chọn NVL; lô tùy chọn (chỉ ghi nguồn). Số lượng không vượt **tồn tổng** của NVL. |
-| D7 | Kiểm kê | Theo NVL (`lotId = NULL`). `systemQuantity` do backend tính lúc xác nhận, không lấy từ client. |
+| D7 | Kiểm kê | Theo NVL (`lotId = NULL`). `systemQuantity` do backend tính lúc xác nhận, không lấy từ client. Chỉ gửi số thực đếm đã nhập; ô trống không được coi là 0 hoặc tồn hệ thống cũ. Chặn ID trùng/NVL ngừng dùng, khóa Ingredient tăng dần trước SUM (review PR #3, 23/10/2026). |
 | D8 | Thanh toán | Món `READY` chưa `SERVED` vẫn tính tiền, không chặn. Chỉ chặn khi còn `PENDING`/`COOKING`. Phiên có tổng 0đ (khách về, không gọi món) vẫn thanh toán được với `amount = 0` để đóng phiên. |
 | D9 | Đối soát | Xem chi tiết bên dưới bảng. |
 | D10 | Khóa tài khoản / đổi vai trò | Khóa chặn đăng nhập mới. JWT đã cấp giữ quyền trong claim `role` đến hết hạn `app.jwt.expiration-hours` (12h cho demo), kể cả sau khi khóa hoặc đổi vai trò. `/api/auth/me` trả role từ JWT để UI và backend cùng nguồn; tên hiện tại vẫn đọc từ DB. Đăng nhập lại nhận role mới. Chủ dự án duyệt mở rộng này ngày 22/10/2026. |
@@ -921,8 +928,11 @@ Không quản lý nhà cung cấp/PO/công nợ.
 
 ## 12.13 UC10.1 — Kiểm kê (HEAD_CHEF)
 1. Form điền sẵn tồn hệ thống hiện tại của các NVL `ACTIVE`.
-2. Nhập số thực tế (≥ 0) và ghi chú nếu có; UI hiển thị chênh lệch tạm tính.
+2. Ô thực tế ban đầu trống; nhập số đã đếm (≥ 0) và ghi chú nếu có, UI hiển thị chênh lệch tạm tính.
+   Chỉ gửi dòng có số thực đếm; xóa ô thì bỏ dòng, nhập 0 tường minh vẫn gửi 0. Ghi chú đơn thuần không coi là đã đếm.
 3. Xác nhận `[TX]`:
+   - chặn ID nguyên vật liệu trùng và NVL ngừng dùng;
+   - khóa toàn bộ dòng `Ingredient` theo ID tăng dần trước khi đọc bất kỳ tổng ledger nào, dùng cùng khóa với loại bỏ;
    - tạo `Stocktake`;
    - với mỗi dòng: backend tính lại `systemQuantity` tại thời điểm xác nhận (D7) → tạo `StocktakeItem`;
    - nếu `calculateDifference() ≠ 0` → tạo `STOCKTAKE_ADJUSTMENT` với `quantityChange = difference`;
@@ -1010,6 +1020,7 @@ Cột “Vai trò” dùng đúng giá trị enum `Role` (mục 6): `OWNER`, `MA
   - 409: vi phạm business rule hoặc trạng thái.
   - `message` là tiếng Việt có dấu, hiển thị thẳng lên UI.
 - **PATCH chuyển trạng thái:** sau khi thỏa tiền điều kiện nghiệp vụ, nếu đối tượng đã ở trạng thái đích thì trả thành công, không làm gì thêm (idempotent). Riêng món phải thuộc phiên `ACTIVE`; phiên `CLOSED` trả 409 kể cả cùng đích (review 23/10/2026).
+  Riêng xác nhận đối soát theo §12.18: đối soát đã xác nhận trả 409, không áp dụng no-op thành công.
 
 ## 13.2 AuthController
 | Method | Path | Vai trò | Mô tả |
@@ -1139,7 +1150,7 @@ Swagger UI bật ở profile `local` để thử API nhanh.
 
 | Event | Query key bị invalidate |
 |---|---|
-| `FLOOR_PLAN` | `['floor-plan']`, `['payment']`, `['session', sessionId]` |
+| `FLOOR_PLAN` | `['floor-plan']`, `['payment']`, `['session', sessionId]`, `['awaiting-service']` |
 | `RESERVATION` | `['reservations']`, `['floor-plan']` |
 | `ORDER` | `['kitchen']`, `['session', sessionId]`, `['awaiting-service']`, `['payment']` |
 
@@ -1214,9 +1225,10 @@ Index thêm cho FK khi cần.
 | Chuyển trạng thái món (bếp, hủy, phục vụ) | `ServiceSession` → `OrderItem`, kiểm phiên ACTIVE | CHECK lý do |
 | Hoàn thành món + tiêu hao | `ServiceSession` → `OrderItem`, kiểm phiên ACTIVE | unique `CONSUMPTION` theo (chi tiết, NVL) |
 | Nhập hàng + lô + movement | — | unique `receipt_item_id` |
-| Kiểm kê + điều chỉnh | — | unique `stocktake_item_id` |
+| Kiểm kê + điều chỉnh | toàn bộ `Ingredient` theo ID tăng dần trước SUM | unique `stocktake_item_id` |
 | Loại bỏ | `Ingredient` | CHECK dấu/lý do |
 | Thanh toán + Invoice + đóng phiên + bàn | `ServiceSession` | unique `invoice.session_id` |
+| Xác nhận đối soát | `RevenueReconciliation` trước kiểm `manager_id` | đã xác nhận → 409 theo §12.18 |
 | Lưu định lượng | `MenuItem` trước khi đọc/diff | PK kép |
 
 Vi phạm unique/check từ DB (`DataIntegrityViolationException`) → 409 với thông báo thân thiện, không lộ SQL.
@@ -1293,6 +1305,12 @@ Thêm bảng ngắn cho TR/NFR: cách đáp ứng (lấy từ mục 2.2, 2.4).
 - các phase sau thêm runner có `@Order` kế tiếp và điều kiện riêng cho từng khối (menu rỗng, NVL rỗng, định lượng rỗng, đặt bàn rỗng; kiểm kê/nhập chỉ khi chưa có giao dịch seed tương ứng). Không đặt các runner này sau lệnh return kiểm tra account. Mỗi runner có transaction và không ghi đè dữ liệu hiện có;
 - hash mật khẩu bằng `PasswordEncoder`;
 - tạo nghiệp vụ (nhập, kiểm kê) qua ServiceImpl để dữ liệu nhất quán.
+
+Review PR #3 (23/10/2026): phiếu kiểm kê tồn đầu dùng số thực đếm cấu hình không âm,
+chạy trước receipt demo lô/HSD. `systemQuantity = 0` chỉ đúng khi chưa có movement;
+nếu đã có CONSUMPTION thì dùng SUM thực theo D7, không sửa lịch sử hoặc dùng actual âm.
+Seeder truyền Account HEAD_CHEF nội bộ qua helper service chung với API, không dựng JWT giả.
+Giữ gate riêng stocktake/receipt; danh mục mẫu thiếu/ngừng dùng thì bỏ cả khối và báo.
 
 Chủ dự án duyệt cổng seed theo từng khối ngày 22/10/2026; làm trên Neon `main`, không bắt buộc branch/reset. Phase 0 chỉ có runner nền tảng; các runner nghiệp vụ được thêm đúng phase. Nếu một khối đã có dữ liệu một phần thì bỏ qua và báo để kiểm tra, không tự xóa hay điền đè.
 
@@ -1390,8 +1408,8 @@ Xóa test `contextLoads()` mặc định của start.spring.io (cần kết nố
 | 1 — Danh mục + Đặt bàn + Mở phiên | 23/10 | UC4 tài khoản; UC5 thực đơn; FR-18 định lượng; sơ đồ bàn; UC7 đặt bàn; UC8.1 mở phiên | 5–13, 15–16 |
 | 2 — Gọi món + Bếp + Real-time | 24/10 | UC8.2 gọi món/gọi thêm/hủy; UC9 bếp + tiêu hao; UC8.3 phục vụ; SSE (mục 14) | 14, 17–22, 35 |
 | 3 — Thanh toán + Kho | 25/10 | UC11.1 thanh toán + hóa đơn; UC2 NVL; UC10.3 nhập; UC6.2 tồn + cảnh báo; UC10.1 kiểm kê; UC10.2 loại bỏ; UC6.3 biến động | 23–32 |
-| 4 — Đối soát + Báo cáo + Hoàn thiện | 26/10 | UC11.2 đối soát; UC6.1/FR-17 báo cáo; 6 unit test; chạy lại toàn bộ checklist; `TRACEABILITY.md`; README; chỉnh UI | 33–36 + toàn bộ |
-| Dự phòng | 27/10 | Sửa lỗi; tạo branch Neon `demo-snapshot`; chụp màn hình cho báo cáo; nộp | — |
+| 4 — Đối soát + Báo cáo + Hoàn thiện | 26/10 | UC11.2 đối soát; UC6.1/FR-17 báo cáo; giữ sáu nhóm unit test §21.1 và suite đã có, thêm test mới; chạy lại toàn bộ checklist; `TRACEABILITY.md`; README; chỉnh UI | 33–36 + toàn bộ |
+| Dự phòng | 27/10 | Sửa lỗi; kiểm tra dữ liệu demo/backup theo lựa chọn chủ dự án; chụp màn hình cho báo cáo; nộp | — |
 
 Không sang phase sau nếu phase hiện tại chưa build sạch.
 
@@ -1453,7 +1471,9 @@ bun run build
 
 # 24. BACKUP/RESTORE (TR-09)
 
-- **Neon:** dùng tính năng restore theo thời điểm và branch có sẵn (trong giới hạn gói). Trước buổi demo, tạo branch `demo-snapshot` từ `main` để khôi phục dữ liệu demo nhanh.
+- **Neon:** có thể dùng restore theo thời điểm hoặc branch/snapshot có sẵn (trong giới hạn gói).
+  Theo lựa chọn chủ dự án 22/10/2026, làm trên `main`, không bắt buộc tạo branch.
+  `demo-snapshot` là tùy chọn chuẩn bị khi chủ dự án cần, không tự tạo hoặc restore main chỉ để kiểm tài liệu/QA.
 - README ghi lệnh thủ công:
   ```powershell
   pg_dump "<neon-connection-uri>" -Fc -f backup.dump
@@ -1465,7 +1485,7 @@ bun run build
 
 # 25. DEFINITION OF DONE
 
-- `mvnw clean verify` và `bun run build` sạch lỗi; 6 unit test pass.
+- `mvnw clean verify` và `bun run build` sạch lỗi; sáu nhóm unit test §21.1 và toàn bộ suite hiện có pass, không hạ baseline về sáu tests.
 - Đúng 18 bảng domain, schema khớp mục 7 và các xử lý ở mục 10.
 - 6 vai trò đăng nhập được, phân quyền backend đúng.
 - **Demo bán hàng xuyên suốt:** đặt bàn/walk-in → mở phiên → gọi món → gọi thêm → bếp → tiêu hao → phục vụ → thanh toán → đóng phiên → đối soát → báo cáo.

@@ -7,12 +7,7 @@ import type {
   PaySessionPayload,
 } from '../types/payment'
 
-export interface PageResponse<T> {
-  items: T[]
-  page: number
-  size: number
-  total: number
-}
+import type { PageResponse } from '../types/tables'
 
 export const paymentApi = {
   listOpenSessions: async (signal?: AbortSignal) =>

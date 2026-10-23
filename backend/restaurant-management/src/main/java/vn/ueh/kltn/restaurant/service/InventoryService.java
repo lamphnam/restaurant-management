@@ -12,13 +12,14 @@ import vn.ueh.kltn.restaurant.dto.response.StockMovementResponse;
 import vn.ueh.kltn.restaurant.dto.response.StockReceiptResponse;
 import vn.ueh.kltn.restaurant.dto.response.StocktakeResponse;
 import vn.ueh.kltn.restaurant.dto.response.StocktakeTemplateItemResponse;
+import vn.ueh.kltn.restaurant.entity.Account;
 import vn.ueh.kltn.restaurant.enums.IngredientStatus;
 import vn.ueh.kltn.restaurant.enums.MovementType;
 
 import java.time.Instant;
 import java.util.List;
 
-public interface InventoryService extends IngredientService {
+public interface InventoryService {
 
     List<IngredientResponse> listIngredients(
             String q, IngredientStatus status, Boolean belowMinStockOnly);
@@ -35,15 +36,17 @@ public interface InventoryService extends IngredientService {
 
     StockReceiptResponse createReceipt(CreateStockReceiptRequest request);
 
-    PageResponse<StockReceiptResponse> listReceipts(
-            Instant from, Instant to, int page, int size);
+    StockReceiptResponse createReceiptForSeed(CreateStockReceiptRequest request, Account actor);
+
+    PageResponse<StockReceiptResponse> listReceipts(Instant from, Instant to, int page, int size);
 
     List<StocktakeTemplateItemResponse> getStocktakeTemplate();
 
     StocktakeResponse createStocktake(CreateStocktakeRequest request);
 
-    PageResponse<StocktakeResponse> listStocktakes(
-            Instant from, Instant to, int page, int size);
+    StocktakeResponse createStocktakeForSeed(CreateStocktakeRequest request, Account actor);
+
+    PageResponse<StocktakeResponse> listStocktakes(Instant from, Instant to, int page, int size);
 
     StockMovementResponse createDisposal(CreateStockDisposalRequest request);
 
