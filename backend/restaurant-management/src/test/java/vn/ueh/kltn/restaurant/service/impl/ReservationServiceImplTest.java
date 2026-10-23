@@ -8,6 +8,7 @@ import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -25,6 +26,7 @@ import jakarta.persistence.criteria.Root;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -39,6 +41,7 @@ import vn.ueh.kltn.restaurant.enums.ReservationStatus;
 import vn.ueh.kltn.restaurant.enums.TableStatus;
 import vn.ueh.kltn.restaurant.exception.BusinessException;
 import vn.ueh.kltn.restaurant.exception.ErrorCode;
+import vn.ueh.kltn.restaurant.realtime.RealtimeEvent;
 import vn.ueh.kltn.restaurant.repository.AccountRepository;
 import vn.ueh.kltn.restaurant.repository.DiningTableRepository;
 import vn.ueh.kltn.restaurant.repository.ReservationRepository;
@@ -54,6 +57,7 @@ class ReservationServiceImplTest {
     private final DiningTableRepository tables = mock(DiningTableRepository.class);
     private final AccountRepository accounts = mock(AccountRepository.class);
     private final CurrentUser user = mock(CurrentUser.class);
+    private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
     private ReservationServiceImpl service;
     private DiningTable table;
 
@@ -67,7 +71,8 @@ class ReservationServiceImplTest {
                         new AppProperties.Alert(3),
                         new AppProperties.Reservation(60));
         service =
-                new ReservationServiceImpl(reservations, tables, accounts, user, CLOCK, properties);
+                new ReservationServiceImpl(
+                        reservations, tables, accounts, user, CLOCK, properties, events);
         table = table(1L, 4);
         when(tables.findLockedById(1L)).thenReturn(Optional.of(table));
         when(user.accountId()).thenReturn(2L);
@@ -104,6 +109,7 @@ class ReservationServiceImplTest {
                                 null));
         assertEquals(ReservationStatus.CONFIRMED, r.status());
         assertEquals(2L, r.createdById());
+        verify(events).publishEvent(new RealtimeEvent(RealtimeEvent.Type.RESERVATION, null));
         verify(reservations)
                 .existsOverlap(
                         1L,
@@ -146,6 +152,8 @@ class ReservationServiceImplTest {
         when(reservations.findLockedById(1L)).thenReturn(Optional.of(r));
         assertEquals(ReservationStatus.CANCELLED, service.cancel(1L).status());
         assertEquals(ReservationStatus.CANCELLED, service.cancel(1L).status());
+        verify(events, times(1))
+                .publishEvent(new RealtimeEvent(RealtimeEvent.Type.RESERVATION, null));
     }
 
     @Test

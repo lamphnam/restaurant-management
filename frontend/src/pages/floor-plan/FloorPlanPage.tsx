@@ -9,19 +9,20 @@ import { useApiFeedback } from '../../hooks/useApiFeedback'
 import type { FloorTable } from '../../types/tables'
 import { formatTime } from '../../utils/time'
 import OpenSessionModal from './OpenSessionModal'
+import { liveQueryOptions } from '../../realtime/invalidation'
 
 export default function FloorPlanPage() {
   const { account } = useAuth()
   const canOpen = account?.role === 'WAITER' || account?.role === 'MANAGER'
   const [selected, setSelected] = useState<FloorTable | null>(null)
   const navigate = useNavigate()
-  const query = useQuery({ queryKey: ['floor-plan'], queryFn: ({ signal }) => tableApi.floorPlan(signal), refetchInterval: 30_000, refetchOnWindowFocus: true })
+  const query = useQuery({ queryKey: ['floor-plan'], queryFn: ({ signal }) => tableApi.floorPlan(signal), ...liveQueryOptions })
   useApiFeedback(query.error)
   return <section>
     <div className="page-heading"><div><Typography.Title level={1}>Sơ đồ bàn</Typography.Title>
       <Typography.Paragraph>Chọn bàn để đón khách và theo dõi lượt đặt trước.</Typography.Paragraph></div>
       <Button loading={query.isFetching} onClick={() => void query.refetch()}>Làm mới</Button></div>
-    <div className="floor-legend"><StatusTag group="TableStatus" value="AVAILABLE" /><StatusTag group="TableStatus" value="OCCUPIED" /><StatusTag group="TableStatus" value="INACTIVE" /><span>Tự cập nhật mỗi 30 giây</span></div>
+    <div className="floor-legend"><StatusTag group="TableStatus" value="AVAILABLE" /><StatusTag group="TableStatus" value="OCCUPIED" /><StatusTag group="TableStatus" value="INACTIVE" /><span>Tự cập nhật trực tiếp · Kiểm tra dự phòng mỗi 30 giây</span></div>
     {query.isPending ? <Skeleton active /> : (query.data ?? []).length === 0 ? <Empty description="Chưa có bàn trong khu vực đang hoạt động." /> : query.data?.map((area) => <section className="floor-area" key={area.id} aria-label={area.name}>
       <div className="area-heading"><Typography.Title level={2}>{area.name}</Typography.Title><span>{area.tables.length} bàn</span></div>
       <div className="floor-grid">{area.tables.map((table) => <article className={`table-card table-${table.status.toLowerCase()}`} key={table.id} data-table-name={table.name}>

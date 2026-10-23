@@ -864,9 +864,9 @@ Ký hiệu `[TX]` = toàn bộ trong một transaction. `[EV: X]` = sau commit p
 **Mỗi lần xác nhận một đợt gọi món** `[TX]`:
 - phiên phải `ACTIVE`;
 - tạo `FoodOrder` mới;
-- thêm 1..n `OrderItem`:
+- thêm 1..50 `OrderItem` (chủ dự án chốt giới hạn review Phase 2 ngày 23/10/2026):
   - chỉ món `ON_SALE`;
-  - `quantity > 0`;
+  - `1 <= quantity <= 99` mỗi dòng;
   - snapshot `unitPriceAtOrder = MenuItem.price`;
   - trạng thái `PENDING`.
 - `[EV: ORDER]`
@@ -875,12 +875,17 @@ Gọi thêm = tạo đợt gọi món mới trong cùng phiên.
 
 **Hủy món** (D4): chỉ `PENDING` → `CANCELLED`. `[EV: ORDER]`
 
+Mọi PATCH món (start/unavailable/complete/cancel/serve) lấy sessionId bằng query scalar,
+khóa `ServiceSession` trước rồi khóa `OrderItem`, kiểm phiên vẫn `ACTIVE` trước chuyển trạng thái
+hoặc trả no-op. Phiên `CLOSED` luôn trả 409, kể cả item đã ở trạng thái đích. Thanh toán Phase 3
+phải giữ cùng thứ tự Session → OrderItem khi cần khóa chi tiết. Quy tắc bổ sung theo review 23/10/2026.
+
 ## 12.10 UC9 — Bếp (KITCHEN_STAFF, HEAD_CHEF)
 - **Hàng chờ:** món `PENDING` + `COOKING` của các phiên đang hoạt động, sắp theo `FoodOrder.createdAt`. Hiển thị bàn, món, số lượng, ghi chú, thời gian gọi.
 - **Bắt đầu chế biến:** `PENDING → COOKING`. `[EV: ORDER]`
 - **Không thể chế biến:** `PENDING | COOKING → UNAVAILABLE`, lý do bắt buộc, **không** sinh tiêu hao. `[EV: ORDER]`
 - **Hoàn thành** `[TX]`:
-  1. khóa dòng `OrderItem`;
+  1. khóa dòng `ServiceSession` → `OrderItem`, kiểm phiên `ACTIVE`;
   2. nếu đã `READY`/`SERVED` → trả về thành công, **không làm gì thêm** (idempotent);
   3. nếu không phải `COOKING` → lỗi 409;
   4. đọc `RecipeItem` của món; với mỗi dòng tạo `StockMovement`:
@@ -1004,7 +1009,7 @@ Cột “Vai trò” dùng đúng giá trị enum `Role` (mục 6): `OWNER`, `MA
   - 404: không tìm thấy;
   - 409: vi phạm business rule hoặc trạng thái.
   - `message` là tiếng Việt có dấu, hiển thị thẳng lên UI.
-- **PATCH chuyển trạng thái:** nếu đối tượng đã ở trạng thái đích thì trả thành công, không làm gì thêm (idempotent).
+- **PATCH chuyển trạng thái:** sau khi thỏa tiền điều kiện nghiệp vụ, nếu đối tượng đã ở trạng thái đích thì trả thành công, không làm gì thêm (idempotent). Riêng món phải thuộc phiên `ACTIVE`; phiên `CLOSED` trả 409 kể cả cùng đích (review 23/10/2026).
 
 ## 13.2 AuthController
 | Method | Path | Vai trò | Mô tả |
@@ -1105,11 +1110,15 @@ Swagger UI bật ở profile `local` để thử API nhanh.
 - `SseHub` (`@Component`):
   - giữ `CopyOnWriteArrayList<SseEmitter>`;
   - gỡ emitter khi `onCompletion`/`onTimeout`/`onError`;
-  - `broadcast(event)` gửi tới tất cả, emitter lỗi thì gỡ;
+  - `broadcast(event)` chỉ enqueue vào executor SSE riêng (4 worker, queue tối đa 256), mỗi emitter
+    một task để client treo không chặn HTTP request vừa commit hoặc client khỏe khác;
+  - gửi/heartbeat bắt mọi `Exception`, emitter lỗi thì gỡ; không complete lại sau lỗi send.
+    Executor đầy/dừng thì bỏ tín hiệu và dùng polling/reconnect để phục hồi; không CallerRuns;
   - heartbeat `@Scheduled(fixedRate = 20000)` gửi comment `ping` (bật `@EnableScheduling`).
 - **Phát event sau commit:**
   - ServiceImpl gọi `ApplicationEventPublisher.publishEvent(new RealtimeEvent(type, sessionId))`;
   - `RealtimeEventListener` dùng `@TransactionalEventListener(phase = AFTER_COMMIT)` để gọi `SseHub.broadcast`;
+  - callback chỉ dispatch, bắt lỗi dispatch để không biến giao dịch đã commit thành HTTP 500;
   - như vậy client không bao giờ nhận tín hiệu cho dữ liệu chưa commit.
 - **Loại event:**
 
@@ -1202,8 +1211,8 @@ Index thêm cho FK khi cần.
 |---|---|---|
 | Tạo đặt bàn | `DiningTable` | — |
 | Mở phiên | `DiningTable` | partial unique phiên đang hoạt động |
-| Chuyển trạng thái món (bếp, hủy, phục vụ) | `OrderItem` | CHECK lý do |
-| Hoàn thành món + tiêu hao | `OrderItem` | unique `CONSUMPTION` theo (chi tiết, NVL) |
+| Chuyển trạng thái món (bếp, hủy, phục vụ) | `ServiceSession` → `OrderItem`, kiểm phiên ACTIVE | CHECK lý do |
+| Hoàn thành món + tiêu hao | `ServiceSession` → `OrderItem`, kiểm phiên ACTIVE | unique `CONSUMPTION` theo (chi tiết, NVL) |
 | Nhập hàng + lô + movement | — | unique `receipt_item_id` |
 | Kiểm kê + điều chỉnh | — | unique `stocktake_item_id` |
 | Loại bỏ | `Ingredient` | CHECK dấu/lý do |

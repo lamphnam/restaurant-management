@@ -11,12 +11,15 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.math.BigDecimal;
-import java.time.Instant;
+
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
 import vn.ueh.kltn.restaurant.enums.MovementType;
+
+import java.math.BigDecimal;
+import java.time.Instant;
 
 @Entity
 @Table(name = "stock_movement")
@@ -64,16 +67,34 @@ public class StockMovement {
     @Column(name = "occurred_at", nullable = false)
     private Instant occurredAt;
 
-    public StockMovement(Ingredient ingredient, IngredientLot lot, StockReceiptItem receiptItem,
-                         OrderItem orderItem, StocktakeItem stocktakeItem, Account performedBy,
-                         MovementType movementType, BigDecimal quantityChange, String reason, Instant occurredAt) {
-        this.ingredient = ingredient; this.lot = lot; this.receiptItem = receiptItem;
+    public StockMovement(
+            Ingredient ingredient,
+            IngredientLot lot,
+            StockReceiptItem receiptItem,
+            OrderItem orderItem,
+            StocktakeItem stocktakeItem,
+            Account performedBy,
+            MovementType movementType,
+            BigDecimal quantityChange,
+            String reason,
+            Instant occurredAt) {
+        this.ingredient = ingredient;
+        this.lot = lot;
+        this.receiptItem = receiptItem;
         this.orderItem = orderItem;
-        this.stocktakeItem = stocktakeItem; this.performedBy = performedBy;
+        this.stocktakeItem = stocktakeItem;
+        this.performedBy = performedBy;
         this.movementType = movementType;
-        this.quantityChange = quantityChange; this.reason = reason;
+        this.quantityChange = quantityChange;
+        this.reason = reason;
         this.occurredAt = occurredAt;
     }
-    public boolean isIncrease() { return quantityChange.signum() > 0; }
-    public boolean isDecrease() { return quantityChange.signum() < 0; }
+
+    public boolean isIncrease() {
+        return quantityChange.signum() > 0;
+    }
+
+    public boolean isDecrease() {
+        return quantityChange.signum() < 0;
+    }
 }

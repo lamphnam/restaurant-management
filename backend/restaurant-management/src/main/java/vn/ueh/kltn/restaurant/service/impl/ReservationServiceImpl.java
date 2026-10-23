@@ -4,6 +4,7 @@ import jakarta.persistence.criteria.Predicate;
 
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -24,6 +25,7 @@ import vn.ueh.kltn.restaurant.exception.BusinessException;
 import vn.ueh.kltn.restaurant.exception.ErrorCode;
 import vn.ueh.kltn.restaurant.mapper.ReservationMapper;
 import vn.ueh.kltn.restaurant.mapper.TableMapper;
+import vn.ueh.kltn.restaurant.realtime.RealtimeEvent;
 import vn.ueh.kltn.restaurant.repository.AccountRepository;
 import vn.ueh.kltn.restaurant.repository.DiningTableRepository;
 import vn.ueh.kltn.restaurant.repository.ReservationRepository;
@@ -51,6 +53,7 @@ public class ReservationServiceImpl implements ReservationService {
     private final CurrentUser currentUser;
     private final Clock clock;
     private final AppProperties properties;
+    private final ApplicationEventPublisher events;
 
     public PageResponse<ReservationResponse> list(
             LocalDate date,
@@ -137,7 +140,7 @@ public class ReservationServiceImpl implements ReservationService {
                                 r.endTime(),
                                 r.note(),
                                 now));
-        // Phase 2: publish RESERVATION here; delivery must happen after commit.
+        events.publishEvent(new RealtimeEvent(RealtimeEvent.Type.RESERVATION, null));
         return ReservationMapper.toResponse(saved, now);
     }
 
@@ -157,8 +160,10 @@ public class ReservationServiceImpl implements ReservationService {
                                                 ErrorCode.NOT_FOUND, "Không tìm thấy đặt bàn"));
         if (reservation.getStatus() == ReservationStatus.SEATED)
             throw new BusinessException(ErrorCode.RESERVATION_NOT_CONFIRMED);
-        reservation.cancel();
-        // Phase 2: publish RESERVATION after a real change, delivered after commit.
+        if (reservation.getStatus() != ReservationStatus.CANCELLED) {
+            reservation.cancel();
+            events.publishEvent(new RealtimeEvent(RealtimeEvent.Type.RESERVATION, null));
+        }
         return ReservationMapper.toResponse(reservation, clock.instant());
     }
 

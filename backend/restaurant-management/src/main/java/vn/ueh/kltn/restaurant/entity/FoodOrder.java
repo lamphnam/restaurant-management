@@ -11,15 +11,16 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-
 
 @Entity
 @Table(name = "food_order")
@@ -41,16 +42,29 @@ public class FoodOrder {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    @OneToMany(mappedBy = "order", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @OneToMany(
+            mappedBy = "order",
+            cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     private List<OrderItem> items = new ArrayList<>();
 
     public FoodOrder(ServiceSession session, Account createdBy, Instant createdAt) {
-        this.session = session; this.createdBy = createdBy;
+        this.session = session;
+        this.createdBy = createdBy;
         this.createdAt = createdAt;
     }
-    public List<OrderItem> getItems() { return Collections.unmodifiableList(items); }
-    public void addItem(OrderItem item) { item.attachTo(this); items.add(item); }
+
+    public List<OrderItem> getItems() {
+        return Collections.unmodifiableList(items);
+    }
+
+    public void addItem(OrderItem item) {
+        item.attachTo(this);
+        items.add(item);
+    }
+
     public BigDecimal calculateTotal() {
-        return items.stream().map(OrderItem::calculateSubtotal).reduce(BigDecimal.ZERO, BigDecimal::add);
+        return items.stream()
+                .map(OrderItem::calculateSubtotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }
