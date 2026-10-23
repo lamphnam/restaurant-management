@@ -9,6 +9,7 @@ import static vn.ueh.kltn.restaurant.TestFixtures.menu;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -20,6 +21,22 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 class OrderItemTest {
+    @ParameterizedTest
+    @EnumSource(OrderItemStatus.class)
+    void billingIncludesPendingCookingReadyAndServedButExcludesTerminalFailures(
+            OrderItemStatus status) {
+        OrderItem item = item();
+        ReflectionTestUtils.setField(item, "status", status);
+        BigDecimal expected =
+                switch (status) {
+                    case CANCELLED, UNAVAILABLE -> BigDecimal.ZERO;
+                    case PENDING, COOKING, READY, SERVED ->
+                            item.getUnitPriceAtOrder()
+                                    .multiply(BigDecimal.valueOf(item.getQuantity()));
+                };
+        assertEquals(expected, item.calculateSubtotal());
+    }
+
     @Test
     void snapshotPriceAndSubtotalIgnoreLaterMenuPrice() {
         MenuItem menu = menu();

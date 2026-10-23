@@ -10,6 +10,7 @@ import {
   Space,
   Table,
   Tag,
+  Tooltip,
   Typography,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
@@ -139,6 +140,7 @@ export default function StocktakePage() {
       key: 'actualQuantity',
       width: 200,
       render: (_, record) => (
+        <Space orientation="vertical" size={4} style={{ width: '100%' }}>
         <InputNumber
           aria-label={`Số lượng thực tế ${record.ingredientName}`}
           placeholder="Chưa nhập số thực đếm"
@@ -149,6 +151,15 @@ export default function StocktakePage() {
           value={record.actualQuantity}
           onChange={(val) => handleActualChange(record.ingredientId, val)}
         />
+        <Tooltip title={record.systemQuantity < 0 ? 'Tồn hệ thống đang âm. Vui lòng nhập số thực đếm không âm.' : 'Chỉ bấm sau khi đã đếm và thấy khớp với số tồn đang hiển thị.'}>
+          <Button type="link" size="small" style={{ padding: 0 }}
+            aria-label={`Khớp tồn hệ thống ${record.ingredientName}`}
+            disabled={createStocktakeMutation.isPending || record.systemQuantity < 0}
+            onClick={() => handleActualChange(record.ingredientId, record.systemQuantity)}>
+            Khớp tồn hệ thống
+          </Button>
+        </Tooltip>
+        </Space>
       ),
     },
     {
@@ -234,14 +245,14 @@ export default function StocktakePage() {
   ]
 
   return (
-    <div className="stocktake-page" style={{ padding: 24 }}>
+    <div className="stocktake-page">
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         <Card title={<Title level={4} style={{ margin: 0 }}>Thực hiện kiểm kê kho nguyên vật liệu</Title>}>
           <Alert
             type="info"
             showIcon
             message="Nhập kết quả thực đếm"
-            description="Chỉ lưu các nguyên vật liệu đã nhập số lượng thực tế. Để trống để bỏ qua; nhập 0 khi đã đếm và không còn hàng. Chênh lệch được tính lại theo tồn hệ thống tại thời điểm xác nhận."
+            description="Chỉ lưu các nguyên vật liệu đã nhập số lượng thực tế. Nếu đã đếm và thấy khớp, bấm Khớp tồn hệ thống ở dòng đó. Để trống để bỏ qua; nhập 0 khi không còn hàng. Chênh lệch được tính lại theo tồn hệ thống tại thời điểm xác nhận."
             style={{ marginBottom: 16 }}
           />
 
@@ -281,6 +292,7 @@ export default function StocktakePage() {
         <Card title={<Title level={4} style={{ margin: 0 }}>Lịch sử các đợt kiểm kê</Title>}>
           <Table
             rowKey="id"
+            scroll={{ x: 760 }}
             columns={historyColumns}
             dataSource={stocktakesData?.items ?? []}
             loading={isHistoryLoading}
@@ -288,6 +300,7 @@ export default function StocktakePage() {
               expandedRowRender: (record) => (
                 <Table<StocktakeItem>
                   size="small"
+                  scroll={{ x: 650 }}
                   rowKey="id"
                   pagination={false}
                   dataSource={record.items}

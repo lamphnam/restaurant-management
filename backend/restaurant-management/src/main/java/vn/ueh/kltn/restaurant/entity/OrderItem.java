@@ -72,7 +72,7 @@ public class OrderItem {
     }
 
     public BigDecimal calculateSubtotal() {
-        return status == OrderItemStatus.CANCELLED || status == OrderItemStatus.UNAVAILABLE
+        return OrderItemStatus.NON_BILLABLE.contains(status)
                 ? BigDecimal.ZERO
                 : unitPriceAtOrder.multiply(BigDecimal.valueOf(quantity));
     }

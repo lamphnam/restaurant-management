@@ -5,12 +5,17 @@ import vn.ueh.kltn.restaurant.dto.response.InvoiceResponse;
 import vn.ueh.kltn.restaurant.dto.response.OpenSessionPaymentResponse;
 import vn.ueh.kltn.restaurant.dto.response.PageResponse;
 import vn.ueh.kltn.restaurant.dto.response.PaymentPreviewResponse;
+import vn.ueh.kltn.restaurant.dto.response.PaymentSummaryResponse;
+import vn.ueh.kltn.restaurant.dto.response.RevenueSummaryResponse;
 import vn.ueh.kltn.restaurant.enums.PaymentMethod;
 
 import java.time.Instant;
 import java.util.List;
 
 public interface PaymentService {
+    RevenueSummaryResponse summarizeRevenue(Instant from, Instant to);
+
+    PaymentSummaryResponse summary(Instant from, Instant to);
 
     List<OpenSessionPaymentResponse> listOpenSessions();
 

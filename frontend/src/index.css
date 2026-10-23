@@ -98,6 +98,16 @@ a:focus-visible, button:focus-visible { outline: 3px solid #176b77; outline-offs
 .account-name strong { max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .account-name .ant-tag { width: fit-content; font-size: 11px; line-height: 18px; }
 .workspace-content { padding: 36px 32px; }
+.account-filters { display: flex; align-items: end; flex-wrap: wrap; gap: 16px; margin: 0 0 16px; }
+.account-filters > div { min-width: 180px; }
+.account-filters .account-search { flex: 1; min-width: min(100%, 280px); max-width: 480px; }
+.account-filters label { display: block; margin-bottom: 8px; }
+.account-filters .ant-select { width: 100%; }
+.stocktake-page { padding: 24px; }
+@media (max-width: 700px) {
+  .stocktake-page { padding: 0; }
+  .stocktake-page .ant-card-head-title { white-space: normal; padding-block: 12px; }
+}
 .workspace-title h1.ant-typography { font-size: 28px; margin-top: 0; margin-bottom: 10px; }
 .workspace-title p { color: #617381; }
 .workspace-empty { margin-top: 32px; padding: 72px 24px; background: #fff; border: 1px solid #e1e8ed; border-radius: 10px; }

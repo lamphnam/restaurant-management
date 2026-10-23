@@ -12,9 +12,11 @@ Backend: `backend/restaurant-management/`, Java 21, Spring Boot 4.1.1, Maven wra
 root package `vn.ueh.kltn.restaurant`. Frontend: `frontend/`, React, TypeScript, Vite, **Bun**.
 Schema is Flyway V1 with exactly 18 domain tables; JPA validates it. Database: existing Neon `main`.
 
-**Phase 0–3 and all reviewed fixes are implemented. Phase 4 is prepared, not implemented.**
-Current code baseline: branch `feat/phase-3-implement`, HEAD `72d1bdc` (PR #3), plus uncommitted
-Phase 3 review fixes and documentation. Check git status/HEAD before work; preserve these changes.
+**Phase 0–4, the UI review and all nine PR #4 fixes are implemented.**
+Current documentation index: `docs/README.md`; latest QA: `docs/phase_results/phase-4-pr-review.md`.
+Latest inspected code baseline (23/10/2026): branch `feat/phase-4-implement`, commit `67e1af2`,
+which includes the PR #4 fixes. `1b3699f` was the pre-review baseline; the fixes are already committed.
+This records local git state, not PR merge/push status. Check actual git status/HEAD before work and preserve all changes.
 Do not commit, push, reset, stash or discard them without the user's instruction.
 
 - Phase 1: accounts, menu/locked recipe diff, ingredient lookup, floor plan, reservations/opening.
@@ -36,22 +38,56 @@ Do not commit, push, reset, stash or discard them without the user's instruction
 
 Implemented routes: `/accounts`, `/menu`, `/floor-plan`, `/reservations`, `/sessions/:id`,
 `/kitchen`, `/awaiting-service`, `/payment`, `/invoices`, `/inventory`, `/inventory/receipts`,
-`/inventory/stocktake`. `/reconciliation` (CASHIER/MANAGER) and `/reports` (OWNER) are still placeholders.
-RevenueReconciliation entity/repository exist, but there is no reconciliation workflow or payment summary API yet.
+`/inventory/stocktake`, `/reconciliation` (CASHIER/MANAGER), `/reports` (OWNER).
 
-Latest verification: **187 backend tests; 26 frontend tests / 77 assertions; both builds/lint passed**.
-PR #3 review: 16 mocked-browser scenarios, 10 read-only and 22 live service/transaction checks.
-Evidence: `docs/phase_results/phase-3-review.md`; original Phase 3 evidence (176 backend tests,
-25 frontend tests / 76 assertions; 111 API checks) is historical, not additive.
-QA left one review ingredient (ID 18) INACTIVE, stock 8 kg; no reset/session/invoice changes.
-Snapshots are dated evidence, not live readiness. Inspect before any later QA writes.
+- Phase 4: ReconciliationService preview/create/list/locked confirm; PaymentService summary.
+  Invoice-only revenue by paidAt `[startTime,endTime)` (D9), zero invoices count too.
+  POST recomputes; JWT actor/Clock time; snapshots immutable. Confirm again returns 409 (§12.18).
+  List optional `confirmed`, page0/size20 (max100), fetches cashier/manager; no own-cashier restriction.
+  Summary uses independent aggregates and snapshot price; excludes CANCELLED/UNAVAILABLE, keeps READY.
+  Report inventory is current, using existing APIs. No new schema/status/report service.
+- Vite proxy closes interrupted `/api/events` via `dev/sseProxy.ts` so the client retries.
+  Keep SSE AFTER_COMMIT executor isolation, polling30s and reduced-motion transition:none.
 
-**Start future Phase 4 work with** `docs/PHASE_4_HANDOFF.md`,
-`docs/phase_instructions/phase-4.md`, `phase-4-prompt.md`, `phase-4-checklist.md` and TRACEABILITY.
-Scope: FR-10/UC11.2 reconciliation, FR-17/UC6.1 reports, checklist 33–36 plus regression 1–36.
-Use D9 `[startTime,endTime)`, Invoice-only revenue, and the explicit §12.18 exception:
-confirming an already confirmed reconciliation returns 409 (not a generic PATCH no-op).
-Preparation is not permission to code. Do not start Phase 4 on your own.
+User UI review (23/10/2026) is implemented: OWNER accounts search name/phone (accent-insensitive),
+role/status filters over the full fetched list; reports have month/day selection, daily amounts/counts,
+all tied positive peak days and server-calculated averages. Summary has 3 aggregate SQL statements in
+one read-only REPEATABLE_READ transaction. Sparse daily results are grouped in configured timezone;
+calendar zero rows are generated for the visible frontend page only. Keep pickers as calendar dates
+to avoid timezone-object endOf/DST errors in browsers outside Vietnam.
+HEAD_CHEF stocktake has an explicit per-row match-stock button, disabled for negative stock;
+copying preserves the displayed actual while backend still recomputes system stock under D7.
+
+PR #4 review: preview/create reject endTime after Clock with400 INVALID_INPUT; never clamp shifts.
+Cashier defaults to today midnight/current minute and disables future dates/times. DTO alone validates
+actual/reason; service checks server revenue overflow with a specific message. Report calendarDays
+stops at Clock's configured-zone today (future-only intervals:0 days/average); current month ends today.
+Top10 is limited in SQL via Pageable with an Invoice join. OrderItemStatus.NON_BILLABLE is shared by
+subtotal and reports; daily SQL receives PaymentMethod enum names. Reconciliation lists poll30s.
+Evidence and live/mock limits: `docs/phase_results/phase-4-pr-review.md`.
+
+Latest verification: **224 backend tests; 36 frontend tests / 111 assertions; both builds/lint PASS**.
+These are recorded PR #4 QA results; documentation synchronization did not rerun QA or write to Neon.
+PR #4: 75 read-only query checks; 9 guarded API rejection groups with 0 records created; 13 real read-only
+browser/API groups. Per Chrome/Edge: 3 picker/polling mock groups (real 30s timers), 30 UI-review groups,
+36 Phase 4 regression groups. Counts/ledger unchanged; keep each evidence set separate.
+Previous UI review: 30 mock checks each Chrome/Edge; 70 read-only Neon query checks; 11 real API/browser
+check groups with unchanged counts/ledger, no domain writes. Evidence: `docs/phase_results/phase-4-review.md`.
+Phase 4: 152 API checks in one resumed fixture chain; 39 read-only query checks before QA;
+60 query/held-transaction checks afterward (not additive); 36 mock UI checks each Chrome/Edge;
+32 live browser observations including repeated login/guard checks; real restart/reconnect;
+5 local HTTP proxy assertions. Old mock regressions: 7 picker / 16 stocktake / 59 popup checks.
+Evidence: `docs/phase_results/phase-4.md`; historical test counts are not new acceptance.
+
+Neon main after Phase 4: QA account9 LOCKED, menu23 DISCONTINUED, ingredient19 INACTIVE stock0kg;
+review ingredient18 still INACTIVE stock8kg. Sessions13/14/15 CLOSED through payment,
+invoices6/7/8, reconciliations1/2/3 confirmed; no reset/history edits. Before/after in the report.
+Readiness snapshot at the last QA (23/10/2026): 5 free tables/7 ACTIVE; no confirmed booking for 27/10. Inspect again before
+QA/demo writes. Physical tablet, multi-user load and actual backup/restore remain unverified.
+Do not restore main merely to test documentation.
+
+Phase 4 handoff/instructions/prompt are the historical starting contract. Use the Phase 4 result
+and TRACEABILITY for current status. No next phase or cut feature is authorized automatically.
 
 - `CODEX_MASTER_SPEC_KLTN_SPRING_REACT.md`: **the source of truth**, written in Vietnamese. Section numbers below (§N) refer to this file.
 - `CODEX_MASTER_SPEC_KLTN_ASPNET_FINAL.md`: the superseded ASP.NET version, for reference only. When the two disagree, the Spring/React spec wins.

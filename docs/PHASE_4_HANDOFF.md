@@ -1,5 +1,8 @@
 # Bàn giao từ Phase 3 sang Phase 4
 
+> **Tài liệu lịch sử trước triển khai.** Phase 0–4 và cả 9 sửa PR #4 đã có trong code tại `67e1af2` (đối chiếu 23/10/2026). Xem [hiện trạng](README.md) và [review PR #4](phase_results/phase-4-pr-review.md). Nội dung bên dưới giữ mốc bàn giao/prompt gốc; không dùng các dòng “chưa triển khai” làm hiện trạng hoặc chạy lại như tác vụ mới.
+
+
 Ngày chốt tài liệu: **23/10/2026**, Asia/Ho_Chi_Minh. Phase 0–3 đã triển khai,
 các sửa review PR #1/#2/#3 và popup đã có trong code. **Phase 4 chưa triển khai**;
 chủ dự án hiện yêu cầu chuẩn bị tài liệu. Không bắt đầu code hoặc commit/push từ tài liệu này.

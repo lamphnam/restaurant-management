@@ -26,6 +26,8 @@ async function fixture(reservationHandler) {
     const json = (data, status = 200) => route.fulfill({ status, json: data })
     if (url.pathname === '/api/auth/login') return json({ accessToken: 'qa-mocked-token', expiresAt: new Date(Date.now() + 3_600_000).toISOString(), account })
     if (url.pathname === '/api/auth/me') return json(account)
+    if (url.pathname === '/api/events') return route.abort('failed')
+    if (url.pathname === '/api/sessions/9901') return json({ sessionId: 9901, tableId: table.id, tableName: table.name, areaName: '[QA] Khu vực', openedAt: new Date().toISOString(), closedAt: null, reservation: null, status: 'ACTIVE', orders: [], total: 0 })
     if (url.pathname === '/api/tables/floor-plan') return json([{ id: 1, name: '[QA] Khu vực', tables: [table] }])
     if (url.pathname === '/api/reservations') {
       calls.push(Object.fromEntries(url.searchParams))

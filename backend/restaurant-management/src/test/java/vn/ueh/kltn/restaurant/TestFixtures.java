@@ -2,6 +2,7 @@ package vn.ueh.kltn.restaurant;
 
 import org.springframework.test.util.ReflectionTestUtils;
 
+import vn.ueh.kltn.restaurant.config.AppProperties;
 import vn.ueh.kltn.restaurant.entity.Account;
 import vn.ueh.kltn.restaurant.entity.DiningArea;
 import vn.ueh.kltn.restaurant.entity.DiningTable;
@@ -23,6 +24,15 @@ public final class TestFixtures {
 
     public static final Instant NOW = Instant.parse("2026-10-22T10:00:00Z");
     public static final Clock CLOCK = Clock.fixed(NOW, ZoneOffset.UTC);
+
+    public static AppProperties appProperties(String timezone) {
+        return new AppProperties(
+                timezone,
+                false,
+                new AppProperties.Jwt("test-only-secret-key-at-least-32-characters", 12),
+                new AppProperties.Alert(3),
+                new AppProperties.Reservation(60));
+    }
 
     public static <T> T id(T entity, Long id) {
         ReflectionTestUtils.setField(entity, "id", id);

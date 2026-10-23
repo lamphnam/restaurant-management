@@ -84,6 +84,7 @@ async function openSelect(page, input) {
 
 async function escapeSelect(input) {
   await input.press('Escape')
+  await input.page().waitForFunction((element) => element.getAttribute('aria-expanded') === 'false', await input.elementHandle(), { timeout: 3000 })
   assert.equal(await input.getAttribute('aria-expanded'), 'false')
 }
 
