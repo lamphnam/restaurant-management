@@ -3,15 +3,17 @@
 Nguồn: `CODEX_MASTER_SPEC_KLTN_SPRING_REACT.md` (§1, §2, §19).
 Tên Việt (khóa luận) ↔ tên code: xem Phụ lục A của spec.
 
-**Phạm vi theo §19 (khi hoàn tất):** `Đã làm` / `Đơn giản hóa` (phần cắt theo §1.2) / `Chưa hiện thực` (cắt, §1.3). Cột Phạm vi là mục tiêu bàn giao, không phải tiến độ. Cột Hiện trạng dùng `Chưa làm`, `Một phần — chờ Phase 4`, `Đã làm` hoặc giới hạn kiểm chứng cụ thể. Các mục lịch sử 6–10 mô tả mốc trước đây, không ghi đè trạng thái đầu tài liệu.
+**Phạm vi theo §19 (khi hoàn tất):** `Đã làm` / `Đơn giản hóa` (phần cắt theo §1.2) / `Chưa hiện thực` (cắt, §1.3). Cột Phạm vi là mục tiêu bàn giao, không phải tiến độ. Cột Hiện trạng dùng `Chưa làm`, `Một phần — chờ Phase 4`, `Đã làm` hoặc giới hạn kiểm chứng cụ thể. Các mục từ 6 trở đi là nhật ký theo từng đợt, không ghi đè trạng thái đầu tài liệu.
 Cột *Phase* là phase dự kiến hiện thực (docs/phase_instructions). Cập nhật cột *Hiện trạng* khi xong từng phase.
 
-Mốc 23/10/2026: **Phase0–4 đã triển khai**, giữ sửa review Phase1–3.
+Mốc 23/10/2026: **Phase 0–4 đã triển khai**, giữ sửa review Phase1–3.
+Code đã đối chiếu tại `67e1af2` trên `feat/phase-4-implement`, gồm cả 9 sửa PR #4.
 [Review PR #4](phase_results/phase-4-pr-review.md): 224 backend tests, 36 frontend/111 assertions,
 hai build/lint PASS; API/Neon, Chrome/Edge, realtime/restart và mock được báo riêng.
 [Checklist1–36](phase_instructions/phase-4-checklist.md) ghi bằng chứng từng dòng.
 TR-09 restore, thiết bị tablet thật và benchmark nhiều user chưa nghiệm thu.
 Handoff/prompt là mốc lịch sử trước code, không ghi đè tiến độ hiện tại.
+[Mục lục hiện trạng](README.md) phân biệt bằng chứng từng lượt; lần đồng bộ tài liệu không chạy lại QA.
 
 ## 1. Functional Requirements
 
@@ -60,7 +62,7 @@ Handoff/prompt là mốc lịch sử trước code, không ghi đè tiến độ
 | BR-07 | Quản lý lô và HSD | FR-13 (lô ghi khi nhập, cảnh báo HSD) | Đã làm |
 | BR-08 | Thông tin tổng hợp | FR-17 | Đã làm |
 | BR-09 | Truy xuất giao dịch | FR-16 | Đã làm |
-| BR-10 | Quyền theo vai trò | FR-01, `@PreAuthorize` | Đã kiểm Phase0–4, gồm sáu role/401 trên API Phase4 |
+| BR-10 | Quyền theo vai trò | FR-01, `@PreAuthorize` | Đã kiểm Phase 0–4, gồm sáu role/401 trên API Phase4 |
 | BR-11 | Món → định lượng → tiêu hao → biến động tồn | FR-18, `StockMovement` | Đã làm |
 | BR-12 | Quản lý tập trung đặt bàn | FR-03 | Đã làm |
 
@@ -72,8 +74,8 @@ Handoff/prompt là mốc lịch sử trước code, không ghi đè tiến độ
 | TR-02, TR-03 | PostgreSQL (Neon), Flyway | Đã làm |
 | TR-04 | PK `BIGINT` identity, trừ `RecipeItem` dùng PK kép | Đã làm |
 | TR-05, TR-06 | Cột thời gian và `*_by_id` theo ERD | Đã làm |
-| TR-07, NFR-04 | JWT + `@PreAuthorize` | Đã kiểm Phase0–4 |
-| TR-08, NFR-03 | `@Transactional` + khóa dòng + unique/CHECK (§16.3) | Đã kiểm Phase0–4, gồm confirm race/held lock |
+| TR-07, NFR-04 | JWT + `@PreAuthorize` | Đã kiểm Phase 0–4 |
+| TR-08, NFR-03 | `@Transactional` + khóa dòng + unique/CHECK (§16.3) | Đã kiểm Phase 0–4, gồm confirm race/held lock |
 | TR-09 | Hướng dẫn backup/restore Neon + `pg_dump` (README) | Có hướng dẫn; chưa có bằng chứng thực diễn restore |
 | TR-10, NFR-07 | Ant Design, ưu tiên tablet cho Bếp/Phục vụ/Sơ đồ bàn | Đã làm |
 | TR-11, NFR-02 | SSE sau commit + invalidation/reconnect/polling | Đã làm |
@@ -267,9 +269,9 @@ Phạm vi FR-10/17 tiếp tục chờ Phase 4. Chưa commit/push.
   khóa future date/time; validation request ở DTO, message riêng cho aggregate vượt giới hạn.
   Manager/cashier list polling30s, giữ confirm lock/409/snapshot.
 - FR-17/UC6.1: bình quân/calendarDays chỉ đến hôm nay theo Clock/timezone, khoảng hoàn toàn
-  tương lai trả0 ngày/0 bình quân; preset tháng hiện tại đến hôm nay, không sinh dòng tương lai.
+  tương lai trả 0 ngày/0 bình quân; preset tháng hiện tại đến hôm nay, không sinh dòng tương lai.
 - BR-08/UC11.1: `OrderItemStatus.NON_BILLABLE` chung cho subtotal và report;
   top10 giới hạn qua Pageable/Invoice join, daily methods từ enum parameters; summary3 SQL.
-- Backend224, frontend36/111, builds/lint PASS;75 query checks chỉ đọc,9 nhóm API kiểm rejection,
+- Backend 224, frontend 36/111, builds/lint PASS;75 query checks chỉ đọc,9 nhóm API kiểm rejection,
   13 nhóm live read-only và picker/polling mock riêng. Không tạo/sửa bản ghi nghiệp vụ.
 - [Bằng chứng review PR #4](phase_results/phase-4-pr-review.md) nêu từng mục1–9 và phần chưa kiểm.

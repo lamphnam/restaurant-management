@@ -1,5 +1,10 @@
 # Sửa review PR #4 — đối soát và báo cáo
 
+**Cập nhật tài liệu 23/10/2026:** các sửa dưới đây đã nằm trong commit `67e1af2`.
+`1b3699f` là baseline trước sửa; câu “không commit/push” phía dưới ghi thao tác của lượt triển khai,
+không phải trạng thái git hiện tại. [Mục lục hiện trạng](../README.md) tổng hợp tài liệu;
+không có lượt QA/ghi Neon mới trong lần đồng bộ tài liệu này.
+
 Thực hiện **23/10/2026**, Asia/Ho_Chi_Minh, theo 3 critical và 6 optional trong review của chủ dự án.
 Baseline thực tế: branch `feat/phase-4-implement`, HEAD `1b3699f`, working tree sạch trước sửa.
 Không reset/stash/discard, không commit/push. Tiếp tục áp dụng skill `phase`, master Spring/React và AGENTS/CLAUDE.
@@ -20,7 +25,7 @@ Giữ D9 `[startTime,endTime)`, Invoice-only revenue, actor JWT, Clock, khóa co
 | 6 optional | Daily query nhận cash/bankTransfer qua parameter từ `PaymentMethod.*.name()` | Native record projection thật trên Neon khớp JDBC nhóm lại bằng Java |
 | 7 optional | `OrderItemStatus.NON_BILLABLE` immutable dùng chung cho subtotal và query top | Unit cả6 trạng thái, giữ READY/SERVED/PENDING/COOKING; SQL so snapshot độc lập |
 | 8 optional | Top query nhận Pageable, summary lấy top10 tại SQL; thay EXISTS bằng join Invoice qua session (unique invoice/session), giữ sort quantity DESC/id ASC | Probe thật kiểm limit1, offset1/thứ tự và top10 so SQL độc lập; summary vẫn3 SQL |
-| 9 optional | Danh sách đối soát polling30s cho CASHIER/MANAGER, không thêm SSE event | Chrome29961ms, Edge29963ms: dòng pending mới tự xuất hiện, không click, SSE bị chặn; API dùng mock |
+| 9 optional | Danh sách đối soát polling30s cho CASHIER/MANAGER, không thêm SSE event | Chrome 29961ms, Edge 29963ms: dòng pending mới tự xuất hiện, không click, SSE bị chặn; API dùng mock |
 
 Controller contract không thêm tham số public; N được truyền bằng Pageable ở repository, summary mặc định10.
 `listInvoices` vẫn dùng `<=to`; các aggregate vẫn dùng `<to`. D7, stocktake blank/clear/zero và nút khớp tồn giữ nguyên.
@@ -34,7 +39,7 @@ Frontend pickers giữ ngày/giờ wall-clock thông thường để tránh hồ
 | Frontend `bun run test` | **36 tests / 111 assertions**, 0 fail | output Bun |
 | Frontend build/lint | **PASS / PASS**, gồm type-check | output Vite/oxlint |
 | Neon query probe chỉ đọc | **75 checks**, before/after counts giống nhau | `.cache/phase4-pr-review-query-probe.log` |
-| API thật cho review | **9 nhóm checks**, gồm request POST/PREVIEW bị từ chối; tạo0 bản ghi | `.cache/phase4-pr-review-api/results.json`, `.cache/phase4-pr-review-api.log` |
+| API thật cho review | **9 nhóm checks**, gồm request POST/PREVIEW bị từ chối; tạo 0 bản ghi | `.cache/phase4-pr-review-api/results.json`, `.cache/phase4-pr-review-api.log` |
 | Browser/API/Neon thật chỉ đọc | **13 nhóm checks**, Chrome + Edge, có thêm CASHIER default preview; counts/ledger giữ nguyên | `.cache/phase4-review-live-readonly/results.json`, PNG; `.cache/phase4-pr-review-live-readonly.log` |
 | Picker/polling mock chuyên biệt | **3 nhóm checks mỗi Chrome/Edge**, có30s chờ thật, không page error/unexpected endpoint | `.cache/phase4-pr-review-browser-{chrome,msedge}/results.json`, PNG |
 | Hồi quy UI review mock | **30 nhóm checks mỗi Chrome/Edge**, 1440/768/375px, normal/reduced motion, 0 page errors | `.cache/phase4-review-browser-{chrome,msedge}/results.json`, `.cache/phase4-pr-review-ui-*.log` |

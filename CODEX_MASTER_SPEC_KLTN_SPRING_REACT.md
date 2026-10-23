@@ -16,6 +16,8 @@
 > Ưu tiên cao nhất vẫn là **đúng nghiệp vụ khóa luận**, đơn giản, chạy ổn định, dễ demo, truy vết được Requirement → Use Case → dữ liệu → code.
 
 > **Mốc hiện thực 23/10/2026:** Phase 0–4 và các sửa review đã có trong code.
+> Code đã đối chiếu tại `67e1af2` trên `feat/phase-4-implement`, gồm cả 9 sửa PR #4.
+> [Mục lục hiện trạng](docs/README.md) phân biệt số liệu từng lượt; đồng bộ tài liệu không đồng nghĩa chạy lại QA.
 > Sau review PR #4: 224 backend tests, 36 frontend tests / 111 assertions, hai build/lint PASS.
 > Bằng chứng thật, mock và giới hạn: [báo cáo Phase 4](docs/phase_results/phase-4.md),
 > [review báo cáo/tìm tài khoản/kiểm kê](docs/phase_results/phase-4-review.md),
@@ -1016,7 +1018,7 @@ Một trang, chọn khoảng thời gian (mặc định hôm nay):
   (kể cả hóa đơn 0đ), bình quân/ngày lịch trong kỳ và số ngày có hóa đơn.
   Backend tính các chỉ số; số bình quân làm tròn HALF_UP đến đồng chỉ để hiển thị.
   Khoảng API bất kỳ tính số ngày lịch có giao với `[from,to)` đến tối đa hôm nay theo Clock/timezone cấu hình.
-  Khoảng hoàn toàn tương lai trả0 ngày/0 bình quân; không sinh dòng lịch cho ngày tương lai;
+  Khoảng hoàn toàn tương lai trả 0 ngày/0 bình quân; không sinh dòng lịch cho ngày tương lai;
 - top10 món bán: Σ `quantity` của chi tiết không `CANCELLED`/`UNAVAILABLE`, thuộc phiên có `Invoice` trong khoảng;
   repository nhận Pageable, giới hạn tại SQL. Quy tắc loại trạng thái dùng chung `OrderItemStatus.NON_BILLABLE` với subtotal;
 - NVL tồn thấp, lô cần chú ý, 10 biến động gần nhất;

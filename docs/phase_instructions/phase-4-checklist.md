@@ -1,6 +1,8 @@
 # Checklist nghiệm thu Phase 4 và hồi quy 1–36
 
 Thực hiện **23/10/2026**, Asia/Ho_Chi_Minh, branch `feat/phase-4-implement`, HEAD nền `28bd527`.
+Đó là mốc nghiệm thu ban đầu. Hiện trạng code đã đối chiếu tại `67e1af2`, gồm cả 9 sửa PR #4;
+xem [mục lục hiện trạng](../README.md). Lượt đồng bộ tài liệu không chạy lại QA.
 Kết quả có phạm vi: API/browser thật khác unit/mock. “PASS” dưới đây là bằng chứng
 trong cột cuối, không tuyên bố mọi nhánh đều được nhập tay trên thiết bị vật lý.
 [Báo cáo đầy đủ](../phase_results/phase-4.md) ghi số kiểm tra, tác động DB, lỗi và giới hạn.
@@ -13,7 +15,24 @@ Không coi các ca review chỉ đọc/mock là chạy lại toàn bộ nghiệp
 Review PR #4: [phase-4-pr-review.md](../phase_results/phase-4-pr-review.md), bổ sung biên Clock,
 chặn ca tương lai, bình quân đến hôm nay, top10 và polling30s; không ghi đè bằng chứng cũ.
 
-Mã bằng chứng:
+## Bổ sung sau review PR #4 — mốc code 67e1af2
+
+Kết quả từ [đợt kiểm PR #4](../phase_results/phase-4-pr-review.md), không thay các bằng chứng cũ:
+
+| Phạm vi | Bằng chứng và giới hạn |
+|---|---|
+| Ca tương lai, mặc định/picker | Preview/create 400 theo Clock; end==now hợp lệ trong unit; CASHIER default preview 200 thật. Picker được kiểm trên Chrome/Edge mock |
+| Báo cáo đến hôm nay | CalendarDays/average loại tương lai, kể cả giờ chưa tới hôm nay; tháng hiện tại đến hôm nay; bảng không sinh ngày tương lai. Unit/API thật và mock tách riêng |
+| Validation/tính tiền/top10 | DTO giữ actual/reason; message riêng khi system overflow; methods từ enum, NON_BILLABLE dùng chung, Pageable/Invoice join. Probe thật kiểm giới hạn/offset; overflow chỉ unit |
+| Polling danh sách | Chrome 29961ms, Edge 29963ms với dữ liệu API mock, không click/SSE; không coi là tạo đối soát thật |
+| Suite/build | Backend 224, frontend 36/111, hai build/lint PASS ở đợt kiểm đã ghi |
+| SQL/API/app | 75 query checks chỉ đọc; 9 nhóm API kiểm rejection có guard; 13 nhóm live read-only. Không tạo/sửa bản ghi nghiệp vụ |
+
+Không chạy lại toàn bộ workflow ghi 1–36, confirmation race/held-lock, seed/restart trong đợt PR #4.
+Summary hiện 3 SQL (thêm daily); số2 trong bảng nghiệm thu bên dưới là số đo lịch sử.
+
+## Mã bằng chứng nghiệm thu ban đầu
+
 - **API**: `scripts/phase4-api-check.mjs`, `.cache/phase4-api/results.json` (152 checks, cùng fixture được tiếp tục).
 - **LIVE**: `scripts/phase4-live-browser-check.mjs`, `.cache/phase4-live-browser/results.json` (Chrome+Edge, 32 observations có login/guard lặp).
 - **SQL/TX**: `scripts/PhaseFourQueryProbe.java`, `.cache/phase4-query-probe.log` (39 chỉ đọc) và `phase4-transaction-probe.log` (60 của lượt sau, không cộng).
@@ -74,7 +93,7 @@ Mã bằng chứng:
 | Reports | PASS thật +mock | API snapshot/quantity/status/Invoiceonly, SQL aggregate; UI empty/partialerror cómock |
 | Reports kho | PASS API/browser | API cũ, lowstock/lots/10movements hiện tại; không dựng tồn lịch sử |
 | UI/role | PASS thật | Login/guard6 vai trò; API +MockMvc quyền mới; CASHIERUI/MANAGERUI/OWNERlanding |
-| Performance | PASS query budget | Preview1/summary2/list2–3 SQL; chưa benchmark nhiều người dùng |
+| Performance | PASS query budget tại nghiệm thu ban đầu | Preview1/summary2/list2–3 SQL ở mốc cũ; hiện summary3 theo review phía trên; chưa benchmark nhiều người dùng |
 | Seed/restart | PASS thật | Restart bậtseed thường; counts/ledger giữ nguyên, SSE tựreconnect khôngreload |
 | Browser | PASS viewport | Chrome+Edge headless, desktop/tablet/mobile normal/reduced; chưa thiết bị tablet vật lý |
 | TR-09 | MỘT PHẦN | README cóhướng dẫn; clienttools chưa thấy trênPATH; chưa dump/restore, khôngrestoremain |

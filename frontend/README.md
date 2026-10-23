@@ -18,6 +18,8 @@ Build gồm type-check. Giữ bun.lock trong Git; không đưa credentials/secre
 ## Trạng thái 23/10/2026
 
 Phase 0–4 và review đã triển khai. **36 tests / 111 assertions**, build/lint PASS.
+Mốc code đã đối chiếu `67e1af2`, gồm cả 9 sửa PR #4; kết quả kiểm thuộc lượt review đã ghi,
+không chạy lại test/QA trong lần đồng bộ tài liệu. Xem [hiện trạng chung](../docs/README.md).
 Xem [Phase4](../docs/phase_results/phase-4.md) cho mock và app/API/Neon thật tách riêng.
 [Review giao diện](../docs/phase_results/phase-4-review.md): tìm tài khoản, báo cáo ngày/tháng và nút khớp tồn.
 [Review PR #4](../docs/phase_results/phase-4-pr-review.md): chặn ca tương lai, bình quân đến hôm nay và polling đối soát.

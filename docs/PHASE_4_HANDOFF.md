@@ -1,6 +1,6 @@
 # Bàn giao từ Phase 3 sang Phase 4
 
-> **Đã triển khai theo yêu cầu riêng ngày 23/10/2026.** Xem [kết quả Phase 4](phase_results/phase-4.md). Nội dung dưới giữ nguyên như hợp đồng/bàn giao trước code; “chưa triển khai” mô tả mốc chuẩn bị.
+> **Tài liệu lịch sử trước triển khai.** Phase 0–4 và cả 9 sửa PR #4 đã có trong code tại `67e1af2` (đối chiếu 23/10/2026). Xem [hiện trạng](README.md) và [review PR #4](phase_results/phase-4-pr-review.md). Nội dung bên dưới giữ mốc bàn giao/prompt gốc; không dùng các dòng “chưa triển khai” làm hiện trạng hoặc chạy lại như tác vụ mới.
 
 
 Ngày chốt tài liệu: **23/10/2026**, Asia/Ho_Chi_Minh. Phase 0–3 đã triển khai,

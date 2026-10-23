@@ -12,10 +12,11 @@ Backend: `backend/restaurant-management/`, Java 21, Spring Boot 4.1.1, Maven wra
 root package `vn.ueh.kltn.restaurant`. Frontend: `frontend/`, React, TypeScript, Vite, **Bun**.
 Schema is Flyway V1 with exactly 18 domain tables; JPA validates it. Database: existing Neon `main`.
 
-**Phase 0–4 and all reviewed fixes are implemented.** See `docs/phase_results/phase-4.md`
-and `docs/phase_instructions/phase-4-checklist.md` for evidence and limits.
-Phase 4/UI review baseline: branch `feat/phase-4-implement`, HEAD `1b3699f`, clean before PR #4 fixes.
-PR #4 review fixes are uncommitted. Check git status/HEAD before work and preserve all changes.
+**Phase 0–4, the UI review and all nine PR #4 fixes are implemented.**
+Current documentation index: `docs/README.md`; latest QA: `docs/phase_results/phase-4-pr-review.md`.
+Latest inspected code baseline (23/10/2026): branch `feat/phase-4-implement`, commit `67e1af2`,
+which includes the PR #4 fixes. `1b3699f` was the pre-review baseline; the fixes are already committed.
+This records local git state, not PR merge/push status. Check actual git status/HEAD before work and preserve all changes.
 Do not commit, push, reset, stash or discard them without the user's instruction.
 
 - Phase 1: accounts, menu/locked recipe diff, ingredient lookup, floor plan, reservations/opening.
@@ -66,6 +67,10 @@ subtotal and reports; daily SQL receives PaymentMethod enum names. Reconciliatio
 Evidence and live/mock limits: `docs/phase_results/phase-4-pr-review.md`.
 
 Latest verification: **224 backend tests; 36 frontend tests / 111 assertions; both builds/lint PASS**.
+These are recorded PR #4 QA results; documentation synchronization did not rerun QA or write to Neon.
+PR #4: 75 read-only query checks; 9 guarded API rejection groups with 0 records created; 13 real read-only
+browser/API groups. Per Chrome/Edge: 3 picker/polling mock groups (real 30s timers), 30 UI-review groups,
+36 Phase 4 regression groups. Counts/ledger unchanged; keep each evidence set separate.
 Previous UI review: 30 mock checks each Chrome/Edge; 70 read-only Neon query checks; 11 real API/browser
 check groups with unchanged counts/ledger, no domain writes. Evidence: `docs/phase_results/phase-4-review.md`.
 Phase 4: 152 API checks in one resumed fixture chain; 39 read-only query checks before QA;
@@ -77,7 +82,7 @@ Evidence: `docs/phase_results/phase-4.md`; historical test counts are not new ac
 Neon main after Phase 4: QA account9 LOCKED, menu23 DISCONTINUED, ingredient19 INACTIVE stock0kg;
 review ingredient18 still INACTIVE stock8kg. Sessions13/14/15 CLOSED through payment,
 invoices6/7/8, reconciliations1/2/3 confirmed; no reset/history edits. Before/after in the report.
-Latest readiness: 5 free tables/7 ACTIVE; no confirmed booking for 27/10 yet. Inspect again before
+Readiness snapshot at the last QA (23/10/2026): 5 free tables/7 ACTIVE; no confirmed booking for 27/10. Inspect again before
 QA/demo writes. Physical tablet, multi-user load and actual backup/restore remain unverified.
 Do not restore main merely to test documentation.
 

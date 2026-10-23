@@ -7,7 +7,8 @@ Tra cứu tài liệu: [docs/README](docs/README.md).
 ## Trạng thái ngày 23/10/2026
 
 **Phase 0–4 đã triển khai**, giữ toàn bộ sửa review. Branch thực tế
-`feat/phase-4-implement`, HEAD nền `1b3699f`; các sửa review PR #4 chưa commit/push.
+`feat/phase-4-implement`, mốc code đã đối chiếu `67e1af2`, đã gồm cả 9 sửa review PR #4.
+`1b3699f` là mốc trước sửa; trạng thái push/merge PR không được suy ra từ commit local.
 Bằng chứng và giới hạn: [Phase 4](docs/phase_results/phase-4.md),
 [review giao diện Phase 4](docs/phase_results/phase-4-review.md),
 [sửa review PR #4](docs/phase_results/phase-4-pr-review.md),
@@ -23,14 +24,16 @@ Bằng chứng và giới hạn: [Phase 4](docs/phase_results/phase-4.md),
   10 biến động mới nhất; chọn tháng/bảng ngày đến hôm nay, ngày cao nhất và bình quân; top10 giới hạn ở SQL.
   Kiểm kê có nút Khớp tồn hệ thống từng dòng, vẫn giữ D7 và actual ban đầu trống.
 
-| Kiểm chứng mới | Kết quả |
+| Bằng chứng đợt review PR #4 | Kết quả |
 |---|---|
 | Backend clean verify | 224 tests, 0 failures/errors/skipped; JAR PASS |
 | Frontend test/build/lint | 36 tests/111 assertions; PASS/PASS |
 | Review Neon thật chỉ đọc | 75 query checks; 13 nhóm API/browser checks; counts/ledger giữ nguyên |
-| API Phase 4 trước review | 152 API checks trong một chuỗi tiếp tục cùng fixture; query/transaction probe riêng |
-| Browser | Chrome và Edge thật; mock tách riêng; xem số đo và giới hạn trong báo cáo |
-| Restart/reconnect | SSE tự kết nối lại, REST invalidation, seed gates không nhân dữ liệu |
+| API thật kiểm rejection | 9 nhóm checks, POST có guard; tạo 0 bản ghi |
+| Browser mock Chrome/Edge | Mỗi browser: 3 nhóm picker/polling, 30 nhóm UI review, 36 nhóm hồi quy; không cộng số giữa các bộ |
+
+Các kết quả trên thuộc đợt kiểm đã ghi trong báo cáo, không phải QA chạy lại khi đồng bộ tài liệu.
+API152 checks, race/realtime/restart của Phase4 ban đầu được giữ tại báo cáo lịch sử riêng.
 
 Chưa nghiệm thu tablet vật lý, tải nhiều user hoặc thực diễn backup/restore.
 Các báo cáo Phase1–3 là bằng chứng lịch sử, không cộng vào kết quả Phase4.
@@ -122,7 +125,7 @@ QA Phase4 để lại account9 LOCKED, món23 DISCONTINUED, NVL19 INACTIVE tồn
 NVL review18 vẫn INACTIVE tồn8kg. Sessions13/14/15 đã CLOSED qua payment,
 invoices6/7/8 và reconciliations1/2/3 có lịch sử thật. Snapshot cuối:
 19 NVL, 10 receipts, 24 stocktakes, 66 movements, 8 invoices, 15 sessions.
-Readiness: 5 bàn trống/7 ACTIVE, chưa có booking CONFIRMED ngày27/10.
+Snapshot readiness ngày23/10: 5 bàn trống/7 ACTIVE, chưa có booking CONFIRMED ngày27/10.
 Đọc readiness/API lại trước demo; chuẩn bị giao dịch mới qua workflow,
 không refresh ngày seed hay sửa lịch sử.
 
@@ -144,6 +147,9 @@ ghi tác động dữ liệu vào báo cáo, không tự reset hoặc trả ti�
 
 Lệnh/script hiện có:
 
+- [Review PR #4](docs/phase_results/phase-4-pr-review.md): `phase4-pr-review-browser-check.mjs`
+  dùng mock, `phase4-review-live-readonly.mjs` chỉ đọc thật; `phase4-pr-review-api-check.mjs`
+  kiểm request bị từ chối nhưng có POST nên vẫn bắt buộc readiness/guard.
 - [Review Phase 3](docs/phase_results/phase-3-review.md): browser mock và service probe
   (mặc định chỉ đọc; `--writes` cần cờ riêng), query count và concurrency trên fixture review.
 - [Phase 3 ban đầu](docs/phase_results/phase-3.md): `scripts/phase3-api-check.mjs` ghi Neon thật.
@@ -151,8 +157,8 @@ Lệnh/script hiện có:
   `popup-live-browser-check.mjs` chỉ đọc thật.
 
 Các script và lệnh Phase4, trước/sau QA và cách dùng guard/resume nằm trong
-[báo cáo Phase4](docs/phase_results/phase-4.md). Scripts mock không ghi Neon;
-API/live browser/transaction probe có guard và tạo lịch sử thật khi chạy lại.
+[báo cáo Phase4 ban đầu](docs/phase_results/phase-4.md) và [review mới nhất](docs/phase_results/phase-4-pr-review.md).
+Script ghi workflow có guard và tạo lịch sử thật khi chạy lại; script mock/chỉ đọc được ghi rõ trong từng báo cáo.
 
 ## Backup/restore (TR-09)
 
