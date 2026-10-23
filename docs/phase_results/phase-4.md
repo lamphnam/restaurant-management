@@ -3,6 +3,7 @@
 **Bổ sung sau review người dùng:** xem [phase-4-review.md](phase-4-review.md) cho tìm tài khoản,
 báo cáo ngày/tháng và nút khớp tồn. Contract/số tests/SQL bên dưới là mốc nghiệm thu ban đầu;
 review mới nâng summary từ 2 lên 3 SQL, backend211 và frontend33/97, không ghi Neon.
+Các sửa review PR #4 tiếp theo được ghi tại [phase-4-pr-review.md](phase-4-pr-review.md).
 
 Thực hiện **23/10/2026**, Asia/Ho_Chi_Minh. Yêu cầu của chủ dự án cho phép bắt đầu
 code, QA trên Neon main và cập nhật tài liệu; không commit/push.

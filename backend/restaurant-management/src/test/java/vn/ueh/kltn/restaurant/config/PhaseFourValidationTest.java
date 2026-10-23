@@ -20,7 +20,7 @@ class PhaseFourValidationTest {
     private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
     @ParameterizedTest
-    @ValueSource(strings = {"-1", "1.1", "100000000000000"})
+    @ValueSource(strings = {"-1", "1.1", "100.0", "100000000000000"})
     void rejectsInvalidAmount(String amount) {
         assertFalse(
                 validator

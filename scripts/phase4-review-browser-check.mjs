@@ -27,7 +27,7 @@ function summary(url) {
   })
   const sum = (field) => dailyRevenue.reduce((total, day) => total + day[field], 0)
   const systemRevenue = sum('revenue'), invoiceCount = sum('invoiceCount')
-  const calendarDays = Math.round((Date.parse(to) - Date.parse(from)) / 86400000)
+  const calendarDays = Math.max(0, Math.round((Math.min(Date.parse(to), Date.parse('2026-10-23T17:00:00Z')) - Date.parse(from)) / 86400000))
   const peakRevenue = Math.max(0, ...dailyRevenue.map((day) => day.revenue))
   return {
     revenue: { from, to, systemRevenue, invoiceCount, methods: [
@@ -37,7 +37,7 @@ function summary(url) {
     topItems: systemRevenue ? [{ menuItemId: 1, menuItemName: '[QA] Món theo snapshot', quantity: 12, revenue: systemRevenue }] : [],
     dailyRevenue,
     analysis: { averageInvoiceAmount: invoiceCount ? Math.round(systemRevenue / invoiceCount) : 0,
-      averageDailyRevenue: Math.round(systemRevenue / calendarDays), peakRevenue,
+      averageDailyRevenue: calendarDays ? Math.round(systemRevenue / calendarDays) : 0, peakRevenue,
       peakDates: peakRevenue ? dailyRevenue.filter((day) => day.revenue === peakRevenue).map((day) => day.date) : [], activeDays: dailyRevenue.length, calendarDays },
   }
 }
@@ -134,26 +134,28 @@ try {
       await page.goto(`${frontend}/reports`)
       await page.getByRole('button', { name: 'Tháng này', exact: true }).click()
       const daily = page.getByRole('region', { name: 'Doanh thu theo ngày', exact: true })
-      await daily.getByText('31 ngày trong kỳ', { exact: true }).waitFor()
-      assert(state.summaries.some((query) => query.from === '2026-09-30T17:00:00.000Z' && query.to === '2026-10-31T17:00:00.000Z'))
+      await daily.getByText('23 ngày trong kỳ', { exact: true }).waitFor()
+      assert(state.summaries.some((query) => query.from === '2026-09-30T17:00:00.000Z' && query.to === '2026-10-23T17:00:00.000Z'))
       await daily.getByText('05/10/2026 và 1 ngày cùng mức', { exact: true }).waitFor()
       await daily.locator('[data-row-key="2026-10-05"]').getByText('Cao nhất', { exact: true }).waitFor()
       const emptyDay = daily.locator('[data-row-key="2026-10-01"]')
       assert((await emptyDay.innerText()).includes('0'))
-      pass(`${label}: month selection sends Vietnam [start,nextMonth), shows tied peak and zero day`)
+      pass(`${label}: month selection stops today in Vietnam, shows tied peak and elapsed zero day`)
       await daily.locator('.ant-pagination-next button').click()
       await daily.locator('[data-row-key="2026-10-15"]').getByText('Cao nhất', { exact: true }).waitFor()
-      await daily.locator('.ant-pagination-item-4').click()
-      await daily.locator('[data-row-key="2026-10-31"]').waitFor()
-      assert.equal(await daily.locator('tbody tr[data-row-key]').count(), 1)
-      pass(`${label}: daily pagination reaches second peak and October31 correctly`)
+      await daily.locator('.ant-pagination-item-3').click()
+      await daily.locator('[data-row-key="2026-10-23"]').waitFor()
+      assert.equal(await daily.locator('tbody tr[data-row-key]').count(), 3)
+      assert.equal(await daily.locator('[data-row-key="2026-10-24"]').count(), 0)
+      pass(`${label}: daily pagination reaches second peak and stops at October23 without future rows`)
       await page.screenshot({ path: `${output}/reports-${width}.png`, fullPage: true })
       await page.locator('#report-month').fill('02/2028')
       await page.locator('#report-month').press('Enter')
-      await daily.getByText('29 ngày trong kỳ', { exact: true }).waitFor()
+      await daily.getByText('Có hóa đơn: 0/0 ngày', { exact: true }).waitFor()
+      assert.equal(await daily.locator('tbody tr[data-row-key]').count(), 0)
       await page.getByText('Không có dữ liệu hóa đơn trong khoảng này.', { exact: true }).waitFor()
       assert(state.summaries.some((query) => query.from === '2028-01-31T17:00:00.000Z' && query.to === '2028-02-29T17:00:00.000Z'))
-      pass(`${label}: month picker handles leap February and empty period without stale peaks`)
+      pass(`${label}: future leap February has no calendar rows or stale peaks`)
       state.failSummary = true
       await page.getByRole('button', { name: 'Làm mới', exact: true }).click()
       await page.getByText('Không tải được báo cáo doanh thu', { exact: true }).waitFor()

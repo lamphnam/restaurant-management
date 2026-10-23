@@ -17,9 +17,10 @@ Build gồm type-check. Giữ bun.lock trong Git; không đưa credentials/secre
 
 ## Trạng thái 23/10/2026
 
-Phase 0–4 và review đã triển khai. **33 tests / 97 assertions**, build/lint PASS.
+Phase 0–4 và review đã triển khai. **36 tests / 111 assertions**, build/lint PASS.
 Xem [Phase4](../docs/phase_results/phase-4.md) cho mock và app/API/Neon thật tách riêng.
 [Review giao diện](../docs/phase_results/phase-4-review.md): tìm tài khoản, báo cáo ngày/tháng và nút khớp tồn.
+[Review PR #4](../docs/phase_results/phase-4-pr-review.md): chặn ca tương lai, bình quân đến hôm nay và polling đối soát.
 Chrome/Edge và tablet viewport đã kiểm; chưa kiểm tablet vật lý.
 
 | Route | Quyền UI | Hiện trạng |
@@ -74,12 +75,16 @@ kho không có SSE. Mutation kho invalidate prefix inventory; payment invalidate
 - `reconciliationApi` dùng PageResponse chung; `paymentApi.summary` cho OWNER.
 - CASHIER actual ban đầu trống, nhập0 được; đổi khoảng xóa actual/reason đang nhập.
   Preview/submit dùng giờ Việt Nam→UTC; server tính lại khi POST, không nhận tổng/audit.
+  Khoảng mặc định từ đầu ngày đến phút hiện tại; picker khóa ngày/giờ tương lai, backend kiểm Clock.
 - MANAGER mặc định lọc chưa xác nhận; Popconfirm, loading/disable; 409 báo lỗi/refetch.
   Chi tiết mở rộng gồm người lập/quản lý/reason/thời điểm. Không sửa/từ chối/xóa.
+  Danh sách polling30s, không cần SSE event mới.
 - `['reconciliations',{filter,page,size}]`, `['reconciliation-preview',{from,to}]`,
   `['payment-summary',{from,to}]`. Create/confirm invalidate list và preview.
 - OWNER report dùng Statistic/Table; ngày mặc định hôm nay tại Việt Nam, UTC `[start,nextDay)`.
   Có chọn tháng/7 ngày, bảng ngày gồm ngày 0đ, ngày cao nhất (kể cả đồng hạng), bình quân do backend tính.
+  Tháng hiện tại chỉ đến hôm nay; calendarDays từ backend loại ngày chưa tới, khoảng hoàn toàn tương lai có0 ngày.
+  Top món tối đa10 dòng, giới hạn bởi query backend.
   Pickers giữ ngày lịch thông thường để tránh `endOf` của đối tượng timezone bị ảnh hưởng DST trình duyệt.
   `dailyRevenue` thưa; `reportDays` chỉ tạo dòng cho trang lịch đang xem, không cấp phát toàn kỳ dài.
   Khối kho dùng prefix inventory và API cũ, không phụ thuộc kỳ doanh thu; 10 movements mới nhất.

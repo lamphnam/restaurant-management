@@ -11,7 +11,7 @@ const resumeBilling = process.argv.includes('--resume-from-billing')
 const resume = process.argv.includes('--resume-from-recipe') || resumeBilling
 const evidence = resume ? JSON.parse(await readFile(`${output}/results.json`, 'utf8')) : { checkedAt: new Date().toISOString(), results: [], created: [], before: databaseSnapshot() }
 let prefix = `[QA] Phase4 ${Date.now()}`
-const period = { from: '2000-01-01T00:00:00Z', to: '2100-01-01T00:00:00Z' }
+const period = { from: '2000-01-01T00:00:00Z', to: new Date().toISOString() }
 const query = new URLSearchParams(period)
 const check = (value, label) => { assert(value, label); evidence.results.push(label) }
 const save = () => writeFile(`${output}/results.json`, JSON.stringify(evidence, null, 2))
@@ -162,6 +162,8 @@ try {
   check(new Set(movements.items.map((item) => item.movementType)).size === 4 && movements.items.every((item) => item.source && item.performedById && item.occurredAt), 'Checklist 28: all four movement types with source/audit')
   const stock = (await get('OWNER', '/inventory/ingredients')).find((item) => item.id === ingredient.id)
   check(Math.abs(stock.currentStock - movements.items.reduce((sum, item) => sum + item.quantityChange, 0)) < 0.00001 && stock.belowMinStock, 'Checklist 26–27: stock equals ledger and low-stock threshold')
+  period.to = new Date().toISOString()
+  query.set('to', period.to)
   const oldPreview = await call('CASHIER', 'GET', `/reconciliations/preview?${query}`)
   const invoices = await Promise.all([call('CASHIER', 'POST', '/payments', { sessionId, paymentMethod: 'BANK_TRANSFER' }, [200, 409]), call('CASHIER', 'POST', '/payments', { sessionId, paymentMethod: 'CASH' }, [200, 409])])
   check(invoices.filter((item) => item.httpStatus === 200).length === 1, 'Checklist 31: parallel pay creates one Invoice and loser 409')
@@ -175,9 +177,12 @@ try {
   await call('KITCHEN_STAFF', 'PATCH', `/kitchen/items/${second.items[0].id}/complete`, undefined, 409)
 
   console.log('Checking reconciliation D9, confirmation race and reports')
+  // The paid invoice belongs to a later ended interval; never create a future-ended shift.
+  period.to = new Date().toISOString()
+  query.set('to', period.to)
   const reconciliation = await call('CASHIER', 'POST', '/reconciliations', { startTime: period.from, endTime: period.to, actualAmount: 0, differenceReason: prefix, systemRevenue: -1, cashierId: 1, managerId: 1 })
   evidence.reconciliationId = reconciliation.id
-  check(reconciliation.systemRevenue === oldPreview.systemRevenue + invoice.amount && reconciliation.cashierId === auth.CASHIER.account.accountId && reconciliation.managerId === null && reconciliation.difference === -reconciliation.systemRevenue, 'Checklist 33: POST ignores forged totals/actors and recomputes stale preview')
+  check(reconciliation.systemRevenue === oldPreview.systemRevenue + invoice.amount && reconciliation.cashierId === auth.CASHIER.account.accountId && reconciliation.managerId === null && reconciliation.difference === -reconciliation.systemRevenue, 'Checklist 33: POST ignores forged totals/actors and computes the newly ended interval independently')
   const confirmations = await Promise.all([call('MANAGER', 'PATCH', `/reconciliations/${reconciliation.id}/confirm`, undefined, [200, 409]), call('MANAGER', 'PATCH', `/reconciliations/${reconciliation.id}/confirm`, undefined, [200, 409])])
   check(confirmations.filter((item) => item.httpStatus === 200).length === 1, 'Checklist 34: two real concurrent confirms have one success and one 409')
   const confirmed = confirmations.find((item) => item.httpStatus === 200)
@@ -189,7 +194,7 @@ try {
   check(pending.items.some((item) => item.id === overlap.id) && !pending.items.some((item) => item.id === reconciliation.id), 'Pending list filters by manager null')
   const summary = await get('OWNER', `/payments/summary?${query}`)
   const top = summary.topItems.find((item) => item.menuItemId === menu.id)
-  check(summary.revenue.systemRevenue === reconciliation.systemRevenue && summary.revenue.methods.reduce((sum, item) => sum + item.revenue, 0) === summary.revenue.systemRevenue && top.quantity === 3 && top.revenue === 48146, 'Reports: no duplicate Invoice totals; top quantity/READY/snapshot/paid sessions correct')
+  check(summary.revenue.systemRevenue === reconciliation.systemRevenue && summary.revenue.methods.reduce((sum, item) => sum + item.revenue, 0) === summary.revenue.systemRevenue && summary.topItems.length <= 10 && (top ? top.quantity === 3 && top.revenue === 48146 : summary.topItems.length === 10), 'Reports: no duplicate Invoice totals; at most10 top items, with expected QA snapshot when ranked')
   const seatedReservation = await call('MANAGER', 'POST', '/reservations', { tableId: table.id, customerName: `${prefix} Nhận bàn`, customerPhone: '0912345678', guestCount: 1, startTime: new Date(Date.now()).toISOString(), endTime: new Date(Date.now() + 3600000).toISOString(), note: prefix })
   const seated = await call('WAITER', 'POST', '/sessions', { tableId: table.id, reservationId: seatedReservation.id })
   await call('MANAGER', 'PATCH', `/reservations/${seatedReservation.id}/cancel`, undefined, 409)
@@ -197,7 +202,8 @@ try {
   check(seatedDetail.reservation?.id === seatedReservation.id, 'Checklist 12: reservation linked and seated cancellation blocked')
   const zeroInvoice = await call('CASHIER', 'POST', '/payments', { sessionId: seated.sessionId, paymentMethod: 'CASH' })
   check(zeroInvoice.amount === 0, 'D8: empty reservation session bills zero and releases table')
-  const afterZero = await get('OWNER', `/payments/summary?${query}`)
+  const afterZeroQuery = new URLSearchParams({ from: period.from, to: new Date().toISOString() })
+  const afterZero = await get('OWNER', `/payments/summary?${afterZeroQuery}`)
   check(afterZero.revenue.systemRevenue === summary.revenue.systemRevenue && afterZero.revenue.invoiceCount === summary.revenue.invoiceCount + 1, 'Zero Invoice increases count without changing revenue or snapshot')
   const savedReconciliation = (await get('CASHIER', '/reconciliations?confirmed=true&size=100')).items.find((item) => item.id === reconciliation.id)
   check(savedReconciliation.systemRevenue === reconciliation.systemRevenue && savedReconciliation.reconciledAt === reconciliation.reconciledAt, 'Committed reconciliation survives refetch and later invoice')

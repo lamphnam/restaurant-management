@@ -48,6 +48,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -60,6 +61,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class PaymentServiceImpl implements PaymentService {
+
+    private static final int TOP_ITEM_LIMIT = 10;
 
     private final ServiceSessionRepository sessions;
     private final FoodOrderRepository foodOrders;
@@ -100,12 +103,26 @@ public class PaymentServiceImpl implements PaymentService {
         RevenueSummaryResponse revenue = summarizeRevenue(from, to);
         String timezone = properties.timezone();
         ZoneId zone = ZoneId.of(timezone);
-        List<DailyRevenueResponse> daily = invoices.summarizeDailyRevenue(from, to, timezone);
+        List<DailyRevenueResponse> daily =
+                invoices.summarizeDailyRevenue(
+                        from,
+                        to,
+                        timezone,
+                        PaymentMethod.CASH.name(),
+                        PaymentMethod.BANK_TRANSFER.name());
+        Instant now = clock.instant();
+        LocalDate lastDate = to.minusNanos(1).atZone(zone).toLocalDate();
+        LocalDate today = now.atZone(zone).toLocalDate();
+        if (lastDate.isAfter(today)) {
+            lastDate = today;
+        }
         long calendarDays =
-                ChronoUnit.DAYS.between(
-                                from.atZone(zone).toLocalDate(),
-                                to.minusNanos(1).atZone(zone).toLocalDate())
-                        + 1;
+                from.isAfter(now)
+                        ? 0
+                        : Math.max(
+                                0,
+                                ChronoUnit.DAYS.between(from.atZone(zone).toLocalDate(), lastDate)
+                                        + 1);
         BigDecimal peakRevenue =
                 daily.stream()
                         .map(DailyRevenueResponse::revenue)
@@ -127,8 +144,13 @@ public class PaymentServiceImpl implements PaymentService {
                                                 BigDecimal.valueOf(revenue.invoiceCount()),
                                                 0,
                                                 RoundingMode.HALF_UP),
-                        revenue.systemRevenue()
-                                .divide(BigDecimal.valueOf(calendarDays), 0, RoundingMode.HALF_UP),
+                        calendarDays == 0
+                                ? BigDecimal.ZERO
+                                : revenue.systemRevenue()
+                                        .divide(
+                                                BigDecimal.valueOf(calendarDays),
+                                                0,
+                                                RoundingMode.HALF_UP),
                         peakRevenue,
                         peakDates,
                         daily.size(),
@@ -136,7 +158,7 @@ public class PaymentServiceImpl implements PaymentService {
         return new PaymentSummaryResponse(
                 revenue,
                 orderItems.summarizeTopItems(
-                        from, to, List.of(OrderItemStatus.CANCELLED, OrderItemStatus.UNAVAILABLE)),
+                        from, to, OrderItemStatus.NON_BILLABLE, PageRequest.of(0, TOP_ITEM_LIMIT)),
                 daily,
                 analysis);
     }

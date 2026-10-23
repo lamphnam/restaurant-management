@@ -14,8 +14,8 @@ Schema is Flyway V1 with exactly 18 domain tables; JPA validates it. Database: e
 
 **Phase 0–4 and all reviewed fixes are implemented.** See `docs/phase_results/phase-4.md`
 and `docs/phase_instructions/phase-4-checklist.md` for evidence and limits.
-Actual implementation baseline: branch `feat/phase-4-implement`, HEAD `28bd527`, clean at start.
-Phase 4 work is uncommitted. Check git status/HEAD before work and preserve all changes.
+Phase 4/UI review baseline: branch `feat/phase-4-implement`, HEAD `1b3699f`, clean before PR #4 fixes.
+PR #4 review fixes are uncommitted. Check git status/HEAD before work and preserve all changes.
 Do not commit, push, reset, stash or discard them without the user's instruction.
 
 - Phase 1: accounts, menu/locked recipe diff, ingredient lookup, floor plan, reservations/opening.
@@ -57,8 +57,16 @@ to avoid timezone-object endOf/DST errors in browsers outside Vietnam.
 HEAD_CHEF stocktake has an explicit per-row match-stock button, disabled for negative stock;
 copying preserves the displayed actual while backend still recomputes system stock under D7.
 
-Latest verification: **211 backend tests; 33 frontend tests / 97 assertions; both builds/lint PASS**.
-UI review: 30 mock checks each Chrome/Edge; 70 read-only Neon query checks; 11 real API/browser
+PR #4 review: preview/create reject endTime after Clock with400 INVALID_INPUT; never clamp shifts.
+Cashier defaults to today midnight/current minute and disables future dates/times. DTO alone validates
+actual/reason; service checks server revenue overflow with a specific message. Report calendarDays
+stops at Clock's configured-zone today (future-only intervals:0 days/average); current month ends today.
+Top10 is limited in SQL via Pageable with an Invoice join. OrderItemStatus.NON_BILLABLE is shared by
+subtotal and reports; daily SQL receives PaymentMethod enum names. Reconciliation lists poll30s.
+Evidence and live/mock limits: `docs/phase_results/phase-4-pr-review.md`.
+
+Latest verification: **224 backend tests; 36 frontend tests / 111 assertions; both builds/lint PASS**.
+Previous UI review: 30 mock checks each Chrome/Edge; 70 read-only Neon query checks; 11 real API/browser
 check groups with unchanged counts/ledger, no domain writes. Evidence: `docs/phase_results/phase-4-review.md`.
 Phase 4: 152 API checks in one resumed fixture chain; 39 read-only query checks before QA;
 60 query/held-transaction checks afterward (not additive); 36 mock UI checks each Chrome/Edge;

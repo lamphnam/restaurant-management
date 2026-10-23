@@ -1,6 +1,13 @@
 import dayjs from 'dayjs'
-import { APP_TIMEZONE } from './time'
+import type { Dayjs } from 'dayjs'
+import { APP_TIMEZONE, nowInAppZone } from './time'
 import type { DailyRevenue } from '../types/reconciliation'
+
+export function reportMonthRange(value: Dayjs, today = dayjs(nowInAppZone().format('YYYY-MM-DD'))): [Dayjs, Dayjs] {
+  const first = dayjs(value.format('YYYY-MM-DD')).startOf('month')
+  const last = first.endOf('month').startOf('day')
+  return [first, !first.isAfter(today, 'day') && last.isAfter(today, 'day') ? today : last]
+}
 
 // Render only one calendar page; long date ranges do not allocate a row for every day.
 export function dailyRevenuePage(daily: DailyRevenue[], firstDate: string, calendarDays: number, page: number, pageSize: number): DailyRevenue[] {

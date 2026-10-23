@@ -1,5 +1,14 @@
 import { expect, test } from 'bun:test'
-import { dailyRevenuePage } from '../src/utils/reportDays'
+import dayjs from 'dayjs'
+import { dailyRevenuePage, reportMonthRange } from '../src/utils/reportDays'
+
+test('current month ends today while a completed month retains its last day', () => {
+  const today = dayjs('2026-10-23')
+  expect(reportMonthRange(today, today).map((date) => date.format('YYYY-MM-DD'))).toEqual(['2026-10-01', '2026-10-23'])
+  expect(reportMonthRange(dayjs('2026-09-15'), today).map((date) => date.format('YYYY-MM-DD'))).toEqual(['2026-09-01', '2026-09-30'])
+  expect(reportMonthRange(dayjs('2028-02-01'), today).map((date) => date.format('YYYY-MM-DD'))).toEqual(['2028-02-01', '2028-02-29'])
+  expect(dailyRevenuePage([], '2026-11-01', 0, 1, 10)).toEqual([])
+})
 
 test('daily report fills missing dates with zero without losing invoice counts or method amounts', () => {
   const day = { date: '2026-10-02', invoiceCount: 3, revenue: 123000, cashRevenue: 100000, bankTransferRevenue: 23000 }

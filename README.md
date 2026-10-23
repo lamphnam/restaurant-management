@@ -7,9 +7,10 @@ Tra cứu tài liệu: [docs/README](docs/README.md).
 ## Trạng thái ngày 23/10/2026
 
 **Phase 0–4 đã triển khai**, giữ toàn bộ sửa review. Branch thực tế
-`feat/phase-4-implement`, HEAD nền `28bd527`; thay đổi Phase 4 chưa commit/push.
+`feat/phase-4-implement`, HEAD nền `1b3699f`; các sửa review PR #4 chưa commit/push.
 Bằng chứng và giới hạn: [Phase 4](docs/phase_results/phase-4.md),
 [review giao diện Phase 4](docs/phase_results/phase-4-review.md),
+[sửa review PR #4](docs/phase_results/phase-4-pr-review.md),
 [checklist 1–36](docs/phase_instructions/phase-4-checklist.md), [TRACEABILITY](docs/TRACEABILITY.md).
 
 - JWT/6 vai trò, tài khoản có tìm tên/SĐT/lọc vai trò/trạng thái, thực đơn/định lượng, sơ đồ bàn, đặt bàn và mở phiên.
@@ -17,16 +18,16 @@ Bằng chứng và giới hạn: [Phase 4](docs/phase_results/phase-4.md),
 - Thanh toán/hóa đơn theo snapshot, READY/0đ, đóng phiên/trả bàn atomic.
 - Kho: danh mục/D12, nhập/lô/HSD, SUM ledger, kiểm kê D7, xuất hủy và lịch sử.
 - Đối soát CASHIER lập/MANAGER xác nhận: Invoice theo `[start,end)`, POST tính lại,
-  giữ snapshot; confirm có khóa dòng, lặp/race trả409 theo §12.18.
+  giữ snapshot; chặn ca tương lai theo Clock; confirm có khóa dòng, lặp/race trả409 theo §12.18; danh sách polling30s.
 - Báo cáo OWNER: doanh thu/count/phương thức/top món, tồn thấp/lô chú ý hiện tại,
-  10 biến động mới nhất; chọn tháng, bảng từng ngày, ngày cao nhất và bình quân.
+  10 biến động mới nhất; chọn tháng/bảng ngày đến hôm nay, ngày cao nhất và bình quân; top10 giới hạn ở SQL.
   Kiểm kê có nút Khớp tồn hệ thống từng dòng, vẫn giữ D7 và actual ban đầu trống.
 
 | Kiểm chứng mới | Kết quả |
 |---|---|
-| Backend clean verify | 211 tests, 0 failures/errors/skipped; JAR PASS |
-| Frontend test/build/lint | 33 tests/97 assertions; PASS/PASS |
-| Review Neon thật chỉ đọc | 70 query checks; 11 nhóm API/browser checks; counts/ledger giữ nguyên |
+| Backend clean verify | 224 tests, 0 failures/errors/skipped; JAR PASS |
+| Frontend test/build/lint | 36 tests/111 assertions; PASS/PASS |
+| Review Neon thật chỉ đọc | 75 query checks; 13 nhóm API/browser checks; counts/ledger giữ nguyên |
 | API Phase 4 trước review | 152 API checks trong một chuỗi tiếp tục cùng fixture; query/transaction probe riêng |
 | Browser | Chrome và Edge thật; mock tách riêng; xem số đo và giới hạn trong báo cáo |
 | Restart/reconnect | SSE tự kết nối lại, REST invalidation, seed gates không nhân dữ liệu |
@@ -68,7 +69,7 @@ và Authorize để gọi API. Ngoài local, Swagger tắt. Auth stateless, khô
 .\mvnw.cmd clean verify
 ```
 
-JUnit/Mockito không cần DB; `contextLoads()` mặc định đã bỏ. Baseline mới nhất là 211 tests,
+JUnit/Mockito không cần DB; `contextLoads()` mặc định đã bỏ. Baseline mới nhất là 224 tests,
 không phải chỉ 6 tests: §21.1 là sáu **nhóm ca bắt buộc**. Các thay đổi sau phải giữ toàn bộ baseline.
 
 Nếu môi trường sandbox không ghi được cache mặc định, dùng cache workspace đã có:

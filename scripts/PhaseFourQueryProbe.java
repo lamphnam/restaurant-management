@@ -16,7 +16,14 @@ import vn.ueh.kltn.restaurant.dto.response.RevenueSummaryResponse;
 import vn.ueh.kltn.restaurant.dto.response.TopMenuItemResponse;
 import vn.ueh.kltn.restaurant.dto.response.DailyRevenueResponse;
 import vn.ueh.kltn.restaurant.repository.InvoiceRepository;
+import vn.ueh.kltn.restaurant.repository.OrderItemRepository;
+import vn.ueh.kltn.restaurant.enums.OrderItemStatus;
+import org.springframework.data.domain.PageRequest;
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.time.ZoneId;
+import vn.ueh.kltn.restaurant.enums.PaymentMethod;
 import java.util.ArrayList;
 import java.util.TreeMap;
 import vn.ueh.kltn.restaurant.service.InventoryService;
@@ -84,7 +91,24 @@ public class PhaseFourQueryProbe {
                     (select 1 from invoice v where v.session_id=o.session_id and v.paid_at>=? and v.paid_at<?)
                     group by i.menu_item_id,m.name order by sum(i.quantity) desc,i.menu_item_id
                     """, (row, n) -> new TopMenuItemResponse(row.getLong(1), row.getString(2), row.getLong(3), row.getBigDecimal(4)), Timestamp.from(from), Timestamp.from(to));
-            check(payments.summary(from, to).topItems().equals(expected), "top quantity/status/Invoice.paidAt/snapshot match SQL independently");
+            check(payments.summary(from, to).topItems().equals(expected.stream().limit(10).toList()), "top10 quantity/status/Invoice.paidAt/snapshot match SQL independently");
+            OrderItemRepository items = context.getBean(OrderItemRepository.class);
+            check(items.summarizeTopItems(from, to, OrderItemStatus.NON_BILLABLE, PageRequest.of(0, 1)).equals(expected.stream().limit(1).toList()), "top query applies requested limit1 in SQL");
+            check(items.summarizeTopItems(from, to, OrderItemStatus.NON_BILLABLE, PageRequest.of(1, 1)).equals(expected.stream().skip(1).limit(1).toList()), "top query honors offset and stable ordering");
+            Clock clock = context.getBean(Clock.class);
+            LocalDate today = clock.instant().atZone(ZoneId.of("Asia/Ho_Chi_Minh")).toLocalDate();
+            long elapsedDays = ChronoUnit.DAYS.between(from.atZone(ZoneId.of("Asia/Ho_Chi_Minh")).toLocalDate(), today) + 1;
+            check(payments.summary(from, to).analysis().calendarDays() == elapsedDays, "summary average excludes future calendar days");
+            Instant futureStart = today.plusMonths(2).atStartOfDay(ZoneId.of("Asia/Ho_Chi_Minh")).toInstant();
+            check(payments.summary(futureStart, futureStart.plusSeconds(86400)).analysis().calendarDays() == 0
+                    && payments.summary(futureStart, futureStart.plusSeconds(86400)).analysis().averageDailyRevenue().signum() == 0,
+                    "future-only report has zero days and average");
+            try {
+                reconciliations.preview(from, clock.instant().plusSeconds(3600));
+                throw new AssertionError("future preview must be rejected");
+            } catch (BusinessException error) {
+                check(error.getErrorCode() == ErrorCode.INVALID_INPUT, "real reconciliation preview rejects future end");
+            }
             checkDailyRevenue(jdbc, context.getBean(InvoiceRepository.class), payments, from, to);
             queryCount(stats, "revenue preview", 1, () -> payments.summarizeRevenue(from, to));
             queryCount(stats, "summary", 3, () -> payments.summary(from, to));
@@ -121,16 +145,16 @@ public class PhaseFourQueryProbe {
                     rows.stream().map(PaidInvoice::amount).reduce(BigDecimal.ZERO, BigDecimal::add),
                     rows.stream().filter(row -> row.method().equals("CASH")).map(PaidInvoice::amount).reduce(BigDecimal.ZERO, BigDecimal::add),
                     rows.stream().filter(row -> row.method().equals("BANK_TRANSFER")).map(PaidInvoice::amount).reduce(BigDecimal.ZERO, BigDecimal::add))));
-            check(invoices.summarizeDailyRevenue(from, to, timezone).equals(expected), "daily native projection matches raw invoices grouped by Java timezone " + timezone);
+            check(invoices.summarizeDailyRevenue(from, to, timezone, PaymentMethod.CASH.name(), PaymentMethod.BANK_TRANSFER.name()).equals(expected), "daily native projection matches raw invoices grouped by Java timezone " + timezone);
             if (timezone.equals("Asia/Ho_Chi_Minh")) {
                 check(payments.summary(from, to).dailyRevenue().equals(expected), "summary daily rows use configured Vietnam timezone");
             }
         }
         for (PaidInvoice invoice : paid) {
             Instant exact = invoice.paidAt();
-            List<DailyRevenueResponse> included = invoices.summarizeDailyRevenue(exact, exact.plusNanos(1000), "Asia/Ho_Chi_Minh");
+            List<DailyRevenueResponse> included = invoices.summarizeDailyRevenue(exact, exact.plusNanos(1000), "Asia/Ho_Chi_Minh", PaymentMethod.CASH.name(), PaymentMethod.BANK_TRANSFER.name());
             check(included.stream().mapToLong(DailyRevenueResponse::invoiceCount).sum() >= 1, "daily aggregate includes paidAt exactly at start");
-            List<DailyRevenueResponse> excluded = invoices.summarizeDailyRevenue(exact.minusNanos(1000), exact, "Asia/Ho_Chi_Minh");
+            List<DailyRevenueResponse> excluded = invoices.summarizeDailyRevenue(exact.minusNanos(1000), exact, "Asia/Ho_Chi_Minh", PaymentMethod.CASH.name(), PaymentMethod.BANK_TRANSFER.name());
             long expectedCount = paid.stream().filter(row -> !row.paidAt().isBefore(exact.minusNanos(1000)) && row.paidAt().isBefore(exact)).count();
             check(excluded.stream().mapToLong(DailyRevenueResponse::invoiceCount).sum() == expectedCount, "daily aggregate excludes paidAt exactly at end");
         }

@@ -7,7 +7,7 @@ Tên Việt (khóa luận) ↔ tên code: xem Phụ lục A của spec.
 Cột *Phase* là phase dự kiến hiện thực (docs/phase_instructions). Cập nhật cột *Hiện trạng* khi xong từng phase.
 
 Mốc 23/10/2026: **Phase0–4 đã triển khai**, giữ sửa review Phase1–3.
-[Review Phase4](phase_results/phase-4-review.md): 211 backend tests, 33 frontend/97 assertions,
+[Review PR #4](phase_results/phase-4-pr-review.md): 224 backend tests, 36 frontend/111 assertions,
 hai build/lint PASS; API/Neon, Chrome/Edge, realtime/restart và mock được báo riêng.
 [Checklist1–36](phase_instructions/phase-4-checklist.md) ghi bằng chứng từng dòng.
 TR-09 restore, thiết bị tablet thật và benchmark nhiều user chưa nghiệm thu.
@@ -260,3 +260,16 @@ Phạm vi FR-10/17 tiếp tục chờ Phase 4. Chưa commit/push.
 - Kiểm: backend211 tests, frontend33/97, builds/lint PASS; 30 nhóm UI mock mỗi Chrome/Edge,
   70 query checks Neon chỉ đọc, 11 nhóm API/browser thật chỉ đọc; hồi quy Phase4/stocktake/popup riêng.
   [Báo cáo review](phase_results/phase-4-review.md) phân biệt mock/thật và các giới hạn.
+
+## 15. Review PR #4 — 23/10/2026
+
+- FR-10/UC11.2: chặn preview/create ca tương lai bằng Clock, mặc định UI đến hiện tại,
+  khóa future date/time; validation request ở DTO, message riêng cho aggregate vượt giới hạn.
+  Manager/cashier list polling30s, giữ confirm lock/409/snapshot.
+- FR-17/UC6.1: bình quân/calendarDays chỉ đến hôm nay theo Clock/timezone, khoảng hoàn toàn
+  tương lai trả0 ngày/0 bình quân; preset tháng hiện tại đến hôm nay, không sinh dòng tương lai.
+- BR-08/UC11.1: `OrderItemStatus.NON_BILLABLE` chung cho subtotal và report;
+  top10 giới hạn qua Pageable/Invoice join, daily methods từ enum parameters; summary3 SQL.
+- Backend224, frontend36/111, builds/lint PASS;75 query checks chỉ đọc,9 nhóm API kiểm rejection,
+  13 nhóm live read-only và picker/polling mock riêng. Không tạo/sửa bản ghi nghiệp vụ.
+- [Bằng chứng review PR #4](phase_results/phase-4-pr-review.md) nêu từng mục1–9 và phần chưa kiểm.

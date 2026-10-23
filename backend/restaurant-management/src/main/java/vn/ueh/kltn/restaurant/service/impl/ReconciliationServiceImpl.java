@@ -39,19 +39,22 @@ public class ReconciliationServiceImpl implements ReconciliationService {
 
     @Override
     public RevenueSummaryResponse preview(Instant from, Instant to) {
+        requireEndedShift(to, clock.instant());
         return payments.summarizeRevenue(from, to);
     }
 
     @Override
     @Transactional
     public ReconciliationResponse create(CreateReconciliationRequest request) {
-        requireMoney(request.actualAmount());
-        if (request.differenceReason() != null && request.differenceReason().length() > 500) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT, "Lý do không quá 500 ký tự");
-        }
+        Instant now = clock.instant();
+        requireEndedShift(request.endTime(), now);
         RevenueSummaryResponse revenue =
                 payments.summarizeRevenue(request.startTime(), request.endTime());
-        requireMoney(revenue.systemRevenue());
+        if (revenue.systemRevenue().compareTo(new BigDecimal("99999999999999")) > 0) {
+            throw new BusinessException(
+                    ErrorCode.INVALID_INPUT,
+                    "Doanh thu hệ thống vượt giới hạn lưu trữ, vui lòng chia nhỏ khoảng thời gian");
+        }
         RevenueReconciliation reconciliation =
                 new RevenueReconciliation(
                         actor(),
@@ -60,7 +63,7 @@ public class ReconciliationServiceImpl implements ReconciliationService {
                         revenue.systemRevenue(),
                         request.actualAmount(),
                         request.differenceReason(),
-                        clock.instant());
+                        now);
         return ReconciliationMapper.toResponse(reconciliations.save(reconciliation));
     }
 
@@ -98,14 +101,10 @@ public class ReconciliationServiceImpl implements ReconciliationService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
     }
 
-    private void requireMoney(BigDecimal amount) {
-        if (amount == null
-                || amount.signum() < 0
-                || amount.stripTrailingZeros().scale() > 0
-                || amount.compareTo(new BigDecimal("99999999999999")) > 0) {
+    private void requireEndedShift(Instant endTime, Instant now) {
+        if (endTime != null && endTime.isAfter(now)) {
             throw new BusinessException(
-                    ErrorCode.INVALID_INPUT,
-                    "Số tiền phải không âm, là số nguyên và tối đa 14 chữ số");
+                    ErrorCode.INVALID_INPUT, "Thời điểm kết thúc ca không được ở tương lai");
         }
     }
 }

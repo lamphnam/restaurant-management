@@ -33,7 +33,7 @@ export function DailyRevenueSection({ daily, analysis, firstDate }: { daily: Dai
       </Card></Col>
     </Row>
     <div><Typography.Title level={4} style={{ marginBottom: 8 }}>Doanh thu theo ngày</Typography.Title>
-      <Typography.Text type="secondary">Ngày không có hóa đơn hiển thị 0đ. Số bình quân làm tròn đến đồng.</Typography.Text>
+      <Typography.Text type="secondary">Chỉ tính các ngày đến hôm nay. Ngày không có hóa đơn hiển thị 0đ. Số bình quân làm tròn đến đồng.</Typography.Text>
     </div>
     <Table<DailyRevenue> rowKey="date" dataSource={dailyRevenuePage(daily, firstDate, analysis.calendarDays, page, size)} scroll={{ x: 740 }}
       locale={{ emptyText: 'Không có dữ liệu' }}

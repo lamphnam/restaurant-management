@@ -16,9 +16,10 @@
 > Ưu tiên cao nhất vẫn là **đúng nghiệp vụ khóa luận**, đơn giản, chạy ổn định, dễ demo, truy vết được Requirement → Use Case → dữ liệu → code.
 
 > **Mốc hiện thực 23/10/2026:** Phase 0–4 và các sửa review đã có trong code.
-> Sau review giao diện Phase 4: 211 backend tests, 33 frontend tests / 97 assertions, hai build/lint PASS.
+> Sau review PR #4: 224 backend tests, 36 frontend tests / 111 assertions, hai build/lint PASS.
 > Bằng chứng thật, mock và giới hạn: [báo cáo Phase 4](docs/phase_results/phase-4.md),
 > [review báo cáo/tìm tài khoản/kiểm kê](docs/phase_results/phase-4-review.md),
+> [sửa review PR #4](docs/phase_results/phase-4-pr-review.md),
 > [checklist 1–36](docs/phase_instructions/phase-4-checklist.md).
 > Chưa nghiệm thu tablet vật lý, tải nhiều user hoặc thực diễn backup/restore.
 > Lịch §22 là kế hoạch gốc; không commit/push hoặc mở rộng phạm vi khi chưa được giao.
@@ -993,23 +994,31 @@ Doanh thu luôn lấy từ `Invoice`; không có bảng doanh thu.
 
 ## 12.18 UC11.2 — Đối soát cuối ca (CASHIER lập, MANAGER xác nhận)
 1. Thu ngân chọn khoảng thời gian ca.
+   Preview và lập mới yêu cầu `endTime <= Clock.instant()`; nếu ở tương lai trả400 INVALID_INPUT,
+   “Thời điểm kết thúc ca không được ở tương lai”, không tự kẹp khoảng.
+   UI mặc định đầu ngày hôm nay đến phút hiện tại theo giờ Việt Nam, khóa ngày/giờ tương lai.
 2. Xem trước: số hóa đơn, `systemRevenue`, tách tiền mặt/chuyển khoản.
 3. Nhập `actualAmount`; UI hiện chênh lệch = `actualAmount − systemRevenue`; nhập `differenceReason` nếu xác định được.
 4. Lưu: backend tính lại `systemRevenue`, `reconciledAt = now`, `managerId = NULL` (D9).
+   DTO/controller validate actual/reason; service kiểm tra thời điểm ca và tổng do server tính.
+   Nếu tổng vượt NUMERIC(14,0), báo “Doanh thu hệ thống vượt giới hạn lưu trữ, vui lòng chia nhỏ khoảng thời gian”.
 5. Quản lý xem danh sách “Chưa xác nhận” và bấm xác nhận → `confirm(manager)` gán `managerId`. Đã xác nhận rồi → 409.
+   Danh sách đối soát polling30s, không thêm event SSE.
 6. Không ghi doanh thu lần hai.
 
 ## 12.19 UC6.1 + FR-17 — Báo cáo (OWNER)
 Một trang, chọn khoảng thời gian (mặc định hôm nay):
 - doanh thu, số hóa đơn, doanh thu theo phương thức;
-- Review chủ dự án 23/10/2026: chọn nhanh tháng, hôm nay/7 ngày qua/tháng này;
+- Review chủ dự án 23/10/2026: chọn nhanh tháng, hôm nay/7 ngày qua/tháng này (tháng hiện tại kết thúc hôm nay);
   bảng từng ngày theo múi giờ ứng dụng, số hóa đơn/tiền mặt/chuyển khoản/doanh thu,
   ngày không có hóa đơn hiển thị 0, phân trang lịch;
 - ngày doanh thu cao nhất (giữ tất cả ngày đồng hạng khi doanh thu >0), bình quân/hóa đơn
   (kể cả hóa đơn 0đ), bình quân/ngày lịch trong kỳ và số ngày có hóa đơn.
   Backend tính các chỉ số; số bình quân làm tròn HALF_UP đến đồng chỉ để hiển thị.
-  Khoảng API bất kỳ tính số ngày lịch có giao với `[from,to)`, theo timezone cấu hình;
-- top món bán: Σ `quantity` của chi tiết không `CANCELLED`/`UNAVAILABLE`, thuộc phiên có `Invoice` trong khoảng;
+  Khoảng API bất kỳ tính số ngày lịch có giao với `[from,to)` đến tối đa hôm nay theo Clock/timezone cấu hình.
+  Khoảng hoàn toàn tương lai trả0 ngày/0 bình quân; không sinh dòng lịch cho ngày tương lai;
+- top10 món bán: Σ `quantity` của chi tiết không `CANCELLED`/`UNAVAILABLE`, thuộc phiên có `Invoice` trong khoảng;
+  repository nhận Pageable, giới hạn tại SQL. Quy tắc loại trạng thái dùng chung `OrderItemStatus.NON_BILLABLE` với subtotal;
 - NVL tồn thấp, lô cần chú ý, 10 biến động gần nhất;
 - trạng thái “Không có dữ liệu” khi rỗng.
 
@@ -1020,6 +1029,7 @@ sắp ngày tăng dần) và `analysis`. Mỗi dòng ngày gồm `date`, `invoic
 `averageDailyRevenue`, `peakRevenue`, `peakDates`, `activeDays`, `calendarDays`.
 Frontend bổ sung ngày trống cho trang lịch đang xem, không tính lại các chỉ số tài chính.
 Ba aggregate chạy cùng transaction read-only REPEATABLE_READ; tất cả lọc Invoice `paidAt >=from AND paidAt <to`.
+Daily query nhận tên phương thức từ PaymentMethod enum qua tham số.
 
 ---
 

@@ -38,8 +38,8 @@ public interface InvoiceRepository
                     """
                     select to_char(paid_at at time zone :timezone, 'YYYY-MM-DD') as date,
                            count(*) as invoice_count, sum(amount) as revenue,
-                           sum(case when payment_method = 'CASH' then amount else 0 end) as cash_revenue,
-                           sum(case when payment_method = 'BANK_TRANSFER' then amount else 0 end) as bank_transfer_revenue
+                           sum(case when payment_method = :cashMethod then amount else 0 end) as cash_revenue,
+                           sum(case when payment_method = :bankTransferMethod then amount else 0 end) as bank_transfer_revenue
                     from invoice where paid_at >= :from and paid_at < :to
                     group by 1 order by 1
                     """,
@@ -47,7 +47,9 @@ public interface InvoiceRepository
     List<DailyRevenueResponse> summarizeDailyRevenue(
             @Param("from") Instant from,
             @Param("to") Instant to,
-            @Param("timezone") String timezone);
+            @Param("timezone") String timezone,
+            @Param("cashMethod") String cashMethod,
+            @Param("bankTransferMethod") String bankTransferMethod);
 
     @Query(
             "select i from Invoice i join fetch i.session s join fetch s.table t join fetch"

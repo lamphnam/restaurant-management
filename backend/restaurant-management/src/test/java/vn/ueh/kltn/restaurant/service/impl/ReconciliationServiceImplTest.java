@@ -10,6 +10,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import static vn.ueh.kltn.restaurant.TestFixtures.CLOCK;
@@ -57,19 +58,19 @@ class ReconciliationServiceImplTest {
     @Test
     void createRecomputesAfterPreviewAndKeepsSnapshotActorAndClock() {
         actor();
-        when(payments.summarizeRevenue(NOW, NOW.plusSeconds(60)))
+        when(payments.summarizeRevenue(NOW.minusSeconds(60), NOW))
                 .thenReturn(
                         new RevenueSummaryResponse(
-                                NOW, NOW.plusSeconds(60), 1, new BigDecimal("100"), List.of()),
+                                NOW.minusSeconds(60), NOW, 1, new BigDecimal("100"), List.of()),
                         new RevenueSummaryResponse(
-                                NOW, NOW.plusSeconds(60), 2, new BigDecimal("200"), List.of()));
+                                NOW.minusSeconds(60), NOW, 2, new BigDecimal("200"), List.of()));
         when(repository.save(any())).thenAnswer(call -> id(call.getArgument(0), 7L));
         assertEquals(
-                new BigDecimal("100"), service.preview(NOW, NOW.plusSeconds(60)).systemRevenue());
+                new BigDecimal("100"), service.preview(NOW.minusSeconds(60), NOW).systemRevenue());
         ReconciliationResponse response =
                 service.create(
                         new CreateReconciliationRequest(
-                                NOW, NOW.plusSeconds(60), BigDecimal.ZERO, null));
+                                NOW.minusSeconds(60), NOW, BigDecimal.ZERO, null));
         assertEquals(new BigDecimal("200"), response.systemRevenue());
         assertEquals(new BigDecimal("-200"), response.difference());
         assertEquals(2L, response.cashierId());
@@ -80,53 +81,56 @@ class ReconciliationServiceImplTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"-1", "0.1", "100000000000000"})
-    void rejectsMoneyOutsideSchemaWithoutSaving(String actual) {
-        assertEquals(
-                ErrorCode.INVALID_INPUT,
+    @ValueSource(longs = {1, 1_000, 3_600_000_000_000L})
+    void rejectsFutureShiftBeforeAnyQueryOrSave(long nanos) {
+        BusinessException error =
                 assertThrows(
-                                BusinessException.class,
-                                () ->
-                                        service.create(
-                                                new CreateReconciliationRequest(
-                                                        NOW,
-                                                        NOW.plusSeconds(60),
-                                                        new BigDecimal(actual),
-                                                        null)))
-                        .getErrorCode());
-        verify(repository, never()).save(any());
+                        BusinessException.class,
+                        () ->
+                                service.create(
+                                        new CreateReconciliationRequest(
+                                                NOW.minusSeconds(60),
+                                                NOW.plusNanos(nanos),
+                                                BigDecimal.ZERO,
+                                                null)));
+        assertEquals(ErrorCode.INVALID_INPUT, error.getErrorCode());
+        assertEquals("Thời điểm kết thúc ca không được ở tương lai", error.getMessage());
+        verifyNoInteractions(payments, repository, accounts, user);
+    }
+
+    @ParameterizedTest
+    @ValueSource(longs = {1, 1_000, 3_600_000_000_000L})
+    void rejectsFuturePreviewUsingTheSameClock(long nanos) {
+        BusinessException error =
+                assertThrows(
+                        BusinessException.class,
+                        () -> service.preview(NOW.minusSeconds(60), NOW.plusNanos(nanos)));
+        assertEquals(ErrorCode.INVALID_INPUT, error.getErrorCode());
+        assertEquals("Thời điểm kết thúc ca không được ở tương lai", error.getMessage());
+        verifyNoInteractions(payments, repository);
     }
 
     @Test
     void rejectsAggregateOverflowWithoutRoundingOrSaving() {
-        when(payments.summarizeRevenue(NOW, NOW.plusSeconds(60)))
+        when(payments.summarizeRevenue(NOW.minusSeconds(60), NOW))
                 .thenReturn(
                         new RevenueSummaryResponse(
+                                NOW.minusSeconds(60),
                                 NOW,
-                                NOW.plusSeconds(60),
                                 2,
                                 new BigDecimal("100000000000000"),
                                 List.of()));
-        assertThrows(
-                BusinessException.class,
-                () ->
-                        service.create(
-                                new CreateReconciliationRequest(
-                                        NOW, NOW.plusSeconds(60), BigDecimal.ZERO, null)));
-        verify(repository, never()).save(any());
-    }
-
-    @Test
-    void rejectsLongReasonBeforeSaving() {
-        assertThrows(
-                BusinessException.class,
-                () ->
-                        service.create(
-                                new CreateReconciliationRequest(
-                                        NOW,
-                                        NOW.plusSeconds(60),
-                                        BigDecimal.ZERO,
-                                        "x".repeat(501))));
+        BusinessException error =
+                assertThrows(
+                        BusinessException.class,
+                        () ->
+                                service.create(
+                                        new CreateReconciliationRequest(
+                                                NOW.minusSeconds(60), NOW, BigDecimal.ZERO, null)));
+        assertEquals(ErrorCode.INVALID_INPUT, error.getErrorCode());
+        assertEquals(
+                "Doanh thu hệ thống vượt giới hạn lưu trữ, vui lòng chia nhỏ khoảng thời gian",
+                error.getMessage());
         verify(repository, never()).save(any());
     }
 

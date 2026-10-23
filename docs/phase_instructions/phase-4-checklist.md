@@ -10,6 +10,8 @@ Không reset, sửa paidAt/ledger hoặc restore main.
 Review giao diện sau nghiệm thu: [phase-4-review.md](../phase_results/phase-4-review.md),
 gắn FR-01/UC4 (tìm tài khoản), FR-14/UC10.1 (khớp tồn) và FR-17/UC6.1 (ngày/tháng).
 Không coi các ca review chỉ đọc/mock là chạy lại toàn bộ nghiệp vụ ghi checklist 1–36.
+Review PR #4: [phase-4-pr-review.md](../phase_results/phase-4-pr-review.md), bổ sung biên Clock,
+chặn ca tương lai, bình quân đến hôm nay, top10 và polling30s; không ghi đè bằng chứng cũ.
 
 Mã bằng chứng:
 - **API**: `scripts/phase4-api-check.mjs`, `.cache/phase4-api/results.json` (152 checks, cùng fixture được tiếp tục).

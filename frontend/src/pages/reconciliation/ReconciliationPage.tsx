@@ -9,7 +9,8 @@ import { MoneyText } from '../../components/MoneyText'
 import { RevenueStats } from '../../components/RevenueStats'
 import { useApiFeedback } from '../../hooks/useApiFeedback'
 import type { CreateReconciliationPayload, Reconciliation } from '../../types/reconciliation'
-import { formatTime, nowInAppZone, toInstant } from '../../utils/time'
+import { formatTime, toInstant } from '../../utils/time'
+import { initialReconciliationRange, isFutureReconciliationDate, reconciliationDisabledTime } from '../../utils/reconciliationTime'
 
 type ActualForm = Pick<CreateReconciliationPayload, 'actualAmount' | 'differenceReason'>
 
@@ -20,21 +21,23 @@ export default function ReconciliationPage() {
   const { report, message } = useApiFeedback()
   const [form] = Form.useForm<ActualForm>()
   const actual = Form.useWatch('actualAmount', form)
-  const [range, setRange] = useState<[Dayjs, Dayjs]>(() => [nowInAppZone().startOf('day'), nowInAppZone().startOf('day').add(1, 'day')])
+  const [range, setRange] = useState<[Dayjs, Dayjs]>(initialReconciliationRange)
   const [reviewOpen, setReviewOpen] = useState(false)
   const [filter, setFilter] = useState(isCashier ? 'all' : 'pending')
   const [page, setPage] = useState(0)
   const [size, setSize] = useState(20)
   const from = toInstant(range[0])
   const to = toInstant(range[1])
+  const validRange = from < to
   const preview = useQuery({
     queryKey: ['reconciliation-preview', { from, to }],
     queryFn: ({ signal }) => reconciliationApi.preview({ from, to }, signal),
-    enabled: isCashier,
+    enabled: isCashier && validRange,
   })
   const list = useQuery({
     queryKey: ['reconciliations', { filter, page, size }],
     queryFn: ({ signal }) => reconciliationApi.list({ confirmed: filter === 'all' ? undefined : filter === 'confirmed', page, size }, signal),
+    refetchInterval: 30_000,
   })
   useApiFeedback(preview.error)
   useApiFeedback(list.error)
@@ -80,9 +83,11 @@ export default function ReconciliationPage() {
           <div><label htmlFor="reconciliation-period">Khoảng thời gian (giờ Việt Nam)</label><br />
             <DatePicker.RangePicker id={{ start: 'reconciliation-period', end: 'reconciliation-period-end' }} showTime={{ format: 'HH:mm' }} format="DD/MM/YYYY HH:mm"
               value={range} allowClear={false} disabled={create.isPending}
+              disabledDate={(date) => isFutureReconciliationDate(date)} disabledTime={(date) => reconciliationDisabledTime(date)}
               onChange={(value) => { if (value?.[0] && value[1]) { setRange([value[0], value[1]]); setReviewOpen(false); form.resetFields() } }} />
           </div>
           <Typography.Text type="secondary">Tính hóa đơn từ thời điểm bắt đầu đến trước thời điểm kết thúc. Tổng thực nhận gồm tiền mặt và chuyển khoản.</Typography.Text>
+          {!validRange && <Alert type="warning" title="Thời điểm bắt đầu phải trước thời điểm kết thúc" />}
           {preview.isError ? <Alert type="error" title="Không tải được doanh thu" action={<Button onClick={() => void preview.refetch()}>Thử lại</Button>} />
             : <Card loading={preview.isFetching}>{preview.data && <><RevenueStats data={preview.data} />{preview.data.invoiceCount === 0 && <Typography.Paragraph>Không có dữ liệu hóa đơn trong khoảng này.</Typography.Paragraph>}</>}</Card>}
           <Form form={form} layout="vertical" disabled={create.isPending} onValuesChange={() => setReviewOpen(false)} scrollToFirstError>
@@ -95,7 +100,7 @@ export default function ReconciliationPage() {
               open={reviewOpen} okText="Lập đối soát" cancelText="Hủy" okButtonProps={{ loading: create.isPending }}
               onOpenChange={(open) => { if (!open) setReviewOpen(false); else void form.validateFields().then(() => setReviewOpen(true)).catch(() => {}) }}
               onConfirm={async () => { const values = await form.validateFields(); await create.mutateAsync({ ...values, startTime: from, endTime: to }).catch(() => {}) }}>
-              <Button type="primary" loading={create.isPending} disabled={preview.isFetching || !preview.data || preview.isError}>Lập đối soát</Button>
+              <Button type="primary" loading={create.isPending} disabled={!validRange || preview.isFetching || !preview.data || preview.isError}>Lập đối soát</Button>
             </Popconfirm>
           </Form>
         </Space>

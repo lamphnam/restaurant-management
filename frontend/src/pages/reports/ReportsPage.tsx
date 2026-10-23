@@ -11,6 +11,7 @@ import { StatusTag } from '../../components/StatusTag'
 import { useApiFeedback } from '../../hooks/useApiFeedback'
 import { formatTime, nowInAppZone, toInstant } from '../../utils/time'
 import { DailyRevenueSection } from './DailyRevenueSection'
+import { reportMonthRange } from '../../utils/reportDays'
 
 // Pickers hold calendar dates. Avoid zone-aware endOf across the browser's DST changes.
 const todayForPicker = () => dayjs(nowInAppZone().format('YYYY-MM-DD'))
@@ -19,7 +20,7 @@ export default function ReportsPage() {
   const [range, setRange] = useState<[Dayjs, Dayjs]>(() => [todayForPicker(), todayForPicker()])
   const from = toInstant(range[0].startOf('day'))
   const to = toInstant(range[1].startOf('day').add(1, 'day'))
-  const wholeMonth = range[0].date() === 1 && range[0].isSame(range[1], 'month') && range[1].date() === range[1].daysInMonth()
+  const wholeMonth = range[0].date() === 1 && range[0].isSame(range[1], 'month') && (range[1].date() === range[1].daysInMonth() || range[1].isSame(todayForPicker(), 'day'))
   const summary = useQuery({ queryKey: ['payment-summary', { from, to }], queryFn: ({ signal }) => paymentApi.summary({ from, to }, signal) })
   const stock = useQuery({ queryKey: ['inventory', 'ingredients', { belowMinStockOnly: true }], queryFn: ({ signal }) => inventoryApi.listIngredients({ belowMinStockOnly: true }, signal) })
   const lots = useQuery({ queryKey: ['inventory', 'lots', 'attention'], queryFn: ({ signal }) => inventoryApi.listAttentionLots(undefined, signal) })
@@ -36,7 +37,7 @@ export default function ReportsPage() {
           <Space wrap align="end">
             <div><label htmlFor="report-month">Xem theo tháng</label><br />
               <DatePicker id="report-month" picker="month" format="MM/YYYY" placeholder="Chọn tháng" allowClear={false}
-                value={wholeMonth ? range[0] : null} onChange={(value) => { if (value) setRange([value.startOf('month'), value.endOf('month').startOf('day')]) }} />
+                value={wholeMonth ? range[0] : null} onChange={(value) => { if (value) setRange(reportMonthRange(value)) }} />
             </div>
             <div><label htmlFor="report-period">Khoảng ngày (giờ Việt Nam)</label><br />
             <DatePicker.RangePicker id={{ start: 'report-period', end: 'report-period-end' }} value={range} allowClear={false} format="DD/MM/YYYY"
@@ -44,7 +45,7 @@ export default function ReportsPage() {
             </div>
             <Button onClick={() => { const today = todayForPicker(); setRange([today, today]) }}>Hôm nay</Button>
             <Button onClick={() => { const today = todayForPicker(); setRange([today.subtract(6, 'day'), today]) }}>7 ngày qua</Button>
-            <Button onClick={() => { const today = todayForPicker(); setRange([today.startOf('month'), today.endOf('month').startOf('day')]) }}>Tháng này</Button>
+            <Button onClick={() => setRange(reportMonthRange(todayForPicker()))}>Tháng này</Button>
           </Space>
           <Typography.Text type="secondary">Doanh thu từ hóa đơn đã thanh toán, từ {range[0].format('DD/MM/YYYY')} đến {range[1].format('DD/MM/YYYY')} theo giờ Việt Nam.</Typography.Text>
           {summary.isError ? <Alert type="error" title="Không tải được báo cáo doanh thu" /> : <Card loading={summary.isFetching}>

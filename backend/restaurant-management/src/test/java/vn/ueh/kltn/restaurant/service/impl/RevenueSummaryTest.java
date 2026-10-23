@@ -12,6 +12,7 @@ import static vn.ueh.kltn.restaurant.TestFixtures.appProperties;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.PageRequest;
 
 import vn.ueh.kltn.restaurant.dto.response.DailyRevenueResponse;
 import vn.ueh.kltn.restaurant.dto.response.PaymentMethodSummaryResponse;
@@ -29,7 +30,9 @@ import vn.ueh.kltn.restaurant.repository.ServiceSessionRepository;
 import vn.ueh.kltn.restaurant.security.CurrentUser;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 
 class RevenueSummaryTest {
@@ -38,13 +41,17 @@ class RevenueSummaryTest {
     private final PaymentServiceImpl service = paymentService("Asia/Ho_Chi_Minh");
 
     private PaymentServiceImpl paymentService(String timezone) {
+        return paymentService(timezone, CLOCK);
+    }
+
+    private PaymentServiceImpl paymentService(String timezone, Clock reportClock) {
         return new PaymentServiceImpl(
                 mock(ServiceSessionRepository.class),
                 mock(FoodOrderRepository.class),
                 invoices,
                 mock(AccountRepository.class),
                 mock(CurrentUser.class),
-                CLOCK,
+                reportClock,
                 mock(ApplicationEventPublisher.class),
                 items,
                 appProperties(timezone));
@@ -85,7 +92,8 @@ class RevenueSummaryTest {
         when(items.summarizeTopItems(
                         NOW,
                         NOW.plusSeconds(60),
-                        List.of(OrderItemStatus.CANCELLED, OrderItemStatus.UNAVAILABLE)))
+                        OrderItemStatus.NON_BILLABLE,
+                        PageRequest.of(0, 10)))
                 .thenReturn(List.of(new TopMenuItemResponse(1L, "Món", 5, BigDecimal.TEN)));
         PaymentSummaryResponse result = service.summary(NOW, NOW.plusSeconds(60));
         assertEquals(BigDecimal.TEN, result.revenue().systemRevenue());
@@ -94,7 +102,8 @@ class RevenueSummaryTest {
                 .summarizeTopItems(
                         NOW,
                         NOW.plusSeconds(60),
-                        List.of(OrderItemStatus.CANCELLED, OrderItemStatus.UNAVAILABLE));
+                        OrderItemStatus.NON_BILLABLE,
+                        PageRequest.of(0, 10));
     }
 
     @Test
@@ -116,7 +125,12 @@ class RevenueSummaryTest {
                                         PaymentMethod.CASH, 1, new BigDecimal("120000")),
                                 new PaymentMethodSummaryResponse(
                                         PaymentMethod.BANK_TRANSFER, 2, new BigDecimal("120000"))));
-        when(invoices.summarizeDailyRevenue(from, to, "Asia/Ho_Chi_Minh"))
+        when(invoices.summarizeDailyRevenue(
+                        from,
+                        to,
+                        "Asia/Ho_Chi_Minh",
+                        PaymentMethod.CASH.name(),
+                        PaymentMethod.BANK_TRANSFER.name()))
                 .thenReturn(
                         List.of(
                                 new DailyRevenueResponse(
@@ -131,7 +145,11 @@ class RevenueSummaryTest {
                                         new BigDecimal("120000"),
                                         BigDecimal.ZERO,
                                         new BigDecimal("120000"))));
-        PaymentSummaryResponse result = service.summary(from, to);
+        PaymentSummaryResponse result =
+                paymentService(
+                                "Asia/Ho_Chi_Minh",
+                                Clock.fixed(Instant.parse("2028-03-01T00:00:00Z"), ZoneOffset.UTC))
+                        .summary(from, to);
         assertEquals(29, result.analysis().calendarDays());
         assertEquals(2, result.analysis().activeDays());
         assertEquals(new BigDecimal("80000"), result.analysis().averageInvoiceAmount());
@@ -148,7 +166,12 @@ class RevenueSummaryTest {
                         List.of(
                                 new PaymentMethodSummaryResponse(
                                         PaymentMethod.CASH, 1, BigDecimal.ZERO)));
-        when(invoices.summarizeDailyRevenue(NOW, NOW.plusSeconds(60), "Asia/Ho_Chi_Minh"))
+        when(invoices.summarizeDailyRevenue(
+                        NOW,
+                        NOW.plusSeconds(60),
+                        "Asia/Ho_Chi_Minh",
+                        PaymentMethod.CASH.name(),
+                        PaymentMethod.BANK_TRANSFER.name()))
                 .thenReturn(
                         List.of(
                                 new DailyRevenueResponse(
@@ -167,8 +190,8 @@ class RevenueSummaryTest {
     void exclusiveVietnamMidnightDoesNotAddAnotherCalendarDay() {
         PaymentSummaryResponse result =
                 service.summary(
-                        Instant.parse("2026-10-22T17:00:00Z"),
-                        Instant.parse("2026-10-23T17:00:00Z"));
+                        Instant.parse("2026-10-20T17:00:00Z"),
+                        Instant.parse("2026-10-21T17:00:00Z"));
         assertEquals(1, result.analysis().calendarDays());
         assertEquals(0, result.analysis().activeDays());
         assertEquals(BigDecimal.ZERO, result.analysis().averageDailyRevenue());
@@ -176,11 +199,17 @@ class RevenueSummaryTest {
 
     @Test
     void partialDaysAreGroupedInTheConfiguredTimezone() {
-        Instant from = Instant.parse("2026-10-22T16:59:59Z");
-        Instant to = Instant.parse("2026-10-22T17:00:01Z");
+        Instant from = Instant.parse("2026-10-21T16:59:59Z");
+        Instant to = Instant.parse("2026-10-21T17:00:01Z");
         assertEquals(2, service.summary(from, to).analysis().calendarDays());
         assertEquals(1, paymentService("UTC").summary(from, to).analysis().calendarDays());
-        verify(invoices).summarizeDailyRevenue(from, to, "UTC");
+        verify(invoices)
+                .summarizeDailyRevenue(
+                        from,
+                        to,
+                        "UTC",
+                        PaymentMethod.CASH.name(),
+                        PaymentMethod.BANK_TRANSFER.name());
     }
 
     @Test
@@ -190,7 +219,62 @@ class RevenueSummaryTest {
                         Instant.parse("2000-01-01T00:00:00Z"),
                         Instant.parse("2100-01-01T00:00:00Z"));
         assertEquals(0, result.dailyRevenue().size());
-        assertEquals(36526, result.analysis().calendarDays());
+        assertEquals(9792, result.analysis().calendarDays());
         assertEquals(BigDecimal.ZERO, result.revenue().systemRevenue());
+    }
+
+    @Test
+    void currentMonthAverageIncludesTodayButNotFutureDays() {
+        Instant from = Instant.parse("2026-09-30T17:00:00Z");
+        Instant to = Instant.parse("2026-10-31T17:00:00Z");
+        when(invoices.summarizeRevenue(from, to))
+                .thenReturn(
+                        List.of(
+                                new PaymentMethodSummaryResponse(
+                                        PaymentMethod.CASH, 2, new BigDecimal("2200"))));
+        PaymentSummaryResponse result = service.summary(from, to);
+        assertEquals(22, result.analysis().calendarDays());
+        assertEquals(new BigDecimal("100"), result.analysis().averageDailyRevenue());
+        assertEquals(new BigDecimal("1100"), result.analysis().averageInvoiceAmount());
+    }
+
+    @Test
+    void futurePeriodHasZeroCalendarDaysAndZeroAverage() {
+        PaymentSummaryResponse result =
+                service.summary(
+                        Instant.parse("2026-11-01T00:00:00Z"),
+                        Instant.parse("2026-12-01T00:00:00Z"));
+        assertEquals(0, result.analysis().calendarDays());
+        assertEquals(BigDecimal.ZERO, result.analysis().averageDailyRevenue());
+        assertEquals(List.of(), result.dailyRevenue());
+    }
+
+    @Test
+    void todayIsDeterminedByClockAndConfiguredTimezone() {
+        Instant from = Instant.parse("2026-09-30T17:00:00Z");
+        Instant to = Instant.parse("2026-10-31T17:00:00Z");
+        Clock eveningUtc = Clock.fixed(Instant.parse("2026-10-22T18:00:00Z"), ZoneOffset.UTC);
+        assertEquals(
+                23,
+                paymentService("Asia/Ho_Chi_Minh", eveningUtc)
+                        .summary(from, to)
+                        .analysis()
+                        .calendarDays());
+        assertEquals(
+                23, paymentService("UTC", eveningUtc).summary(from, to).analysis().calendarDays());
+        Instant sameLocalMonthStart = Instant.parse("2026-10-01T00:00:00Z");
+        assertEquals(
+                22,
+                paymentService("UTC", eveningUtc)
+                        .summary(sameLocalMonthStart, to)
+                        .analysis()
+                        .calendarDays());
+    }
+
+    @Test
+    void futureOnlyHoursTodayHaveNoElapsedCalendarDay() {
+        PaymentSummaryResponse result = service.summary(NOW.plusSeconds(60), NOW.plusSeconds(120));
+        assertEquals(0, result.analysis().calendarDays());
+        assertEquals(BigDecimal.ZERO, result.analysis().averageDailyRevenue());
     }
 }

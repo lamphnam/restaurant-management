@@ -2,7 +2,7 @@
 
 Cập nhật **23/10/2026**, Asia/Ho_Chi_Minh. **Phase0–4 và các sửa review đã triển khai.**
 [Báo cáo Phase4](phase_results/phase-4.md) và [checklist1–36](phase_instructions/phase-4-checklist.md)
-cùng [review giao diện Phase4](phase_results/phase-4-review.md) ghi trạng thái mới nhất.
+cùng [review giao diện Phase4](phase_results/phase-4-review.md) và [sửa review PR #4](phase_results/phase-4-pr-review.md) ghi trạng thái mới nhất.
 Handoff/prompt/báo cáo cũ mô tả mốc lịch sử, không phải dữ liệu live.
 
 ## Thứ tự đọc cho việc tiếp theo
@@ -27,7 +27,7 @@ Handoff/prompt/báo cáo cũ mô tả mốc lịch sử, không phải dữ li�
 | 3 | Payment/invoices và kho, đã sửa 3 critical + 6 optional PR #3 | [Kết quả ban đầu](phase_results/phase-3.md), [review mới nhất](phase_results/phase-3-review.md) |
 | 4 | Đã code và QA, còn giới hạn nêu trong kết quả | [Kết quả](phase_results/phase-4.md), [Bàn giao](PHASE_4_HANDOFF.md), [hướng dẫn](phase_instructions/phase-4.md), [prompt](phase_instructions/phase-4-prompt.md), [checklist đã ghi bằng chứng](phase_instructions/phase-4-checklist.md) |
 
-Baseline mới nhất: **211 backend tests; 33 frontend tests/97 assertions; hai build/lint PASS**.
+Baseline mới nhất: **224 backend tests; 36 frontend tests/111 assertions; hai build/lint PASS**.
 Review: tìm tài khoản, báo cáo ngày/tháng/ngày cao nhất, nút khớp tồn; Neon chỉ đọc, không ghi nghiệp vụ.
 API/Neon/browser thật và mock Phase4 báo riêng, không cộng số lịch sử Phase1–3.
 Chrome/Edge, SSE hai browser, polling và reconnect sau restart đã kiểm; tablet vật lý,

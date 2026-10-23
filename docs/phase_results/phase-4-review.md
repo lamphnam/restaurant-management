@@ -1,5 +1,9 @@
 # Review giao diện Phase 4 — báo cáo, tài khoản và kiểm kê
 
+**Mốc lịch sử trước review PR #4.** Các điều chỉnh tiếp theo về chặn ca tương lai,
+bình quân đến hôm nay, top10 và polling đối soát nằm ở [phase-4-pr-review.md](phase-4-pr-review.md).
+Số tests/SQL/checks trong báo cáo này là bằng chứng của lượt cũ.
+
 Thực hiện **23/10/2026**, Asia/Ho_Chi_Minh, theo phản hồi trực tiếp của chủ dự án:
 báo cáo cần xem từng ngày trong tháng/ngày cao nhất, tài khoản cần tìm nhân viên,
 kiểm kê cần nút điền số thực tế bằng tồn đang hiển thị khi đã đếm thấy khớp.
