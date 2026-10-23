@@ -27,6 +27,7 @@ import vn.ueh.kltn.restaurant.controller.PaymentController;
 import vn.ueh.kltn.restaurant.enums.Role;
 import vn.ueh.kltn.restaurant.service.InventoryService;
 import vn.ueh.kltn.restaurant.service.PaymentService;
+import vn.ueh.kltn.restaurant.service.ReconciliationService;
 
 import java.time.Instant;
 import java.util.List;
@@ -62,10 +63,7 @@ class PhaseThreeSecurityTest {
                                     cashierOnly),
                             // 2. Payment session preview: CASHIER
                             new Endpoint(
-                                    HttpMethod.GET,
-                                    "/api/payments/sessions/1",
-                                    null,
-                                    cashierOnly),
+                                    HttpMethod.GET, "/api/payments/sessions/1", null, cashierOnly),
                             // 3. POST Payment: CASHIER
                             new Endpoint(
                                     HttpMethod.POST,
@@ -74,10 +72,7 @@ class PhaseThreeSecurityTest {
                                     cashierOnly),
                             // 4. Invoices list: CASHIER, MANAGER, OWNER
                             new Endpoint(
-                                    HttpMethod.GET,
-                                    "/api/invoices",
-                                    null,
-                                    cashierManagerOwner),
+                                    HttpMethod.GET, "/api/invoices", null, cashierManagerOwner),
                             // 5. GET Ingredients: OWNER, HEAD_CHEF
                             new Endpoint(
                                     HttpMethod.GET,
@@ -88,13 +83,15 @@ class PhaseThreeSecurityTest {
                             new Endpoint(
                                     HttpMethod.POST,
                                     "/api/inventory/ingredients",
-                                    "{\"name\":\"Gia vị\",\"unit\":\"g\",\"minStock\":10,\"trackLot\":false,\"trackExpiry\":false}",
+                                    "{\"name\":\"Gia"
+                                        + " vị\",\"unit\":\"g\",\"minStock\":10,\"trackLot\":false,\"trackExpiry\":false}",
                                     ownerOnly),
                             // 7. PUT Ingredients: OWNER
                             new Endpoint(
                                     HttpMethod.PUT,
                                     "/api/inventory/ingredients/1",
-                                    "{\"name\":\"Gia vị mới\",\"unit\":\"g\",\"minStock\":10,\"trackLot\":false,\"trackExpiry\":false}",
+                                    "{\"name\":\"Gia vị"
+                                        + " mới\",\"unit\":\"g\",\"minStock\":10,\"trackLot\":false,\"trackExpiry\":false}",
                                     ownerOnly),
                             // 8. PATCH Deactivate: OWNER
                             new Endpoint(
@@ -159,8 +156,7 @@ class PhaseThreeSecurityTest {
 
             // Test unauthenticated access -> 401
             for (Endpoint endpoint : endpoints) {
-                MockHttpServletRequestBuilder req =
-                        request(endpoint.method(), endpoint.path());
+                MockHttpServletRequestBuilder req = request(endpoint.method(), endpoint.path());
                 if (endpoint.body() != null) {
                     req.contentType(MediaType.APPLICATION_JSON).content(endpoint.body());
                 }
@@ -205,6 +201,11 @@ class PhaseThreeSecurityTest {
         InventoryController.class
     })
     static class TestConfig {
+        @Bean
+        ReconciliationService reconciliationService() {
+            return mock(ReconciliationService.class);
+        }
+
         @Bean
         PaymentService paymentService() {
             return mock(PaymentService.class);

@@ -15,12 +15,13 @@
 >
 > Ưu tiên cao nhất vẫn là **đúng nghiệp vụ khóa luận**, đơn giản, chạy ổn định, dễ demo, truy vết được Requirement → Use Case → dữ liệu → code.
 
-> **Mốc hiện thực 23/10/2026:** Phase 0–3 và các sửa review đã có trong code.
-> Baseline sau review PR #3: 187 backend tests, 26 frontend tests / 77 assertions,
-> hai build và lint PASS; xem [báo cáo review](docs/phase_results/phase-3-review.md).
-> Phase 4 mới chuẩn bị tại [bàn giao](docs/PHASE_4_HANDOFF.md) và
-> [hướng dẫn](docs/phase_instructions/phase-4.md), chưa triển khai.
-> Ngày ở §22 là kế hoạch gốc; tài liệu chuẩn bị không phải lệnh bắt đầu phase.
+> **Mốc hiện thực 23/10/2026:** Phase 0–4 và các sửa review đã có trong code.
+> Sau review giao diện Phase 4: 211 backend tests, 33 frontend tests / 97 assertions, hai build/lint PASS.
+> Bằng chứng thật, mock và giới hạn: [báo cáo Phase 4](docs/phase_results/phase-4.md),
+> [review báo cáo/tìm tài khoản/kiểm kê](docs/phase_results/phase-4-review.md),
+> [checklist 1–36](docs/phase_instructions/phase-4-checklist.md).
+> Chưa nghiệm thu tablet vật lý, tải nhiều user hoặc thực diễn backup/restore.
+> Lịch §22 là kế hoạch gốc; không commit/push hoặc mở rộng phạm vi khi chưa được giao.
 
 ---
 
@@ -815,6 +816,8 @@ Ký hiệu `[TX]` = toàn bộ trong một transaction. `[EV: X]` = sau commit p
 ## 12.2 UC4 — Quản lý tài khoản (OWNER)
 - **Tạo:** họ tên, SĐT (unique), mật khẩu (≥ 6 ký tự, hash BCrypt), vai trò (bắt buộc); trạng thái `ACTIVE`.
 - **Khóa/mở khóa, đổi vai trò:** không áp dụng cho chính mình.
+- Review chủ dự án 23/10/2026: tìm theo tên/SĐT (tên không dấu cũng được), kết hợp lọc vai trò/trạng thái.
+  Lọc toàn bộ danh sách đã tải trước khi phân trang; giữ nguyên API và quyền hiện có.
 - Không hard delete.
 
 ## 12.3 UC2 — Danh mục NVL (OWNER)
@@ -930,6 +933,9 @@ Không quản lý nhà cung cấp/PO/công nợ.
 1. Form điền sẵn tồn hệ thống hiện tại của các NVL `ACTIVE`.
 2. Ô thực tế ban đầu trống; nhập số đã đếm (≥ 0) và ghi chú nếu có, UI hiển thị chênh lệch tạm tính.
    Chỉ gửi dòng có số thực đếm; xóa ô thì bỏ dòng, nhập 0 tường minh vẫn gửi 0. Ghi chú đơn thuần không coi là đã đếm.
+   Review chủ dự án 23/10/2026: nút **Khớp tồn hệ thống** từng dòng sao chép số tồn đang hiển thị
+   vào ô thực tế sau khi người dùng đã đếm và xác nhận khớp. Không tự điền các dòng khác;
+   không sao chép tồn âm. Số đã chọn giữ nguyên khi gửi; backend vẫn tính lại tồn theo D7.
 3. Xác nhận `[TX]`:
    - chặn ID nguyên vật liệu trùng và NVL ngừng dùng;
    - khóa toàn bộ dòng `Ingredient` theo ID tăng dần trước khi đọc bất kỳ tổng ledger nào, dùng cùng khóa với loại bỏ;
@@ -996,11 +1002,24 @@ Doanh thu luôn lấy từ `Invoice`; không có bảng doanh thu.
 ## 12.19 UC6.1 + FR-17 — Báo cáo (OWNER)
 Một trang, chọn khoảng thời gian (mặc định hôm nay):
 - doanh thu, số hóa đơn, doanh thu theo phương thức;
+- Review chủ dự án 23/10/2026: chọn nhanh tháng, hôm nay/7 ngày qua/tháng này;
+  bảng từng ngày theo múi giờ ứng dụng, số hóa đơn/tiền mặt/chuyển khoản/doanh thu,
+  ngày không có hóa đơn hiển thị 0, phân trang lịch;
+- ngày doanh thu cao nhất (giữ tất cả ngày đồng hạng khi doanh thu >0), bình quân/hóa đơn
+  (kể cả hóa đơn 0đ), bình quân/ngày lịch trong kỳ và số ngày có hóa đơn.
+  Backend tính các chỉ số; số bình quân làm tròn HALF_UP đến đồng chỉ để hiển thị.
+  Khoảng API bất kỳ tính số ngày lịch có giao với `[from,to)`, theo timezone cấu hình;
 - top món bán: Σ `quantity` của chi tiết không `CANCELLED`/`UNAVAILABLE`, thuộc phiên có `Invoice` trong khoảng;
 - NVL tồn thấp, lô cần chú ý, 10 biến động gần nhất;
 - trạng thái “Không có dữ liệu” khi rỗng.
 
 Dùng Ant Design `Statistic` + `Table`, không cần thư viện biểu đồ.
+`/payments/summary` giữ `revenue`, `topItems`, thêm `dailyRevenue` (chỉ ngày có hóa đơn,
+sắp ngày tăng dần) và `analysis`. Mỗi dòng ngày gồm `date`, `invoiceCount`, `revenue`,
+`cashRevenue`, `bankTransferRevenue`; analysis gồm `averageInvoiceAmount`,
+`averageDailyRevenue`, `peakRevenue`, `peakDates`, `activeDays`, `calendarDays`.
+Frontend bổ sung ngày trống cho trang lịch đang xem, không tính lại các chỉ số tài chính.
+Ba aggregate chạy cùng transaction read-only REPEATABLE_READ; tất cả lọc Invoice `paidAt >=from AND paidAt <to`.
 
 ---
 
@@ -1097,7 +1116,7 @@ Cột “Vai trò” dùng đúng giá trị enum `Role` (mục 6): `OWNER`, `MA
 | GET | `/api/payments/sessions/{id}` | CASHIER | Xem trước hóa đơn |
 | POST | `/api/payments` | CASHIER | `{sessionId, paymentMethod}` → `Invoice` |
 | GET | `/api/invoices` | CASHIER, MANAGER, OWNER | `?from&to&paymentMethod&page&size` |
-| GET | `/api/payments/summary` | OWNER | `?from&to` → doanh thu, số hóa đơn, theo phương thức, top món |
+| GET | `/api/payments/summary` | OWNER | `?from&to` → doanh thu, số hóa đơn, theo phương thức, top món, từng ngày và chỉ số kỳ (§12.19) |
 | GET | `/api/reconciliations/preview` | CASHIER | `?from&to` → `systemRevenue`, tiền mặt, chuyển khoản, số hóa đơn |
 | POST | `/api/reconciliations` | CASHIER | `{startTime, endTime, actualAmount, differenceReason?}` |
 | GET | `/api/reconciliations` | CASHIER, MANAGER | Danh sách + cờ đã xác nhận |

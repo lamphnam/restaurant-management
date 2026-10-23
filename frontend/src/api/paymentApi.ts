@@ -1,4 +1,5 @@
 import { api } from './client'
+import type { PaymentSummary } from '../types/reconciliation'
 import type {
   Invoice,
   InvoiceFilter,
@@ -10,6 +11,8 @@ import type {
 import type { PageResponse } from '../types/tables'
 
 export const paymentApi = {
+  summary: async (params: { from: string; to: string }, signal?: AbortSignal) =>
+    (await api.get<PaymentSummary>('/payments/summary', { params, signal })).data,
   listOpenSessions: async (signal?: AbortSignal) =>
     (await api.get<OpenSessionPayment[]>('/payments/open-sessions', { signal })).data,
 

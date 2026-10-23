@@ -10,13 +10,20 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
+import vn.ueh.kltn.restaurant.config.AppProperties;
 import vn.ueh.kltn.restaurant.dto.request.PaySessionRequest;
+import vn.ueh.kltn.restaurant.dto.response.DailyRevenueResponse;
 import vn.ueh.kltn.restaurant.dto.response.InvoiceResponse;
 import vn.ueh.kltn.restaurant.dto.response.OpenSessionPaymentResponse;
 import vn.ueh.kltn.restaurant.dto.response.PageResponse;
+import vn.ueh.kltn.restaurant.dto.response.PaymentMethodSummaryResponse;
 import vn.ueh.kltn.restaurant.dto.response.PaymentPreviewResponse;
+import vn.ueh.kltn.restaurant.dto.response.PaymentSummaryResponse;
+import vn.ueh.kltn.restaurant.dto.response.RevenueAnalysisResponse;
+import vn.ueh.kltn.restaurant.dto.response.RevenueSummaryResponse;
 import vn.ueh.kltn.restaurant.entity.Account;
 import vn.ueh.kltn.restaurant.entity.FoodOrder;
 import vn.ueh.kltn.restaurant.entity.Invoice;
@@ -32,13 +39,17 @@ import vn.ueh.kltn.restaurant.realtime.RealtimeEvent;
 import vn.ueh.kltn.restaurant.repository.AccountRepository;
 import vn.ueh.kltn.restaurant.repository.FoodOrderRepository;
 import vn.ueh.kltn.restaurant.repository.InvoiceRepository;
+import vn.ueh.kltn.restaurant.repository.OrderItemRepository;
 import vn.ueh.kltn.restaurant.repository.ServiceSessionRepository;
 import vn.ueh.kltn.restaurant.security.CurrentUser;
 import vn.ueh.kltn.restaurant.service.PaymentService;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -57,6 +68,78 @@ public class PaymentServiceImpl implements PaymentService {
     private final CurrentUser currentUser;
     private final Clock clock;
     private final ApplicationEventPublisher events;
+    private final OrderItemRepository orderItems;
+    private final AppProperties properties;
+
+    @Override
+    public RevenueSummaryResponse summarizeRevenue(Instant from, Instant to) {
+        if (from == null || to == null || !from.isBefore(to)) {
+            throw new BusinessException(
+                    ErrorCode.INVALID_INPUT, "Thời điểm bắt đầu phải trước thời điểm kết thúc");
+        }
+        List<PaymentMethodSummaryResponse> totals = invoices.summarizeRevenue(from, to);
+        List<PaymentMethodSummaryResponse> methods = new ArrayList<>();
+        for (PaymentMethod method : PaymentMethod.values()) {
+            methods.add(
+                    totals.stream()
+                            .filter(total -> total.paymentMethod() == method)
+                            .findFirst()
+                            .orElse(new PaymentMethodSummaryResponse(method, 0, BigDecimal.ZERO)));
+        }
+        long count = methods.stream().mapToLong(PaymentMethodSummaryResponse::invoiceCount).sum();
+        BigDecimal revenue =
+                methods.stream()
+                        .map(PaymentMethodSummaryResponse::revenue)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return new RevenueSummaryResponse(from, to, count, revenue, List.copyOf(methods));
+    }
+
+    @Override
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
+    public PaymentSummaryResponse summary(Instant from, Instant to) {
+        RevenueSummaryResponse revenue = summarizeRevenue(from, to);
+        String timezone = properties.timezone();
+        ZoneId zone = ZoneId.of(timezone);
+        List<DailyRevenueResponse> daily = invoices.summarizeDailyRevenue(from, to, timezone);
+        long calendarDays =
+                ChronoUnit.DAYS.between(
+                                from.atZone(zone).toLocalDate(),
+                                to.minusNanos(1).atZone(zone).toLocalDate())
+                        + 1;
+        BigDecimal peakRevenue =
+                daily.stream()
+                        .map(DailyRevenueResponse::revenue)
+                        .max(BigDecimal::compareTo)
+                        .orElse(BigDecimal.ZERO);
+        List<String> peakDates =
+                peakRevenue.signum() == 0
+                        ? List.of()
+                        : daily.stream()
+                                .filter(day -> day.revenue().compareTo(peakRevenue) == 0)
+                                .map(DailyRevenueResponse::date)
+                                .toList();
+        RevenueAnalysisResponse analysis =
+                new RevenueAnalysisResponse(
+                        revenue.invoiceCount() == 0
+                                ? BigDecimal.ZERO
+                                : revenue.systemRevenue()
+                                        .divide(
+                                                BigDecimal.valueOf(revenue.invoiceCount()),
+                                                0,
+                                                RoundingMode.HALF_UP),
+                        revenue.systemRevenue()
+                                .divide(BigDecimal.valueOf(calendarDays), 0, RoundingMode.HALF_UP),
+                        peakRevenue,
+                        peakDates,
+                        daily.size(),
+                        calendarDays);
+        return new PaymentSummaryResponse(
+                revenue,
+                orderItems.summarizeTopItems(
+                        from, to, List.of(OrderItemStatus.CANCELLED, OrderItemStatus.UNAVAILABLE)),
+                daily,
+                analysis);
+    }
 
     @Override
     public List<OpenSessionPaymentResponse> listOpenSessions() {
@@ -66,8 +149,7 @@ public class PaymentServiceImpl implements PaymentService {
             return Collections.emptyList();
         }
 
-        List<Long> sessionIds =
-                activeSessions.stream().map(ServiceSession::getId).toList();
+        List<Long> sessionIds = activeSessions.stream().map(ServiceSession::getId).toList();
         List<FoodOrder> allOrders = foodOrders.findDetailsBySessionIdIn(sessionIds);
 
         Map<Long, List<FoodOrder>> ordersBySession =
@@ -90,13 +172,10 @@ public class PaymentServiceImpl implements PaymentService {
                             .anyMatch(
                                     item ->
                                             item.getStatus() == OrderItemStatus.PENDING
-                                                    || item.getStatus()
-                                                            == OrderItemStatus.COOKING);
+                                                    || item.getStatus() == OrderItemStatus.COOKING);
 
             int totalItems =
-                    sessionOrders.stream()
-                            .mapToInt(order -> order.getItems().size())
-                            .sum();
+                    sessionOrders.stream().mapToInt(order -> order.getItems().size()).sum();
 
             results.add(
                     PaymentMapper.toOpenSessionResponse(
@@ -171,8 +250,7 @@ public class PaymentServiceImpl implements PaymentService {
                         .anyMatch(
                                 item ->
                                         item.getStatus() == OrderItemStatus.PENDING
-                                                || item.getStatus()
-                                                        == OrderItemStatus.COOKING);
+                                                || item.getStatus() == OrderItemStatus.COOKING);
 
         if (hasBlocking) {
             throw new BusinessException(
@@ -191,8 +269,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         Instant now = clock.instant();
 
-        Invoice invoice =
-                new Invoice(session, cashier, request.paymentMethod(), total, now);
+        Invoice invoice = new Invoice(session, cashier, request.paymentMethod(), total, now);
         Invoice savedInvoice = invoices.save(invoice);
 
         session.close(now);

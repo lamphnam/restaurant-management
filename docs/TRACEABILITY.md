@@ -6,15 +6,12 @@ Tên Việt (khóa luận) ↔ tên code: xem Phụ lục A của spec.
 **Phạm vi theo §19 (khi hoàn tất):** `Đã làm` / `Đơn giản hóa` (phần cắt theo §1.2) / `Chưa hiện thực` (cắt, §1.3). Cột Phạm vi là mục tiêu bàn giao, không phải tiến độ. Cột Hiện trạng dùng `Chưa làm`, `Một phần — chờ Phase 4`, `Đã làm` hoặc giới hạn kiểm chứng cụ thể. Các mục lịch sử 6–10 mô tả mốc trước đây, không ghi đè trạng thái đầu tài liệu.
 Cột *Phase* là phase dự kiến hiện thực (docs/phase_instructions). Cập nhật cột *Hiện trạng* khi xong từng phase.
 
-Mốc 23/10/2026: Phase 0–3 đã triển khai; 3 critical và 6 optional PR #3 đã sửa.
-Hệ thống đã có đầy đủ chuỗi thanh toán, hóa đơn, giải phóng bàn, quản lý danh mục NVL,
-nhập kho, kiểm kê D7, xuất hủy, lô chú ý, lịch sử biến động và D8/D12 rules.
-Xem [Phase 3 ban đầu](phase_results/phase-3.md) và [review mới nhất](phase_results/phase-3-review.md):
-187 backend tests, 26 frontend tests / 77 assertions; hai build/lint PASS.
-FR-10/FR-17 chưa triển khai; bộ [bàn giao Phase 4](PHASE_4_HANDOFF.md),
-[hướng dẫn](phase_instructions/phase-4.md), [prompt](phase_instructions/phase-4-prompt.md)
-và [checklist chưa chạy](phase_instructions/phase-4-checklist.md) đã sẵn sàng.
-Hồi quy toàn bộ/Edge/backup-restore còn cần bằng chứng, không suy hoàn thành từ build.
+Mốc 23/10/2026: **Phase0–4 đã triển khai**, giữ sửa review Phase1–3.
+[Review Phase4](phase_results/phase-4-review.md): 211 backend tests, 33 frontend/97 assertions,
+hai build/lint PASS; API/Neon, Chrome/Edge, realtime/restart và mock được báo riêng.
+[Checklist1–36](phase_instructions/phase-4-checklist.md) ghi bằng chứng từng dòng.
+TR-09 restore, thiết bị tablet thật và benchmark nhiều user chưa nghiệm thu.
+Handoff/prompt là mốc lịch sử trước code, không ghi đè tiến độ hiện tại.
 
 ## 1. Functional Requirements
 
@@ -29,14 +26,14 @@ Hồi quy toàn bộ/Edge/backup-restore còn cần bằng chứng, không suy h
 | FR-07 | UC9 | Đã làm (đầy đủ) | 2 | Kitchen | KitchenService | OrderItem | Đã làm |
 | FR-08 | UC8.3 | Đã làm (đầy đủ) | 2 | ServiceSession | ServiceSessionService | OrderItem | Đã làm |
 | FR-09 | UC11.1 | Đã làm (đầy đủ) | 3 | Payment | PaymentService | Invoice, ServiceSession | Đã làm |
-| FR-10 | UC11.2 | Đã làm (đầy đủ) | 4 | Payment | ReconciliationService | Invoice, RevenueReconciliation | Chưa làm |
+| FR-10 | UC11.2 | Đã làm (đầy đủ) | 4 | Payment | ReconciliationService | Invoice, RevenueReconciliation | Đã làm |
 | FR-11 | UC2 | Đã làm (đầy đủ) | 3 | Inventory | InventoryService | Ingredient | Đã làm |
 | FR-12 | UC10.3 | Đã làm (đầy đủ) | 3 | Inventory | InventoryService | StockReceipt, StockReceiptItem, IngredientLot, StockMovement | Đã làm |
 | FR-13 | UC6.2 (không tồn theo lô) | Đơn giản hóa | 3 | Inventory | InventoryService | Ingredient, IngredientLot, StockMovement | Đã làm |
 | FR-14 | UC10.1 (kiểm kê theo NVL) | Đơn giản hóa | 3 | Inventory | InventoryService | Stocktake, StocktakeItem, StockMovement | Đã làm |
 | FR-15 | UC10.2 | Đã làm (đầy đủ) | 3 | Inventory | InventoryService | StockMovement | Đã làm |
 | FR-16 | UC6.3 + lịch sử hóa đơn/đặt bàn | Đơn giản hóa | 1, 3 | Inventory, Payment, Table | InventoryService, PaymentService, ReservationService | nhiều bảng | Đã làm |
-| FR-17 | UC6.1 (1 trang báo cáo) | Đơn giản hóa | 4 | Payment, Inventory | PaymentService, InventoryService | Invoice, OrderItem, StockMovement | Chưa làm |
+| FR-17 | UC6.1 (1 trang báo cáo) | Đơn giản hóa | 4 | Payment, Inventory | PaymentService, InventoryService | Invoice, OrderItem, StockMovement | Đã làm |
 | FR-18 | Định lượng + UC9 | Đã làm (đầy đủ) | 1, 2 | Menu, Kitchen | MenuService, KitchenService | RecipeItem, StockMovement | Đã làm |
 
 ## 2. Use Case chưa hiện thực (hướng phát triển)
@@ -58,12 +55,12 @@ Hồi quy toàn bộ/Edge/backup-restore còn cần bằng chứng, không suy h
 | BR-02 | Số hóa quy trình đặt/bố trí bàn → thanh toán | FR-03, FR-04, FR-05, FR-09 | Đã làm |
 | BR-03 | Chia sẻ trạng thái món phục vụ ↔ bếp | FR-07, FR-08, SSE | Đã làm |
 | BR-04 | Các lần gọi món cùng phiên | `FoodOrder` nhiều/`ServiceSession` | Đã làm |
-| BR-05 | Doanh thu, đối soát theo ca | FR-09, FR-10 | Một phần — chờ Phase 4 |
+| BR-05 | Doanh thu, đối soát theo ca | FR-09, FR-10 | Đã làm |
 | BR-06 | Số hóa nhập, tồn, kiểm kê | FR-12, FR-13, FR-14 | Đã làm |
 | BR-07 | Quản lý lô và HSD | FR-13 (lô ghi khi nhập, cảnh báo HSD) | Đã làm |
-| BR-08 | Thông tin tổng hợp | FR-17 | Chưa làm |
+| BR-08 | Thông tin tổng hợp | FR-17 | Đã làm |
 | BR-09 | Truy xuất giao dịch | FR-16 | Đã làm |
-| BR-10 | Quyền theo vai trò | FR-01, `@PreAuthorize` | Đã kiểm Phase 0–3; quyền API Phase 4 chưa làm |
+| BR-10 | Quyền theo vai trò | FR-01, `@PreAuthorize` | Đã kiểm Phase0–4, gồm sáu role/401 trên API Phase4 |
 | BR-11 | Món → định lượng → tiêu hao → biến động tồn | FR-18, `StockMovement` | Đã làm |
 | BR-12 | Quản lý tập trung đặt bàn | FR-03 | Đã làm |
 
@@ -75,16 +72,16 @@ Hồi quy toàn bộ/Edge/backup-restore còn cần bằng chứng, không suy h
 | TR-02, TR-03 | PostgreSQL (Neon), Flyway | Đã làm |
 | TR-04 | PK `BIGINT` identity, trừ `RecipeItem` dùng PK kép | Đã làm |
 | TR-05, TR-06 | Cột thời gian và `*_by_id` theo ERD | Đã làm |
-| TR-07, NFR-04 | JWT + `@PreAuthorize` | Đã kiểm Phase 0–3; Phase 4 chưa làm |
-| TR-08, NFR-03 | `@Transactional` + khóa dòng + unique/CHECK (§16.3) | Đã kiểm workflow Phase 0–3; Phase 4 chưa làm |
+| TR-07, NFR-04 | JWT + `@PreAuthorize` | Đã kiểm Phase0–4 |
+| TR-08, NFR-03 | `@Transactional` + khóa dòng + unique/CHECK (§16.3) | Đã kiểm Phase0–4, gồm confirm race/held lock |
 | TR-09 | Hướng dẫn backup/restore Neon + `pg_dump` (README) | Có hướng dẫn; chưa có bằng chứng thực diễn restore |
 | TR-10, NFR-07 | Ant Design, ưu tiên tablet cho Bếp/Phục vụ/Sơ đồ bàn | Đã làm |
 | TR-11, NFR-02 | SSE sau commit + invalidation/reconnect/polling | Đã làm |
-| NFR-01, NFR-09 | Projection/index/page, list Phase 3 tối đa 2–3 SQL/trang | Đã đo Phase 0–3; chưa benchmark nhiều user/summary Phase 4 |
+| NFR-01, NFR-09 | Projection/index/page, list Phase 3 tối đa 2–3 SQL/trang | Summary3 SQL (thêm daily), preview1; list giữ2–3/page; chưa benchmark nhiều user |
 | NFR-05 | BCrypt | Đã làm |
 | NFR-06 | Lưu người/thời điểm trên giao dịch | Đã làm |
 | NFR-08 | Dữ liệu commit trong PostgreSQL | Đã làm |
-| NFR-10 | Trình duyệt phổ biến (Chrome/Edge) | Chrome/headless viewport đã kiểm; Edge/tablet thật chưa nghiệm thu |
+| NFR-10 | Trình duyệt phổ biến (Chrome/Edge) | Chrome và Edge headless/viewport đã kiểm; tablet vật lý chưa nghiệm thu |
 | NFR-11 | Phân lớp controller → service → impl → repository | Đã làm |
 | NFR-12 | Nhãn trạng thái dùng chung `labels.ts` (§6) | Đã làm |
 
@@ -210,7 +207,7 @@ Mốc triển khai ban đầu Phase 3; các sửa tiếp theo và giới hạn k
   - End-to-end API QA (`scripts/phase3-api-check.mjs`): **111/111 checks PASS** trên Neon main thật.
   - Checklist §21.2: Các mục 23–32 đã nghiệm thu đầy đủ. Chi tiết xem [Báo cáo Phase 3](phase_results/phase-3.md).
 
-## 11. Chuẩn bị Phase 4 — chưa triển khai
+## 11. Chuẩn bị Phase 4 — mốc lịch sử trước triển khai
 
 Nội dung còn lại của hệ thống:
 - **FR-10 / UC11.2:** Đối soát doanh thu cuối ca (`/api/reconciliations/**`).
@@ -232,3 +229,34 @@ không tạo báo cáo `phase_results/phase-4.md` hoặc đổi FR-10/17 thành 
 Thanh toán FLOOR_PLAN invalidate cả món chờ phục vụ; bốn danh sách hóa đơn/kho dùng tối đa 2–3 SQL/trang.
 Seed tồn đầu không âm, qua InventoryService, giữ D7 trên ledger có sẵn; không reset dữ liệu.
 Phạm vi FR-10/17 tiếp tục chờ Phase 4. Chưa commit/push.
+
+## 13. Phase4 đã hiện thực — 23/10/2026
+
+- FR-10/UC11.2, BR-05: `ReconciliationServiceImpl.preview/create/list/confirm`,
+  Invoice aggregate D9 `[start,end)`, snapshot/actor/Clock; confirm lock/lặp409.
+- FR-17/UC6.1, BR-08: `PaymentServiceImpl.summary`, Invoice + OrderItem projections,
+  `ReportsPage` ghép các API InventoryService cũ cho kho hiện tại, không bảng/doanh thu mới.
+- FR-16/BR-09: list đối soát page/filterconfirmed/to-one graph; giữ lịch sử Invoice/ledger cũ.
+- TR-08/NFR-03/06: recompute khi POST, precisionV1, snapshot immutable; HTTP race và
+  probe giữ transaction thật đã chứng minh request chờ rồi trả409. Đúng18 bảng, V1 không đổi.
+- TR-07/NFR-04: đủ6 role/401 trên5 API mới qua MockMvc và HTTP; UI guard/landing thật.
+- TR-11/NFR-02/08: hai browser Chrome/Edge cập nhật dưới2s; polling khi SSE lỗi;
+  sửa Vite proxy ngắt upstream, kiểm reconnect + REST invalidation/restart không nhân seed.
+- NFR-07/10/12: Ant Design, nhãn/giờ Việt Nam, actual trống/zero, Popconfirm, error/empty,
+  desktop/tablet viewport normal/reduced motion. Chưa tablet vật lý/multi-user benchmark.
+- TR-09: hướng dẫn README có; chưa dump/thực diễn restore, không restore main để kiểm docs.
+- Bằng chứng, số tests/checks tách loại, tác động QA và giới hạn tại
+  [Phase4](phase_results/phase-4.md). Không commit/push.
+
+## 14. Review giao diện Phase4 — 23/10/2026
+
+- FR-01/UC4: `AccountsPage`, `accountFilters` tìm tên/SĐT không dấu trên toàn danh sách,
+  kết hợp vai trò/trạng thái và phân trang; giữ khóa/đổi vai trò đúng ID, chặn thao tác chính mình.
+- FR-14/UC10.1: `StocktakePage` có nút Khớp tồn hệ thống từng dòng; actual vẫn trống
+  ban đầu, xóa bỏ dòng, explicit0 giữ lại, không sao chép tồn âm; D7/khóa Ingredient không đổi.
+- FR-17/UC6.1: `InvoiceRepository.summarizeDailyRevenue`, `PaymentServiceImpl.summary`,
+  `DailyRevenueSection`, `reportDays`: tháng/ngày, peak/tie/averages ở backend, giữ D9 và hóa đơn0đ.
+  Query count summary3 không phụ thuộc số hóa đơn; không N+1, không schema mới.
+- Kiểm: backend211 tests, frontend33/97, builds/lint PASS; 30 nhóm UI mock mỗi Chrome/Edge,
+  70 query checks Neon chỉ đọc, 11 nhóm API/browser thật chỉ đọc; hồi quy Phase4/stocktake/popup riêng.
+  [Báo cáo review](phase_results/phase-4-review.md) phân biệt mock/thật và các giới hạn.

@@ -1,5 +1,8 @@
 # Prompt triển khai Phase 4
 
+> **Đã triển khai theo yêu cầu riêng ngày 23/10/2026.** Xem [kết quả Phase 4](../phase_results/phase-4.md). Nội dung dưới giữ nguyên như hợp đồng/bàn giao trước code; “chưa triển khai” mô tả mốc chuẩn bị.
+
+
 **Chưa thực thi.** Chỉ giao đoạn dưới khi chủ dự án yêu cầu bắt đầu code Phase 4.
 Chuẩn bị ngày 23/10/2026 không tự cấp quyền triển khai, commit hoặc push.
 

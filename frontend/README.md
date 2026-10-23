@@ -17,14 +17,14 @@ Build gồm type-check. Giữ bun.lock trong Git; không đưa credentials/secre
 
 ## Trạng thái 23/10/2026
 
-Phase 0–3 và review đã triển khai. Baseline mới nhất **26 tests / 77 assertions**,
-build/lint PASS; xem [review Phase 3](../docs/phase_results/phase-3-review.md).
-Review browser có 16 nhóm ca stocktake dùng API mock, normal/reduced motion,
-desktop/mobile viewport; không phải QA browser ghi Neon.
+Phase 0–4 và review đã triển khai. **33 tests / 97 assertions**, build/lint PASS.
+Xem [Phase4](../docs/phase_results/phase-4.md) cho mock và app/API/Neon thật tách riêng.
+[Review giao diện](../docs/phase_results/phase-4-review.md): tìm tài khoản, báo cáo ngày/tháng và nút khớp tồn.
+Chrome/Edge và tablet viewport đã kiểm; chưa kiểm tablet vật lý.
 
 | Route | Quyền UI | Hiện trạng |
 |---|---|---|
-| `/accounts` | OWNER | Quản lý tài khoản |
+| `/accounts` | OWNER | Tìm tên/SĐT không dấu; lọc vai trò/trạng thái; quản lý tài khoản |
 | `/menu` | OWNER, HEAD_CHEF | Thực đơn/định lượng, thao tác theo role |
 | `/floor-plan` | WAITER, MANAGER, CASHIER, OWNER | Sơ đồ bàn/mở phiên đúng quyền |
 | `/reservations` | MANAGER, WAITER, OWNER | Đặt bàn/tra cứu, thao tác theo role |
@@ -35,8 +35,8 @@ desktop/mobile viewport; không phải QA browser ghi Neon.
 | `/invoices` | CASHIER, MANAGER, OWNER | Lịch sử hóa đơn |
 | `/inventory` | OWNER, HEAD_CHEF | Tồn/danh mục/lô/biến động, thao tác theo role |
 | `/inventory/receipts`, `/inventory/stocktake` | HEAD_CHEF | Nhập/kiểm kê |
-| `/reconciliation` | CASHIER, MANAGER | **Placeholder Phase 4** |
-| `/reports` | OWNER | **Placeholder Phase 4**, OWNER landing |
+| `/reconciliation` | CASHIER, MANAGER | Lập/preview/list/confirm theo role |
+| `/reports` | OWNER | Doanh thu + kho hiện tại, OWNER landing |
 
 UI role guard không thay backend authorization. Không mở lại `/sessions/:id` cho CASHIER.
 
@@ -51,6 +51,7 @@ UI role guard không thay backend authorization. Không mở lại `/sessions/:i
   picker đặt trước dùng tableId/unexpired=true/status=CONFIRMED phía server.
 - Stocktake actual ban đầu trống, chỉ gửi dòng đã đếm. Xóa ô bỏ dòng, 0 chỉ gửi khi nhập0.
   Ghi chú đơn thuần không đánh dấu đã đếm; server tính lại systemQuantity, UI chỉ tính tạm.
+  Nút Khớp tồn hệ thống từng dòng điền số đang hiển thị sau thao tác người dùng; không sao chép tồn âm.
 - Payment không gửi amount; pending/cooking chặn, READY/0đ hợp lệ. Invoice/stock nghiệp vụ ở backend.
 
 ## Query keys và realtime
@@ -68,21 +69,25 @@ useRealtime gắn một lần trong AppLayout, bearer header, cleanup theo token
 invalidate toàn bộ live prefixes khi reconnect. Live screens polling30s/focus;
 kho không có SSE. Mutation kho invalidate prefix inventory; payment invalidate các key liên quan.
 
-## Điểm nối Phase 4
+## Đối soát và báo cáo Phase 4
 
-Đọc [bàn giao](../docs/PHASE_4_HANDOFF.md), [hướng dẫn](../docs/phase_instructions/phase-4.md),
-[prompt](../docs/phase_instructions/phase-4-prompt.md), [checklist](../docs/phase_instructions/phase-4-checklist.md).
-Chỉ triển khai khi được giao riêng; lượt cập nhật tài liệu chưa thay placeholder.
+- `reconciliationApi` dùng PageResponse chung; `paymentApi.summary` cho OWNER.
+- CASHIER actual ban đầu trống, nhập0 được; đổi khoảng xóa actual/reason đang nhập.
+  Preview/submit dùng giờ Việt Nam→UTC; server tính lại khi POST, không nhận tổng/audit.
+- MANAGER mặc định lọc chưa xác nhận; Popconfirm, loading/disable; 409 báo lỗi/refetch.
+  Chi tiết mở rộng gồm người lập/quản lý/reason/thời điểm. Không sửa/từ chối/xóa.
+- `['reconciliations',{filter,page,size}]`, `['reconciliation-preview',{from,to}]`,
+  `['payment-summary',{from,to}]`. Create/confirm invalidate list và preview.
+- OWNER report dùng Statistic/Table; ngày mặc định hôm nay tại Việt Nam, UTC `[start,nextDay)`.
+  Có chọn tháng/7 ngày, bảng ngày gồm ngày 0đ, ngày cao nhất (kể cả đồng hạng), bình quân do backend tính.
+  Pickers giữ ngày lịch thông thường để tránh `endOf` của đối tượng timezone bị ảnh hưởng DST trình duyệt.
+  `dailyRevenue` thưa; `reportDays` chỉ tạo dòng cho trang lịch đang xem, không cấp phát toàn kỳ dài.
+  Khối kho dùng prefix inventory và API cũ, không phụ thuộc kỳ doanh thu; 10 movements mới nhất.
+- `dev/sseProxy.ts` trong Vite config đóng downstream khi `/api/events` upstream bị ngắt,
+  giúp fetch-event-source retry. Không thay hook/executor/polling30s hoặc CSS reduced motion.
+  Kiểm HTTP cục bộ: `node scripts/phase4-proxy-check.mjs` từ repo root theo báo cáo.
 
-- Thêm api/types và hai lazy pages. Query key riêng có from/to cho reconciliation/preview/summary;
-  khối kho dùng API/key hiện có. Giữ shared PageResponse và feedback.
-- CASHIER lập đối soát, MANAGER list/chưa xác nhận/confirm; lặp confirm409 refetch.
-  Không có sửa/từ chối/xóa hoặc actual được tự coi là tiền hệ thống.
-- OWNER report: Statistic + Table, hôm nay giờ Việt Nam → UTC `[startOfDay,nextDay)`;
-  revenue/count/methods/top món theo khoảng, kho/cảnh báo hiện tại và10 movements gần nhất.
-- Rỗng/loading/lỗi/reload, routeguard, tablet/desktop, keyboard/click-only popup và reduced motion.
-  Không thêm chart library/event SSE hoặc business rule frontend.
-
-Lịch sử [review Phase1](../docs/phase_results/phase-1-review.md),
-[Phase2](../docs/phase_results/phase-2-review.md), [popup](../docs/phase_results/phase-2-popup-fix.md)
-giữ làm nguồn hồi quy. Không cộng các số test cũ thành một lượt kiểm mới.
+[Báo cáo Phase4](../docs/phase_results/phase-4.md),
+[checklist](../docs/phase_instructions/phase-4-checklist.md) ghi phạm vi kiểm và cách chạy lại.
+Giữ các nguồn hồi quy [Phase1](../docs/phase_results/phase-1-review.md),
+[Phase2](../docs/phase_results/phase-2-review.md), [popup](../docs/phase_results/phase-2-popup-fix.md).

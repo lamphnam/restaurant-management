@@ -1,5 +1,8 @@
 # Phase 4 — Đối soát, báo cáo và hoàn thiện
 
+> **Đã triển khai theo yêu cầu riêng ngày 23/10/2026.** Xem [kết quả Phase 4](../phase_results/phase-4.md). Nội dung dưới giữ nguyên như hợp đồng/bàn giao trước code; “chưa triển khai” mô tả mốc chuẩn bị.
+
+
 **Trạng thái 23/10/2026: đã chuẩn bị tài liệu, chưa triển khai.** Ngày 26/10 là lịch
 dự kiến gốc; chỉ code khi chủ dự án giao riêng. Không commit/push khi chưa được yêu cầu.
 

@@ -1,5 +1,8 @@
 # Bàn giao từ Phase 3 sang Phase 4
 
+> **Đã triển khai theo yêu cầu riêng ngày 23/10/2026.** Xem [kết quả Phase 4](phase_results/phase-4.md). Nội dung dưới giữ nguyên như hợp đồng/bàn giao trước code; “chưa triển khai” mô tả mốc chuẩn bị.
+
+
 Ngày chốt tài liệu: **23/10/2026**, Asia/Ho_Chi_Minh. Phase 0–3 đã triển khai,
 các sửa review PR #1/#2/#3 và popup đã có trong code. **Phase 4 chưa triển khai**;
 chủ dự án hiện yêu cầu chuẩn bị tài liệu. Không bắt đầu code hoặc commit/push từ tài liệu này.

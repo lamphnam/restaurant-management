@@ -6,38 +6,34 @@ Tra cứu tài liệu: [docs/README](docs/README.md).
 
 ## Trạng thái ngày 23/10/2026
 
-**Phase 0–3 và các sửa review đã có trong code. Phase 4 đã chuẩn bị tài liệu, chưa triển khai.**
-Branch baseline `feat/phase-3-implement`, HEAD `72d1bdc` của PR #3; các sửa review và
-tài liệu còn chưa commit/push. Kiểm `git status` trước khi làm việc và giữ thay đổi hiện có.
+**Phase 0–4 đã triển khai**, giữ toàn bộ sửa review. Branch thực tế
+`feat/phase-4-implement`, HEAD nền `28bd527`; thay đổi Phase 4 chưa commit/push.
+Bằng chứng và giới hạn: [Phase 4](docs/phase_results/phase-4.md),
+[review giao diện Phase 4](docs/phase_results/phase-4-review.md),
+[checklist 1–36](docs/phase_instructions/phase-4-checklist.md), [TRACEABILITY](docs/TRACEABILITY.md).
 
-- JWT/6 vai trò, tài khoản, thực đơn/định lượng, sơ đồ bàn, đặt bàn, mở phiên.
-- Gọi/gọi thêm/hủy món, bếp, tiêu hao, xác nhận phục vụ; SSE sau commit và polling 30s.
-- Thanh toán/hóa đơn: snapshot giá, chặn PENDING/COOKING, cho READY và 0đ, đóng phiên `CLOSED`, trả bàn.
-- Kho: danh mục, D12, nhập/lô/HSD, tồn từ SUM ledger, kiểm kê D7, xuất hủy, cảnh báo và lịch sử.
-- Review PR #3: form chỉ gửi số thực đếm; kiểm kê khóa Ingredient tăng dần, chặn trùng/inactive;
-  seed tồn đầu không âm qua service; làm mới món chờ phục vụ sau payment; sửa N+1 và code/type trùng.
-- `/reconciliation` và `/reports` hiện vẫn là placeholder. Chưa có `/api/reconciliations/**`
-  hoặc `/api/payments/summary`.
+- JWT/6 vai trò, tài khoản có tìm tên/SĐT/lọc vai trò/trạng thái, thực đơn/định lượng, sơ đồ bàn, đặt bàn và mở phiên.
+- Gọi/gọi thêm/hủy, bếp/tiêu hao/phục vụ; SSE sau commit, reconnect và polling30s.
+- Thanh toán/hóa đơn theo snapshot, READY/0đ, đóng phiên/trả bàn atomic.
+- Kho: danh mục/D12, nhập/lô/HSD, SUM ledger, kiểm kê D7, xuất hủy và lịch sử.
+- Đối soát CASHIER lập/MANAGER xác nhận: Invoice theo `[start,end)`, POST tính lại,
+  giữ snapshot; confirm có khóa dòng, lặp/race trả409 theo §12.18.
+- Báo cáo OWNER: doanh thu/count/phương thức/top món, tồn thấp/lô chú ý hiện tại,
+  10 biến động mới nhất; chọn tháng, bảng từng ngày, ngày cao nhất và bình quân.
+  Kiểm kê có nút Khớp tồn hệ thống từng dòng, vẫn giữ D7 và actual ban đầu trống.
 
-| Bằng chứng | Kết quả |
+| Kiểm chứng mới | Kết quả |
 |---|---|
-| [Review Phase 3](docs/phase_results/phase-3-review.md) | 187 backend tests; 26 frontend tests / 77 assertions; hai build và lint PASS |
-| Browser review | 16 nhóm ca API mock, desktop/mobile viewport và normal/reduced motion |
-| Neon review | 10 checks chỉ đọc; 22 checks service/transaction thật, có race kiểm kê/disposal |
-| [Phase 3 ban đầu](docs/phase_results/phase-3.md) | 176 backend tests; 25 frontend / 76 assertions; 111 API checks (mốc cũ) |
+| Backend clean verify | 211 tests, 0 failures/errors/skipped; JAR PASS |
+| Frontend test/build/lint | 33 tests/97 assertions; PASS/PASS |
+| Review Neon thật chỉ đọc | 70 query checks; 11 nhóm API/browser checks; counts/ledger giữ nguyên |
+| API Phase 4 trước review | 152 API checks trong một chuỗi tiếp tục cùng fixture; query/transaction probe riêng |
+| Browser | Chrome và Edge thật; mock tách riêng; xem số đo và giới hạn trong báo cáo |
+| Restart/reconnect | SSE tự kết nối lại, REST invalidation, seed gates không nhân dữ liệu |
 
-Các số liệu là những lượt kiểm riêng, không cộng dồn hoặc thay cho nghiệm thu Phase 4.
-Lịch sử review [Phase 1](docs/phase_results/phase-1-review.md),
-[Phase 2](docs/phase_results/phase-2-review.md), [popup](docs/phase_results/phase-2-popup-fix.md) vẫn phải bảo toàn.
-
-## Bắt đầu Phase 4 khi được yêu cầu
-
-1. Đọc [bàn giao Phase 4](docs/PHASE_4_HANDOFF.md) để nắm code, baseline, dữ liệu và các giới hạn.
-2. Dùng [hướng dẫn](docs/phase_instructions/phase-4.md) và [prompt triển khai](docs/phase_instructions/phase-4-prompt.md).
-3. Ghi bằng chứng vào [checklist Phase 4](docs/phase_instructions/phase-4-checklist.md) khi thực sự chạy.
-
-Phần còn lại: FR-10/UC11.2 đối soát, FR-17/UC6.1 báo cáo, kiểm 33–36 và hồi quy 1–36,
-chốt tài liệu/demo. Không tự thêm tính năng đã cắt hoặc bắt đầu code từ việc đọc tài liệu.
+Chưa nghiệm thu tablet vật lý, tải nhiều user hoặc thực diễn backup/restore.
+Các báo cáo Phase1–3 là bằng chứng lịch sử, không cộng vào kết quả Phase4.
+Không tự mở rộng chức năng đã cắt hoặc commit/push.
 
 ## Môi trường và cấu hình
 
@@ -72,8 +68,8 @@ và Authorize để gọi API. Ngoài local, Swagger tắt. Auth stateless, khô
 .\mvnw.cmd clean verify
 ```
 
-JUnit/Mockito không cần DB; `contextLoads()` mặc định đã bỏ. Baseline mới nhất là 187 tests,
-không phải chỉ 6 tests: §21.1 là sáu **nhóm ca bắt buộc**. Phase 4 phải giữ toàn bộ baseline.
+JUnit/Mockito không cần DB; `contextLoads()` mặc định đã bỏ. Baseline mới nhất là 211 tests,
+không phải chỉ 6 tests: §21.1 là sáu **nhóm ca bắt buộc**. Các thay đổi sau phải giữ toàn bộ baseline.
 
 Nếu môi trường sandbox không ghi được cache mặc định, dùng cache workspace đã có:
 
@@ -108,7 +104,7 @@ Mật khẩu demo chung: **Demo@123**; DB lưu BCrypt, không plaintext.
 
 | Số điện thoại | Vai trò | Trang mặc định |
 |---|---|---|
-| 0900000001 | OWNER | `/reports` — placeholder trước Phase 4 |
+| 0900000001 | OWNER | `/reports` |
 | 0900000002 | MANAGER | `/reservations` |
 | 0900000003 | CASHIER | `/payment` |
 | 0900000004 | WAITER | `/floor-plan` |
@@ -121,11 +117,13 @@ stocktake/receipt riêng, kiểm kê tồn đầu cấu hình không âm trướ
 qua InventoryService; dùng SUM thực nếu đã có tiêu hao. Danh mục thiếu/ngừng dùng
 thì bỏ cả khối và báo. Startup không reset, sửa lịch sử hoặc refresh ngày tương đối.
 
-QA review để lại NVL `[QA]` ID 18 INACTIVE, tồn 8 kg. Snapshot cuối 23/10:
-18 NVL, 9 receipts, 12 stocktakes, 48 movements, 4 invoices, 12 sessions.
-Đây là mốc đã ghi nhận; đọc readiness/API lại trước demo. Lần đọc gần nhất thấy
-4 bàn trống/8 phiên ACTIVE, chưa có đặt bàn ngày 27/10. Khi cần, tạo giao dịch mới
-qua workflow; không sửa seed cũ để làm mới ngày.
+QA Phase4 để lại account9 LOCKED, món23 DISCONTINUED, NVL19 INACTIVE tồn0kg;
+NVL review18 vẫn INACTIVE tồn8kg. Sessions13/14/15 đã CLOSED qua payment,
+invoices6/7/8 và reconciliations1/2/3 có lịch sử thật. Snapshot cuối:
+19 NVL, 10 receipts, 24 stocktakes, 66 movements, 8 invoices, 15 sessions.
+Readiness: 5 bàn trống/7 ACTIVE, chưa có booking CONFIRMED ngày27/10.
+Đọc readiness/API lại trước demo; chuẩn bị giao dịch mới qua workflow,
+không refresh ngày seed hay sửa lịch sử.
 
 D10: khóa account chặn login mới; JWT đã cấp giữ role trong claim đến hết hạn 12h,
 kể cả đổi role. `/api/auth/me` dùng role token, tên hiện tại từ DB. Login lại nhận role mới.
@@ -151,12 +149,14 @@ Lệnh/script hiện có:
 - [Popup](docs/phase_results/phase-2-popup-fix.md): `popup-browser-check.mjs` mock và
   `popup-live-browser-check.mjs` chỉ đọc thật.
 
-Test/build của lượt sửa code trước đã PASS; lượt cập nhật tài liệu không phải một lượt nghiệm thu mới.
+Các script và lệnh Phase4, trước/sau QA và cách dùng guard/resume nằm trong
+[báo cáo Phase4](docs/phase_results/phase-4.md). Scripts mock không ghi Neon;
+API/live browser/transaction probe có guard và tạo lịch sử thật khi chạy lại.
 
 ## Backup/restore (TR-09)
 
 Giữ Neon `main` theo lựa chọn của chủ dự án. Hướng dẫn có sẵn không đồng nghĩa đã
-thực diễn restore; TR-09 vẫn cần ghi bằng chứng ở Phase 4. Branch/snapshot demo là
+thực diễn restore; lượt Phase4 chưa dump/restore (client tools chưa thấy trên PATH). Branch/snapshot demo là
 tùy chọn chuẩn bị khi chủ dự án cần, không tự tạo từ việc cập nhật tài liệu.
 PostgreSQL client tools dùng phiên bản tương thích server:
 
