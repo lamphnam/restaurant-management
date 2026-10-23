@@ -27,4 +27,9 @@ public interface ServiceSessionRepository extends JpaRepository<ServiceSession, 
             "select s from ServiceSession s join fetch s.table t join fetch t.area"
                     + " left join fetch s.reservation where s.id = :id")
     Optional<ServiceSession> findDetailById(Long id);
+
+    @Query(
+            "select distinct s from ServiceSession s join fetch s.table t join fetch t.area"
+                    + " left join fetch s.reservation where s.status = :status order by s.openedAt desc")
+    List<ServiceSession> findByStatusWithTableAndArea(@Param("status") SessionStatus status);
 }

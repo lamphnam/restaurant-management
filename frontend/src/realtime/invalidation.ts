@@ -6,7 +6,7 @@ export const liveQueryOptions = { refetchInterval: 30_000, refetchOnWindowFocus:
 export function eventKeys(event: RealtimeEvent): QueryKey[] {
   const session: QueryKey[] = event.sessionId == null ? [] : [['session', Number(event.sessionId)]]
   switch (event.type) {
-    case 'FLOOR_PLAN': return [['floor-plan'], ['payment'], ...session]
+    case 'FLOOR_PLAN': return [['floor-plan'], ['payment'], ...session, ['awaiting-service']]
     case 'RESERVATION': return [['reservations'], ['floor-plan']]
     case 'ORDER': return [['kitchen'], ...session, ['awaiting-service'], ['payment']]
     default: return []

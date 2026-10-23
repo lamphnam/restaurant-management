@@ -42,17 +42,30 @@ public class DiningTable {
     private TableStatus status;
 
     public DiningTable(DiningArea area, String name, int capacity) {
-        this.area = area; this.name = name; this.capacity = capacity;
+        this.area = area;
+        this.name = name;
+        this.capacity = capacity;
         this.status = TableStatus.AVAILABLE;
     }
-    public boolean hasEnoughCapacity(int guestCount) { return guestCount > 0 && capacity >= guestCount; }
-    public void occupy() {
-        if (status != TableStatus.AVAILABLE) throw new BusinessException(ErrorCode.INVALID_STATE, "Bàn không ở trạng thái trống");
-        status = TableStatus.OCCUPIED;
+
+    public boolean hasEnoughCapacity(int guestCount) {
+        return guestCount > 0 && capacity >= guestCount;
     }
+
+    public void occupy() {
+        if (status != TableStatus.AVAILABLE) {
+            throw new BusinessException(ErrorCode.INVALID_STATE, "Bàn không ở trạng thái trống");
+        }
+        this.status = TableStatus.OCCUPIED;
+    }
+
     public void release() {
-        if (status == TableStatus.AVAILABLE) return;
-        if (status != TableStatus.OCCUPIED) throw new BusinessException(ErrorCode.INVALID_STATE, "Bàn không đang phục vụ");
-        status = TableStatus.AVAILABLE;
+        if (status == TableStatus.AVAILABLE || status == TableStatus.INACTIVE) {
+            return;
+        }
+        if (status != TableStatus.OCCUPIED) {
+            throw new BusinessException(ErrorCode.INVALID_STATE, "Bàn không đang phục vụ");
+        }
+        this.status = TableStatus.AVAILABLE;
     }
 }

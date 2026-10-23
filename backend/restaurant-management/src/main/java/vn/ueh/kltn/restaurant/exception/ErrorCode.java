@@ -28,12 +28,26 @@ public enum ErrorCode {
     TABLE_INACTIVE(HttpStatus.CONFLICT, "Bàn đã ngừng sử dụng"),
     TABLE_NOT_AVAILABLE(HttpStatus.CONFLICT, "Bàn không ở trạng thái trống"),
     SESSION_ALREADY_ACTIVE(HttpStatus.CONFLICT, "Bàn đã có phiên đang hoạt động"),
+    SESSION_NOT_ACTIVE(HttpStatus.CONFLICT, "Phiên phục vụ không ở trạng thái đang hoạt động"),
+    SESSION_ALREADY_PAID(HttpStatus.CONFLICT, "Phiên phục vụ đã được thanh toán"),
+    PAYMENT_BLOCKED_PENDING_ITEMS(
+            HttpStatus.BAD_REQUEST, "Không thể thanh toán khi còn món đang chờ chế biến hoặc đang nấu"),
+    UNIT_CHANGE_BLOCKED(
+            HttpStatus.CONFLICT, "Không thể thay đổi đơn vị tính của nguyên vật liệu đã có biến động kho"),
+    INSUFFICIENT_STOCK(HttpStatus.BAD_REQUEST, "Số lượng tồn kho không đủ để xuất hủy"),
+    INVALID_DISPOSAL(HttpStatus.BAD_REQUEST, "Số lượng xuất hủy phải lớn hơn 0"),
+    INVALID_STOCKTAKE(HttpStatus.BAD_REQUEST, "Dữ liệu kiểm kê không hợp lệ"),
+    INVALID_QUANTITY(HttpStatus.BAD_REQUEST, "Số lượng không hợp lệ"),
+    EXPIRY_DATE_REQUIRED(
+            HttpStatus.BAD_REQUEST, "Nguyên vật liệu có theo dõi hạn sử dụng bắt buộc phải nhập hạn sử dụng"),
+    LOT_INGREDIENT_MISMATCH(HttpStatus.BAD_REQUEST, "Lô nguyên vật liệu không thuộc về nguyên vật liệu đã chọn"),
     RESERVATION_NOT_CONFIRMED(HttpStatus.CONFLICT, "Đặt bàn không còn ở trạng thái đã xác nhận"),
     RESERVATION_TABLE_MISMATCH(HttpStatus.CONFLICT, "Đặt bàn không thuộc bàn đã chọn"),
     RESERVATION_EXPIRED(HttpStatus.CONFLICT, "Đặt bàn đã quá giờ kết thúc"),
     DUPLICATE_RECIPE_INGREDIENT(
             HttpStatus.BAD_REQUEST, "Nguyên vật liệu bị trùng trong định lượng"),
     INGREDIENT_INACTIVE(HttpStatus.BAD_REQUEST, "Nguyên vật liệu đã ngừng sử dụng"),
+    LOT_NOT_FOUND(HttpStatus.NOT_FOUND, "Không tìm thấy lô nguyên vật liệu"),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Hệ thống gặp sự cố, vui lòng thử lại sau");
 
     private final HttpStatus status;

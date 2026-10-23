@@ -1,5 +1,9 @@
 # Prompt triển khai Phase 3
 
+> **Prompt lịch sử, không chạy lại trên baseline hiện tại.** Phase 3 và review đã có trong code;
+> xem [review](../phase_results/phase-3-review.md). Công việc tiếp theo dùng
+> [prompt Phase 4](phase-4-prompt.md) khi được chủ dự án giao triển khai.
+
 Chỉ giao prompt này khi chủ dự án yêu cầu bắt đầu Phase 3. Việc chuẩn bị file ngày
 23/10/2026 chưa cho phép chạy phần triển khai bên dưới.
 

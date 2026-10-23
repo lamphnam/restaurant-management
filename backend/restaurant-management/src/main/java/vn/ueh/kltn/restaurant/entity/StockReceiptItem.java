@@ -42,11 +42,15 @@ public class StockReceiptItem {
     private BigDecimal quantity;
 
     public StockReceiptItem(Ingredient ingredient, IngredientLot lot, BigDecimal quantity) {
-        this.ingredient = ingredient; this.lot = lot;
+        this.ingredient = ingredient;
+        this.lot = lot;
         this.quantity = quantity;
     }
+
     void attachTo(StockReceipt receipt) {
-        if (this.receipt != null) throw new BusinessException(ErrorCode.INVALID_STATE, "Chi tiết đã thuộc phiếu nhập");
+        if (this.receipt != null) {
+            throw new BusinessException(ErrorCode.INVALID_STATE, "Chi tiết đã thuộc phiếu nhập");
+        }
         this.receipt = receipt;
     }
 }

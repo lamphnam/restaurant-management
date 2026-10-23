@@ -39,9 +39,17 @@ public class Stocktake {
     @OneToMany(mappedBy = "stocktake", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     private List<StocktakeItem> items = new ArrayList<>();
 
-    public Stocktake(Account createdBy, Instant createdAt) { this.createdBy = createdBy;
+    public Stocktake(Account createdBy, Instant createdAt) {
+        this.createdBy = createdBy;
+        this.createdAt = createdAt;
+    }
 
-    this.createdAt = createdAt; }
-    public List<StocktakeItem> getItems() { return Collections.unmodifiableList(items); }
-    public void addItem(StocktakeItem item) { item.attachTo(this); items.add(item); }
+    public List<StocktakeItem> getItems() {
+        return Collections.unmodifiableList(items);
+    }
+
+    public void addItem(StocktakeItem item) {
+        item.attachTo(this);
+        items.add(item);
+    }
 }

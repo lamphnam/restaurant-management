@@ -1,65 +1,88 @@
 # Frontend — Quản lý quán ăn
 
-React + TypeScript + Vite, sử dụng Bun. Các thư viện đã cài: Ant Design,
-TanStack Query, React Router, Axios, dayjs, `@microsoft/fetch-event-source`.
+React + TypeScript + Vite, dùng **Bun**; Ant Design, TanStack Query, React Router,
+Axios, dayjs và @microsoft/fetch-event-source. Không thêm UI/state framework mới.
 
 ```powershell
 bun install
 bun run dev
-```
-
-Mở http://localhost:5173. Vite proxy `/api` tới http://localhost:8080.
-Ant Design và dayjs dùng locale tiếng Việt.
-
-```powershell
+bun run test
 bun run build
 bun run lint
-bun run test
 bun run preview
 ```
 
-`build` gồm kiểm tra TypeScript. Commit `bun.lock` để dùng cùng phiên bản
-dependencies. Không đưa thông tin kết nối database hoặc JWT secret vào frontend.
+Vite http://localhost:5173 proxy `/api` → backend8080. Ant Design/dayjs dùng tiếng Việt.
+Build gồm type-check. Giữ bun.lock trong Git; không đưa credentials/secret vào frontend.
 
-Đã có đăng nhập, route guard, menu theo role và bốn trang Phase 1:
-`/accounts`, `/menu` (gồm định lượng), `/floor-plan`, `/reservations`.
-`/sessions/:id`, `/awaiting-service`, `/kitchen` đã có giao diện Phase 2;
-thanh toán, kho đầy đủ, đối soát và báo cáo chờ Phase 3–4.
+## Trạng thái 23/10/2026
 
-Mốc sau review Phase 1: build/lint pass, 13 test Bun / 27 assertions.
-Mốc Phase 2: build/lint pass, 16 test / 41 assertions; kiểm browser dùng API/Neon thật
-và giới hạn tại [báo cáo Phase 2](../docs/phase_results/phase-2.md).
-Sau review: 18 test / 47 assertions, build/lint pass; form gọi món dùng tối đa 99 phần/dòng,
-50 dòng/đợt. Bằng chứng mới: [review Phase 2](../docs/phase_results/phase-2-review.md).
-Đã sửa dropdown lệch khỏi màn hình khi bật giảm chuyển động; 59 kiểm tra popup API mock
-và 9 kiểm tra app/API thật chỉ đọc pass. Xem [báo cáo popup](../docs/phase_results/phase-2-popup-fix.md).
-Kiểm thử hồi quy modal mở phiên: 7 kiểm tra Chrome headless dùng API mock,
-không ghi vào Neon. Xem lệnh chạy trong
-[báo cáo review](../docs/phase_results/phase-1-review.md).
+Phase 0–3 và review đã triển khai. Baseline mới nhất **26 tests / 77 assertions**,
+build/lint PASS; xem [review Phase 3](../docs/phase_results/phase-3-review.md).
+Review browser có 16 nhóm ca stocktake dùng API mock, normal/reduced motion,
+desktop/mobile viewport; không phải QA browser ghi Neon.
 
-## Quy ước đã dùng, cần giữ
+| Route | Quyền UI | Hiện trạng |
+|---|---|---|
+| `/accounts` | OWNER | Quản lý tài khoản |
+| `/menu` | OWNER, HEAD_CHEF | Thực đơn/định lượng, thao tác theo role |
+| `/floor-plan` | WAITER, MANAGER, CASHIER, OWNER | Sơ đồ bàn/mở phiên đúng quyền |
+| `/reservations` | MANAGER, WAITER, OWNER | Đặt bàn/tra cứu, thao tác theo role |
+| `/sessions/:id` | WAITER, MANAGER | Chi tiết/gọi món; CASHIER dùng payment riêng |
+| `/kitchen` | KITCHEN_STAFF, HEAD_CHEF | Queue/trạng thái món |
+| `/awaiting-service` | WAITER | Món chờ phục vụ |
+| `/payment` | CASHIER | Danh sách/preview/payment |
+| `/invoices` | CASHIER, MANAGER, OWNER | Lịch sử hóa đơn |
+| `/inventory` | OWNER, HEAD_CHEF | Tồn/danh mục/lô/biến động, thao tác theo role |
+| `/inventory/receipts`, `/inventory/stocktake` | HEAD_CHEF | Nhập/kiểm kê |
+| `/reconciliation` | CASHIER, MANAGER | **Placeholder Phase 4** |
+| `/reports` | OWNER | **Placeholder Phase 4**, OWNER landing |
 
-- `api/<name>Api.ts`, `types/<name>.ts`, page lazy-load trong `router.tsx`.
-  Giữ Ant Design, TanStack Query và Axios hiện có.
-- Nhãn/màu từ `utils/labels.ts` + `StatusTag`; tiền dùng `MoneyText`;
-  thời gian qua `utils/time.ts` theo `Asia/Ho_Chi_Minh`.
-- Dùng `useApiFeedback` cho message/fieldErrors; không ghi đè cơ chế 401/403,
-  chống stale 401 và chính sách không retry 4xx trong `api/queryClient.ts`.
-- Giảm chuyển động dùng `transition: none`; không đặt duration dương trên mọi thuộc tính
-  của mọi phần tử, vì transition left/top làm sai phép đo căn vị trí popup.
-- Query key hiện có: `['accounts']`, `['menu-items', filters]`,
-  `['menu-items', id, 'recipe']`, `['ingredients']`, `['floor-plan']`,
-  `['reservations', filters]`. Phase 2 đã nối `['session', id]`, `['kitchen']`,
-  `['awaiting-service']`; số `id` phải cùng kiểu giữa route và event.
-- Modal walk-in không tải hoặc chờ đặt bàn; chế độ đặt trước mới gọi query
-  có `tableId`, `unexpired=true`, `status=CONFIRMED`. Không quay lại quét cả quán.
-- `realtime/useRealtime.ts` gắn một lần trong AppLayout, dùng bearer header,
-  cleanup theo token, invalidate toàn bộ live key khi reconnect. Sơ đồ bàn/bếp/
-  chờ phục vụ/chi tiết phiên có polling 30 giây và refetch khi focus.
-  Thiết kế SSE, quyền từng thao tác và checklist nằm ở
-  [hướng dẫn Phase 2](../docs/phase_instructions/phase-2.md).
+UI role guard không thay backend authorization. Không mở lại `/sessions/:id` cho CASHIER.
 
-Bàn giao hiện tại: [PHASE_3_HANDOFF](../docs/PHASE_3_HANDOFF.md),
-[hướng dẫn Phase 3](../docs/phase_instructions/phase-3.md),
-[prompt](../docs/phase_instructions/phase-3-prompt.md). Chỉ chuẩn bị tài liệu, chưa thay các
-placeholder thanh toán/hóa đơn/kho. Đối soát và báo cáo vẫn thuộc Phase 4.
+## Quy ước cần giữ
+
+- api/types theo domain, page lazy trong router.tsx, navigation/landing ở auth/roles.ts.
+- labels.ts + StatusTag, tiền qua MoneyText, time.ts theo Asia/Ho_Chi_Minh.
+- useApiFeedback cho message/fieldErrors; giữ cơ chế stale401/403 và không retry4xx.
+- PageResponse chỉ có một định nghĩa trong types/tables.ts; inventoryApi không import type từ paymentApi.
+- Giảm chuyển động dùng `transition: none`; không duration dương global trên left/top popup.
+- Recipe giữ dòng inactive đã có; lookup có status filter. Walk-in độc lập query reservation;
+  picker đặt trước dùng tableId/unexpired=true/status=CONFIRMED phía server.
+- Stocktake actual ban đầu trống, chỉ gửi dòng đã đếm. Xóa ô bỏ dòng, 0 chỉ gửi khi nhập0.
+  Ghi chú đơn thuần không đánh dấu đã đếm; server tính lại systemQuantity, UI chỉ tính tạm.
+- Payment không gửi amount; pending/cooking chặn, READY/0đ hợp lệ. Invoice/stock nghiệp vụ ở backend.
+
+## Query keys và realtime
+
+| Nhóm | Prefix hiện có |
+|---|---|
+| Danh mục | `['accounts']`, `['menu-items']`, `['ingredients']` (recipe lookup) |
+| Bán hàng live | `['floor-plan']`, `['reservations']`, `['session', numericId]`, `['kitchen']`, `['awaiting-service']` |
+| Thanh toán/lịch sử | `['payment','open-sessions']`, `['payment','preview',id]`, `['invoices',filters]` |
+| Kho | `['inventory','ingredients',filters]`, `ingredients-active`, `ingredients-lookup`, `lots-attention`, `movements`, `receipts-list`, `stocktakes-list`, `stocktake-template` dưới prefix inventory |
+
+FLOOR_PLAN invalidate floor-plan/payment/session/awaiting-service. ORDER invalidate
+kitchen/session/awaiting-service/payment; RESERVATION invalidate reservations/floor-plan.
+useRealtime gắn một lần trong AppLayout, bearer header, cleanup theo token,
+invalidate toàn bộ live prefixes khi reconnect. Live screens polling30s/focus;
+kho không có SSE. Mutation kho invalidate prefix inventory; payment invalidate các key liên quan.
+
+## Điểm nối Phase 4
+
+Đọc [bàn giao](../docs/PHASE_4_HANDOFF.md), [hướng dẫn](../docs/phase_instructions/phase-4.md),
+[prompt](../docs/phase_instructions/phase-4-prompt.md), [checklist](../docs/phase_instructions/phase-4-checklist.md).
+Chỉ triển khai khi được giao riêng; lượt cập nhật tài liệu chưa thay placeholder.
+
+- Thêm api/types và hai lazy pages. Query key riêng có from/to cho reconciliation/preview/summary;
+  khối kho dùng API/key hiện có. Giữ shared PageResponse và feedback.
+- CASHIER lập đối soát, MANAGER list/chưa xác nhận/confirm; lặp confirm409 refetch.
+  Không có sửa/từ chối/xóa hoặc actual được tự coi là tiền hệ thống.
+- OWNER report: Statistic + Table, hôm nay giờ Việt Nam → UTC `[startOfDay,nextDay)`;
+  revenue/count/methods/top món theo khoảng, kho/cảnh báo hiện tại và10 movements gần nhất.
+- Rỗng/loading/lỗi/reload, routeguard, tablet/desktop, keyboard/click-only popup và reduced motion.
+  Không thêm chart library/event SSE hoặc business rule frontend.
+
+Lịch sử [review Phase1](../docs/phase_results/phase-1-review.md),
+[Phase2](../docs/phase_results/phase-2-review.md), [popup](../docs/phase_results/phase-2-popup-fix.md)
+giữ làm nguồn hồi quy. Không cộng các số test cũ thành một lượt kiểm mới.

@@ -45,8 +45,16 @@ public class Invoice {
     @Column(name = "paid_at", nullable = false)
     private Instant paidAt;
 
-    public Invoice(ServiceSession session, Account cashier, PaymentMethod paymentMethod, BigDecimal amount, Instant paidAt) {
-        this.session = session; this.cashier = cashier; this.paymentMethod = paymentMethod; this.amount = amount;
+    public Invoice(
+            ServiceSession session,
+            Account cashier,
+            PaymentMethod paymentMethod,
+            BigDecimal amount,
+            Instant paidAt) {
+        this.session = session;
+        this.cashier = cashier;
+        this.paymentMethod = paymentMethod;
+        this.amount = amount;
         this.paidAt = paidAt;
     }
 }

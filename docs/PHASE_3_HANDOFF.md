@@ -1,5 +1,11 @@
 # Bàn giao từ Phase 2 sang Phase 3
 
+> **Tài liệu lịch sử trước triển khai.** Phase 3 và review PR #3 đã có trong code.
+> Hiện trạng: [review Phase 3](phase_results/phase-3-review.md).
+> Công việc tiếp theo dùng [bàn giao Phase 4](PHASE_4_HANDOFF.md),
+> [hướng dẫn](phase_instructions/phase-4.md), [prompt](phase_instructions/phase-4-prompt.md).
+> Những ghi chú branch/code “chưa có” bên dưới chỉ đúng ở mốc bàn giao cũ, không dùng để triển khai lại Phase 3.
+
 Ngày chốt: 23/10/2026, Asia/Ho_Chi_Minh. Chủ dự án đã test tay lại popup, xác nhận
 thấy ổn và yêu cầu chuẩn bị tài liệu. **Phase 3 chưa triển khai.** Tài liệu không
 phải lệnh bắt đầu code. Không commit/push cho tới khi chủ dự án yêu cầu.

@@ -1,52 +1,49 @@
 # Tài liệu dự án
 
-Mốc bàn giao: Phase 0–2 đã triển khai; cả 7 mục review Phase 1 được bảo toàn.
-Ngày cập nhật: 23/10/2026. Bản ghi nghiệm thu là bằng chứng tại ngày chạy, không phải dữ liệu live.
+Cập nhật **23/10/2026**, Asia/Ho_Chi_Minh. **Phase 0–3 và sửa review đã có trong code;
+Phase 4 đã chuẩn bị, chưa triển khai.** Tài liệu lịch sử giữ bằng chứng tại ngày chạy,
+không phải dữ liệu live hoặc chỉ dẫn triển khai lại phase cũ.
 
-## Đọc theo thứ tự
+## Thứ tự đọc cho việc tiếp theo
 
-1. [CLAUDE.md](../CLAUDE.md): trạng thái và quy tắc làm việc.
-2. [Master spec Spring/React](../CODEX_MASTER_SPEC_KLTN_SPRING_REACT.md): nghiệp vụ,
-   phạm vi, 18 bảng, quyền, API và checklist. Bản ASP.NET là tài liệu cũ.
-3. [Kết quả Phase 2](phase_results/phase-2.md), [review](phase_results/phase-2-review.md),
-   [popup](phase_results/phase-2-popup-fix.md): hiện trạng, bằng chứng và xác nhận test tay của chủ dự án.
-4. [Bàn giao Phase 3](PHASE_3_HANDOFF.md), [hướng dẫn](phase_instructions/phase-3.md),
-   [prompt](phase_instructions/phase-3-prompt.md): tài liệu chuẩn bị, chưa triển khai Phase 3.
-5. [TRACEABILITY](TRACEABILITY.md): phần đã làm và phần còn chờ Phase 3–4.
-6. [Bàn giao lịch sử trước Phase 2](PHASE_2_HANDOFF.md), [hướng dẫn](phase_instructions/phase-2.md)
-   và [prompt](phase_instructions/phase-2-prompt.md): nguồn yêu cầu của đợt triển khai.
+1. [AGENTS](../AGENTS.md) / [CLAUDE](../CLAUDE.md): trạng thái, quy tắc, baseline.
+2. [Master Spring/React](../CODEX_MASTER_SPEC_KLTN_SPRING_REACT.md): nguồn chính;
+   ASP.NET là bản đã bị thay thế, không cập nhật theo tiến độ hiện tại.
+3. [Review Phase 3](phase_results/phase-3-review.md), [kết quả ban đầu](phase_results/phase-3.md),
+   [TRACEABILITY](TRACEABILITY.md): code hiện có, bằng chứng và phần còn thiếu.
+4. [Bàn giao Phase 4](PHASE_4_HANDOFF.md), [hướng dẫn](phase_instructions/phase-4.md),
+   [prompt](phase_instructions/phase-4-prompt.md), [checklist](phase_instructions/phase-4-checklist.md).
+5. [Review Phase 1](phase_results/phase-1-review.md), [review Phase 2](phase_results/phase-2-review.md),
+   [popup](phase_results/phase-2-popup-fix.md): các sửa phải giữ khi hồi quy.
 
-Tài liệu bàn giao/hướng dẫn không thay thế thứ tự ưu tiên của master §0.1.
-Không tự thay nghiệp vụ nếu gặp mâu thuẫn; nêu đúng mục và hỏi chủ dự án.
+## Tiến độ và bằng chứng
 
-## Trạng thái và bằng chứng
-
-| Giai đoạn | Trạng thái | Báo cáo |
+| Phase | Hiện trạng | Tài liệu |
 |---|---|---|
-| Phase 0 | Nền tảng, auth/JWT, schema, layout và sửa review đã xong | [Kết quả](phase_results/phase-0.md), [review](phase_results/phase-0-review.md) |
-| Phase 1 | Danh mục/định lượng, đặt bàn, mở phiên; đã sửa 7 mục review | [Nghiệm thu ban đầu](phase_results/phase-1.md), [sửa review](phase_results/phase-1-review.md) |
-| Phase 2 | Đã triển khai, sửa ba Critical và popup; chủ dự án test tay popup thấy ổn | [Kết quả](phase_results/phase-2.md), [review](phase_results/phase-2-review.md), [popup](phase_results/phase-2-popup-fix.md) |
-| Phase 3 | Mới chuẩn bị tài liệu, chưa code | [Bàn giao](PHASE_3_HANDOFF.md), [hướng dẫn](phase_instructions/phase-3.md), [prompt](phase_instructions/phase-3-prompt.md) |
-| Phase 4 | Chưa triển khai | [Hướng dẫn](phase_instructions/phase-4.md) |
+| 0 | Nền tảng/JWT/schema/layout, đã sửa review | [Kết quả](phase_results/phase-0.md), [review](phase_results/phase-0-review.md) |
+| 1 | Danh mục/định lượng/đặt bàn/mở phiên, giữ cả 7 sửa review | [Kết quả](phase_results/phase-1.md), [review](phase_results/phase-1-review.md) |
+| 2 | Gọi món/bếp/tiêu hao/phục vụ/SSE, đã sửa Critical và popup | [Kết quả](phase_results/phase-2.md), [review](phase_results/phase-2-review.md), [popup](phase_results/phase-2-popup-fix.md) |
+| 3 | Payment/invoices và kho, đã sửa 3 critical + 6 optional PR #3 | [Kết quả ban đầu](phase_results/phase-3.md), [review mới nhất](phase_results/phase-3-review.md) |
+| 4 | Đã chuẩn bị tài liệu, chưa code/QA | [Bàn giao](PHASE_4_HANDOFF.md), [hướng dẫn](phase_instructions/phase-4.md), [prompt](phase_instructions/phase-4-prompt.md), [checklist chưa chạy](phase_instructions/phase-4-checklist.md) |
 
-Tiến độ từng FR/BR/TR/NFR: [TRACEABILITY](TRACEABILITY.md).
-Lịch trong [phase_instructions](phase_instructions/README.md) là lịch dự kiến;
-không suy ra đã hoàn thành chỉ vì đã đến ngày của phase.
+Baseline gần nhất: **187 backend tests; 26 frontend tests / 77 assertions; hai build/lint PASS**.
+Review PR #3 có 16 nhóm ca browser mock, 10 checks Neon chỉ đọc và 22 checks service/transaction thật.
+111 live API checks là lượt triển khai Phase 3 trước review, không cộng vào lượt mới.
+FR-10/FR-17, kiểm toàn bộ 1–36, Edge và thực diễn backup/restore còn cần bằng chứng Phase 4.
 
-## Kiểm thử và chạy app
+## Chạy app và QA
 
-- Cài đặt, cấu hình local, tài khoản demo và chạy hai phía: [README gốc](../README.md).
-- Frontend, query key, UI chung: [frontend README](../frontend/README.md).
-- Lệnh kiểm tra sau review, phân biệt API thật/API mock và tác động QA:
-  [phase-1-review.md](phase_results/phase-1-review.md).
-- Kiểm Phase 2 trên app/Neon thật, race complete và SSE: [phase-2.md](phase_results/phase-2.md).
-- Sửa và rà dropdown/Modal/Drawer với normal/reduced motion:
-  [phase-2-popup-fix.md](phase_results/phase-2-popup-fix.md), phân biệt 59 kiểm tra mock và 9 kiểm tra thật chỉ đọc.
-- Kiểm chỉ đọc trước QA/demo: `node scripts/phase1-demo-readiness.mjs` từ gốc repo.
-- Script ghi QA yêu cầu `PHASE1_QA_ALLOW_WRITES=main`; không tự reset.
-  Không chạy lại script mở phiên chỉ để kiểm tài liệu: chưa có luồng đóng phiên.
+- [README gốc](../README.md): cấu hình, lệnh chạy/test, tài khoản, seed, backup/restore.
+- [Frontend README](../frontend/README.md): route/role, query key, shared UI và điểm nối Phase 4.
+- `node scripts/phase1-demo-readiness.mjs`: kiểm chỉ đọc trước QA/demo; snapshot trong báo cáo không thay kiểm live.
+- Script ghi cần `PHASE1_QA_ALLOW_WRITES=main`, prefix `[QA]`, ghi tác động vào báo cáo; không tự reset.
+- Review fixture ID 18 hiện INACTIVE, tồn 8 kg; không dùng nó như NVL demo nghiệp vụ bình thường.
+- `.cache/` chứa output tái tạo; không lưu token, secret, DB credentials trong docs/Git.
 
-Các quyết định D10, seed độc lập, Neon main/reset và định lượng sau review đã ghi ở
-CLAUDE.md, master spec và phần quyết định trong tài liệu bàn giao. Không lưu DB password,
-JWT secret hay bearer token vào tài liệu. Log/ảnh/JSON trong `.cache` là output sinh lại;
-test và script tái lập nằm trong Git.
+## Tài liệu lịch sử
+
+[Bàn giao trước Phase 2](PHASE_2_HANDOFF.md), [trước Phase 3](PHASE_3_HANDOFF.md),
+các instruction/prompt Phase 0–3 và báo cáo cũ mô tả đúng mốc của chúng.
+Các dòng “chưa triển khai Phase 2/3” trong phần lịch sử không phải trạng thái hiện tại.
+Lịch 24/25/26/10 trong master/instructions là kế hoạch gốc; nghiệm thu dựa trên code và bằng chứng.
+Không tự code Phase 4 hoặc commit/push chỉ vì tài liệu đã chuẩn bị xong.

@@ -3,6 +3,9 @@
 > Bản bàn giao lịch sử trước triển khai. Phase 2 đã được thực hiện ngày 23/10/2026;
 > xem [kết quả Phase 2](phase_results/phase-2.md) cho hiện trạng và bằng chứng mới.
 
+> Cập nhật dẫn đường 23/10/2026: Phase 0–3/review đã có trong code. Công việc tiếp theo
+> dùng [bàn giao Phase 4](PHASE_4_HANDOFF.md); các mô tả chưa triển khai bên dưới là lịch sử.
+
 Ngày chốt tài liệu: 22/10/2026, Asia/Ho_Chi_Minh.
 Phase 1 và 7 mục review PR #1 đã được sửa; chủ dự án yêu cầu chuẩn bị tài liệu.
 **Phase 2 chưa triển khai.** Tài liệu này mô tả nền hiện có và phần sắp làm, không phải báo cáo nghiệm thu Phase 2.
