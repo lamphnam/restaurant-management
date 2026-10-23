@@ -1,6 +1,8 @@
 package vn.ueh.kltn.restaurant.realtime;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -18,6 +20,19 @@ import org.springframework.transaction.support.DefaultTransactionStatus;
 import org.springframework.transaction.support.TransactionTemplate;
 
 class RealtimeEventListenerTest {
+    @Test
+    void unexpectedDispatchFailureCannotTurnCommittedTransactionIntoFailure() {
+        try (var context = new AnnotationConfigApplicationContext(TestConfig.class)) {
+            SseHub hub = context.getBean(SseHub.class);
+            var event = new RealtimeEvent(RealtimeEvent.Type.ORDER, 7L);
+            doThrow(new RuntimeException("dispatch failure")).when(hub).broadcast(event);
+            var template = new TransactionTemplate(new TestTransactionManager());
+            assertDoesNotThrow(
+                    () -> template.executeWithoutResult(status -> context.publishEvent(event)));
+            verify(hub).broadcast(event);
+        }
+    }
+
     @Test
     void
             realSpringTransactionSynchronizationsDeliverOnlyAfterCommitNeverRollbackOrOutsideTransaction() {

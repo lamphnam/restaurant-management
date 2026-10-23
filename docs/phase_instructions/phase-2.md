@@ -34,7 +34,8 @@ Giữ Controller → Service interface → ServiceImpl → Repository; DTO recor
 Controller validate + @PreAuthorize + gọi service; không truy cập repository hoặc xử lý workflow.
 Thời gian dùng Clock/Instant, audit lấy CurrentUser, số lượng/tiền dùng BigDecimal;
 request kiểm @Size theo độ dài cột (note/reason tối đa 500), @NotBlank cho reason,
-quantity > 0 và items không rỗng. Không tin giá/người/thời điểm nghiệp vụ từ client.
+quantity từ 1–99 và items từ 1–50 dòng (chủ dự án chốt review 23/10/2026).
+Không tin giá/người/thời điểm nghiệp vụ từ client.
 
 ### API cần thêm theo §13
 
@@ -66,7 +67,8 @@ Không đổi response POST mở phiên đang dùng sessionId.
 6. Entity guard chuyển trạng thái (`startCooking`, `markUnavailable`, `markReady`, `markServed`, `cancel`) ném `BusinessException` khi sai.
 7. SSE (§14.1): `EventController` (`SseEmitter`), `SseHub`, heartbeat 20s, `RealtimeEvent` + `@TransactionalEventListener(AFTER_COMMIT)`. Phát `FLOOR_PLAN`, `RESERVATION`, `ORDER` đúng bảng §14.1 (gồm cả các thao tác Phase 1).
 
-- Mọi chuyển trạng thái món dùng khóa OrderItem theo §16.3; giữ check và thay đổi trong cùng transaction.
+- Mọi chuyển trạng thái món lấy sessionId bằng query scalar, khóa Session → OrderItem theo §16.3;
+  kiểm phiên ACTIVE trước cả nhánh no-op, giữ check và thay đổi trong cùng transaction.
   Lặp complete ở READY/SERVED là no-op trước khi đọc recipe/tạo movement.
 - Complete đọc recipe hiện tại, bao gồm NVL inactive được giữ từ trước; không lọc ACTIVE
   làm mất tiêu hao. Không cần recipe snapshot mới. Định lượng đổi không sửa movement đã ghi.
@@ -77,6 +79,8 @@ Không đổi response POST mở phiên đang dùng sessionId.
 - Query session/orders/items và queue tránh N+1; map khi transaction đọc còn mở vì OSIV=false.
 - PATCH cùng đích không phát event mới; rollback không phát. cancel reservation đã CANCELLED
   hiện là no-op, phải phân biệt trước khi publish RESERVATION.
+- SSE sau commit chỉ enqueue sang executor riêng, không gửi trên thread HTTP; task gửi bắt Exception,
+  lỗi dispatch/rejection không làm hỏng response đã commit. Queue hữu hạn, không CallerRuns.
 
 ## Frontend
 - `/sessions/:id` (gọi món/gọi thêm, hủy món, Đã phục vụ, tạm tính), `/awaiting-service`, `/kitchen` (2 cột, chữ lớn, tablet).

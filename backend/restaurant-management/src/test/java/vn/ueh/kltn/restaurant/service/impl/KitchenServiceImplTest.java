@@ -8,6 +8,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -21,10 +22,13 @@ import static vn.ueh.kltn.restaurant.TestFixtures.item;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import vn.ueh.kltn.restaurant.entity.Account;
 import vn.ueh.kltn.restaurant.entity.Ingredient;
@@ -39,6 +43,7 @@ import vn.ueh.kltn.restaurant.realtime.RealtimeEvent;
 import vn.ueh.kltn.restaurant.repository.AccountRepository;
 import vn.ueh.kltn.restaurant.repository.OrderItemRepository;
 import vn.ueh.kltn.restaurant.repository.RecipeItemRepository;
+import vn.ueh.kltn.restaurant.repository.ServiceSessionRepository;
 import vn.ueh.kltn.restaurant.repository.StockMovementRepository;
 import vn.ueh.kltn.restaurant.security.CurrentUser;
 
@@ -54,13 +59,17 @@ class KitchenServiceImplTest {
     private final AccountRepository accounts = mock(AccountRepository.class);
     private final CurrentUser user = mock(CurrentUser.class);
     private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
+    private final ServiceSessionRepository sessions = mock(ServiceSessionRepository.class);
     private final KitchenServiceImpl service =
-            new KitchenServiceImpl(items, recipes, movements, accounts, user, CLOCK, events);
+            new KitchenServiceImpl(
+                    items, recipes, movements, accounts, user, CLOCK, events, sessions);
     private OrderItem item;
 
     @BeforeEach
     void setup() {
         item = item();
+        when(items.findSessionIdById(9L)).thenReturn(Optional.of(7L));
+        when(sessions.findLockedById(7L)).thenReturn(Optional.of(item.getOrder().getSession()));
         when(items.findLockedById(9L)).thenReturn(Optional.of(item));
     }
 
@@ -94,7 +103,9 @@ class KitchenServiceImplTest {
             assertNull(movement.getReceiptItem());
             assertNull(movement.getStocktakeItem());
         }
-        InOrder order = inOrder(items, recipes, movements, events);
+        InOrder order = inOrder(items, sessions, recipes, movements, events);
+        order.verify(items).findSessionIdById(9L);
+        order.verify(sessions).findLockedById(7L);
         order.verify(items).findLockedById(9L);
         order.verify(recipes).findByMenuItemId(1L);
         order.verify(movements).saveAll(any());
@@ -160,5 +171,45 @@ class KitchenServiceImplTest {
         assertThrows(BusinessException.class, () -> service.unavailable(99L, "Hết món"));
         assertThrows(BusinessException.class, () -> service.complete(99L));
         verifyNoInteractions(events, movements);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "start,PENDING",
+        "start,COOKING",
+        "unavailable,PENDING",
+        "unavailable,UNAVAILABLE",
+        "complete,COOKING",
+        "complete,READY",
+        "complete,SERVED"
+    })
+    void closedSessionRejectsTransitionsIncludingRepeatedTargets(
+            String action, OrderItemStatus status) {
+        ReflectionTestUtils.setField(item, "status", status);
+        item.getOrder().getSession().close(NOW);
+        assertThrows(BusinessException.class, () -> mutate(action));
+        assertEquals(status, item.getStatus());
+        verifyNoInteractions(recipes, movements, events);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"start,PENDING", "unavailable,PENDING", "complete,COOKING"})
+    void mutationsLockSessionBeforeItem(String action, OrderItemStatus status) {
+        ReflectionTestUtils.setField(item, "status", status);
+        mutate(action);
+        InOrder locks = inOrder(items, sessions);
+        locks.verify(items).findSessionIdById(9L);
+        locks.verify(sessions).findLockedById(7L);
+        locks.verify(items).findLockedById(9L);
+        verify(items, never()).findById(9L);
+    }
+
+    private void mutate(String action) {
+        switch (action) {
+            case "start" -> service.start(9L);
+            case "unavailable" -> service.unavailable(9L, "Hết nguyên liệu");
+            case "complete" -> service.complete(9L);
+            default -> throw new IllegalArgumentException(action);
+        }
     }
 }

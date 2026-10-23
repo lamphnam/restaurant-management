@@ -7,6 +7,9 @@ import { base, databaseSnapshot, eventually, loginAll, openStream, roles, select
 requireWriteApproval('phase2-api-check')
 const auth = await loginAll()
 const results = []
+let stream
+let expectedOrders = 0, expectedReservations = 0
+const itemStates = new Map(), reservationStates = new Map()
 const check = (condition, label) => { assert(condition, label); results.push(label) }
 async function call(role, method, path, body, expected = 200) {
   const response = await fetch(`${base}/api${path}`, { method, headers: { Authorization: `Bearer ${auth[role].accessToken}`, 'Content-Type': 'application/json' },
@@ -14,12 +17,35 @@ async function call(role, method, path, body, expected = 200) {
   const value = await response.json()
   assert.equal(response.status, expected, `${role} ${method} ${path}: ${value.code ?? response.status}`)
   results.push(`${role} ${method} ${path} → ${expected}`)
+  // AFTER_COMMIT now queues sends: wait for each positive signal before taking no-op counters.
+  if (response.status === 200 && stream) {
+    let eventType
+    if (method === 'POST' && /^\/sessions\/\d+\/orders$/.test(path)) {
+      value.items.forEach((item) => itemStates.set(item.id, item.status))
+      expectedOrders++; eventType = 'ORDER'
+    } else if (method === 'PATCH' && /^\/(?:sessions|kitchen)\/items\/\d+\//.test(path)) {
+      if (itemStates.has(value.id) && itemStates.get(value.id) !== value.status) {
+        expectedOrders++; eventType = 'ORDER'
+      }
+      itemStates.set(value.id, value.status)
+    } else if (method === 'POST' && path === '/reservations') {
+      reservationStates.set(value.id, value.status)
+      expectedReservations++; eventType = 'RESERVATION'
+    } else if (method === 'PATCH' && /^\/reservations\/\d+\/cancel$/.test(path)) {
+      if (reservationStates.get(value.id) !== value.status) {
+        expectedReservations++; eventType = 'RESERVATION'
+      }
+      reservationStates.set(value.id, value.status)
+    }
+    if (eventType) await eventually(() => stream.events.filter((event) => event.type === eventType).length >=
+      (eventType === 'ORDER' ? expectedOrders : expectedReservations))
+  }
   return value
 }
 const before = databaseSnapshot()
 const session = await selectQaSession(call)
 const prefix = `[QA] Phase2 API ${Date.now()}`
-const stream = await openStream(auth.WAITER.accessToken)
+stream = await openStream(auth.WAITER.accessToken)
 const menus = []
 try {
   // Real six-role matrix: authorized mutations target nonexistent ids, so this matrix does not write data.
@@ -116,11 +142,11 @@ try {
   snapshot = databaseSnapshot()
   check(!snapshot.movements.some((movement) => [emptyItem.id, cancelled.id, unavailable.id].includes(movement.orderItemId)), 'Unavailable/cancelled/empty recipe create no consumption')
   check(snapshot.movements.filter((movement) => movement.orderItemId === completed.id).length === 2, 'Complete after serve retains exactly original two movements')
-  // Force a real DB write failure using numeric precision. Earlier valid movement insert must roll back too.
+  // Force a DB rollback with an extreme QA recipe, while respecting the approved quantity cap.
   await call('HEAD_CHEF', 'PUT', `/menu-items/${dish.id}/recipe`, { lines: [
-    { ingredientId: ingredients[0].id, quantityPerServing: 0.001 }, { ingredientId: ingredients[1].id, quantityPerServing: 1000 },
+    { ingredientId: ingredients[0].id, quantityPerServing: 0.001 }, { ingredientId: ingredients[1].id, quantityPerServing: 100000000 },
   ] })
-  const overflow = await call('WAITER', 'POST', `/sessions/${session.sessionId}/orders`, { items: [{ menuItemId: dish.id, quantity: 2147483647, note: `${prefix} transaction rollback` }] })
+  const overflow = await call('WAITER', 'POST', `/sessions/${session.sessionId}/orders`, { items: [{ menuItemId: dish.id, quantity: 99, note: `${prefix} transaction rollback` }] })
   const overflowItem = overflow.items[0]
   await call('KITCHEN_STAFF', 'PATCH', `/kitchen/items/${overflowItem.id}/start`)
   const beforeRollbackEvents = stream.events.length

@@ -10,11 +10,15 @@ Hướng dẫn làm từng phase cho `CODEX_MASTER_SPEC_KLTN_SPRING_REACT.md` (�
 | `phase-3.md` | 25/10 | Thanh toán + toàn bộ kho |
 | `phase-4.md` | 26/10 | Đối soát, báo cáo, unit test, tài liệu |
 
-Cách dùng: gõ `/phase <N>` (skill `.claude/skills/phase`), hoặc dán nội dung `phase-N.md` cho agent.
+Cách dùng khi đã quyết định triển khai: gõ `/phase <N>` (skill `.agents/skills/phase`),
+hoặc giao prompt tương ứng cho agent.
 
 Mốc hiện tại (23/10/2026): Phase 0–2 đã triển khai; cả 7 mục review Phase 1 được giữ.
 Đọc [kết quả Phase 2](../phase_results/phase-2.md) và [TRACEABILITY](../TRACEABILITY.md)
-trước việc tiếp theo. Phase 3 chưa bắt đầu, cần yêu cầu riêng từ chủ dự án.
+trước việc tiếp theo. Đã có [bàn giao Phase 3](../PHASE_3_HANDOFF.md),
+[hướng dẫn](phase-3.md) và [prompt](phase-3-prompt.md); **Phase 3 chưa bắt đầu**,
+cần yêu cầu triển khai riêng từ chủ dự án. Các sửa Critical và popup/test tay được ghi ở
+[review](../phase_results/phase-2-review.md) và [popup](../phase_results/phase-2-popup-fix.md).
 Ngày trong bảng là kế hoạch, không phải bằng chứng nghiệm thu.
 Nguồn yêu cầu Phase 2 được giữ trong [bàn giao](../PHASE_2_HANDOFF.md),
 [review Phase 1](../phase_results/phase-1-review.md) và [prompt](phase-2-prompt.md).

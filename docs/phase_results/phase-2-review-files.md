@@ -1,0 +1,38 @@
+# File tạo/sửa sau review Phase 2
+
+Baseline: `cadcfab`, branch `feat/phase-2-implement`; không gồm các file Phase 2 đã có trong baseline. Chưa commit/push các sửa review.
+
+Tổng: 32 file.
+
+- [backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/config/RealtimeConfig.java](../../backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/config/RealtimeConfig.java)
+- [backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/dto/request/CreateOrderRequest.java](../../backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/dto/request/CreateOrderRequest.java)
+- [backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/dto/request/OrderLineRequest.java](../../backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/dto/request/OrderLineRequest.java)
+- [backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/realtime/RealtimeEventListener.java](../../backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/realtime/RealtimeEventListener.java)
+- [backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/realtime/SseHub.java](../../backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/realtime/SseHub.java)
+- [backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/repository/OrderItemRepository.java](../../backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/repository/OrderItemRepository.java)
+- [backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/service/impl/KitchenServiceImpl.java](../../backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/service/impl/KitchenServiceImpl.java)
+- [backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/service/impl/ServiceSessionServiceImpl.java](../../backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/service/impl/ServiceSessionServiceImpl.java)
+- [backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/validation/OrderLimits.java](../../backend/restaurant-management/src/main/java/vn/ueh/kltn/restaurant/validation/OrderLimits.java)
+- [backend/restaurant-management/src/test/java/vn/ueh/kltn/restaurant/config/PhaseTwoValidationTest.java](../../backend/restaurant-management/src/test/java/vn/ueh/kltn/restaurant/config/PhaseTwoValidationTest.java)
+- [backend/restaurant-management/src/test/java/vn/ueh/kltn/restaurant/realtime/RealtimeEventListenerTest.java](../../backend/restaurant-management/src/test/java/vn/ueh/kltn/restaurant/realtime/RealtimeEventListenerTest.java)
+- [backend/restaurant-management/src/test/java/vn/ueh/kltn/restaurant/realtime/SseHubTest.java](../../backend/restaurant-management/src/test/java/vn/ueh/kltn/restaurant/realtime/SseHubTest.java)
+- [backend/restaurant-management/src/test/java/vn/ueh/kltn/restaurant/service/impl/KitchenServiceImplTest.java](../../backend/restaurant-management/src/test/java/vn/ueh/kltn/restaurant/service/impl/KitchenServiceImplTest.java)
+- [backend/restaurant-management/src/test/java/vn/ueh/kltn/restaurant/service/impl/SessionOrderServiceImplTest.java](../../backend/restaurant-management/src/test/java/vn/ueh/kltn/restaurant/service/impl/SessionOrderServiceImplTest.java)
+- [CLAUDE.md](../../CLAUDE.md)
+- [CODEX_MASTER_SPEC_KLTN_SPRING_REACT.md](../../CODEX_MASTER_SPEC_KLTN_SPRING_REACT.md)
+- [docs/phase_instructions/phase-2.md](../../docs/phase_instructions/phase-2.md)
+- [docs/phase_instructions/phase-2-prompt.md](../../docs/phase_instructions/phase-2-prompt.md)
+- [docs/phase_results/phase-2.md](../../docs/phase_results/phase-2.md)
+- [docs/phase_results/phase-2-review.md](../../docs/phase_results/phase-2-review.md)
+- [docs/phase_results/phase-2-review-files.md](../../docs/phase_results/phase-2-review-files.md)
+- [docs/README.md](../../docs/README.md)
+- [docs/TRACEABILITY.md](../../docs/TRACEABILITY.md)
+- [frontend/README.md](../../frontend/README.md)
+- [frontend/src/pages/sessions/OrderModal.tsx](../../frontend/src/pages/sessions/OrderModal.tsx)
+- [frontend/src/utils/orderLimits.ts](../../frontend/src/utils/orderLimits.ts)
+- [frontend/tests/orderLimits.test.ts](../../frontend/tests/orderLimits.test.ts)
+- [README.md](../../README.md)
+- [scripts/phase2-api-check.mjs](../../scripts/phase2-api-check.mjs)
+- [scripts/phase2-review-api-check.mjs](../../scripts/phase2-review-api-check.mjs)
+- [scripts/phase2-review-browser-check.mjs](../../scripts/phase2-review-browser-check.mjs)
+- [scripts/tests/qa-write-guard.test.mjs](../../scripts/tests/qa-write-guard.test.mjs)

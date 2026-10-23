@@ -12,27 +12,32 @@ The Git repository has been initialized. Backend is in
 builds have been verified. Phase 0 now includes the V1 migration (18 domain
 tables), entities/repositories, JWT login and `/me`, frontend authentication,
 role guards and navigation, shared status labels, and account/area/table seed.
-Phase 0 is complete. Phase 1 and all seven PR #1 review fixes are implemented;
-the owner requested documentation and preparation for Phase 2, which has not started:
-AccountController/AccountService, MenuController/MenuService (including recipe diff),
-InventoryController/IngredientService (read only), TableController/TableService/ReservationService,
-and ServiceSessionController/ServiceSessionService (opening only). PhaseOneSeeder has independent gates.
-The four routes /accounts, /menu, /floor-plan and /reservations are implemented;
-other business screens and /sessions/:id remain placeholders. No Phase 2 work has started.
-Verification is recorded in `docs/phase_results/phase-1.md` (75 backend tests, 13 frontend tests,
-186 live API assertions, 17 functional browser checks and 5 visual/validation checks).
-The Phase 1 review fixes are recorded separately in `docs/phase_results/phase-1-review.md`:
-recipe replacements lock the parent menu item, retained inactive ingredients remain editable,
-the session picker filters reservations server-side and never blocks walk-ins,
-and mutating QA scripts require an explicit environment flag. Review verification:
-83 backend tests, 46 live API checks, 7 mocked-API browser checks and 4 QA-guard tests.
-Frontend baseline: 13 tests / 27 assertions, production build and lint passed.
-Start the next task by reading `docs/PHASE_2_HANDOFF.md`, then
-`docs/phase_instructions/phase-2.md`. A ready-to-use implementation prompt is in
-`docs/phase_instructions/phase-2-prompt.md`; creating these documents is not permission
-to begin Phase 2. Do not commit/push until the owner requests it.
-The latest recorded Neon snapshot is 9 ACTIVE sessions / 3 free tables, with no
-confirmed booking for 27/10; this is dated evidence, not a live availability guarantee.
+Phase 0–2 are implemented; all seven PR #1 fixes remain intact. Phase 2 adds session
+detail, order batches, cancellation, kitchen transitions/current-recipe CONSUMPTION,
+serving and SSE. The seven routes /accounts, /menu, /floor-plan, /reservations,
+/sessions/:id, /kitchen and /awaiting-service are implemented.
+All five item PATCH workflows lock ServiceSession before OrderItem and require ACTIVE,
+including before no-op. Orders accept 1–50 lines and 1–99 portions per line.
+SSE broadcasts/heartbeats enqueue to a dedicated four-worker executor (queue 256),
+only after commit, with send/dispatch errors isolated; never CallerRuns.
+Phase 1 evidence is in `docs/phase_results/phase-1.md` and `phase-1-review.md`.
+Phase 2 evidence is in `docs/phase_results/phase-2.md` and `phase-2-review.md`:
+150 backend tests; 18 frontend tests / 47 assertions; clean verify/build/lint passed.
+The popup follow-up is in `docs/phase_results/phase-2-popup-fix.md`: reduced-motion
+CSS uses transition:none to preserve synchronous popup alignment; 59 mocked-API
+browser checks and 9 real read-only checks passed. The owner manually retested and
+reported it working on 23/10/2026. Do not restore global positive transition durations
+on every property, which interpolate popup left/top measurements.
+Phase 3 is documentation only and has not started. Read `docs/PHASE_3_HANDOFF.md`,
+`docs/phase_instructions/phase-3.md`, `docs/phase_instructions/phase-3-prompt.md` and
+`docs/TRACEABILITY.md` before the next phase. Preparation is not permission to code.
+Payment must lock ServiceSession before loading items/totals, sharing the item-workflow
+lock; duplicate POST payment returns 409, READY and zero-amount sessions are payable (D8).
+Stocktakes recompute the ledger sum (D7), including existing CONSUMPTION; do not assume
+zero opening stock or rewrite movements to match demo seed. There is no payment/closing,
+full inventory, reconciliation or report workflow yet. Do not commit/push until requested.
+The latest recorded readiness snapshot is 10 ACTIVE sessions / 2 free tables (23/10,
+11:00 Vietnam time), no confirmed booking for 27/10; inspect readiness again before QA.
 The Java root package is `vn.ueh.kltn.restaurant`.
 
 - `CODEX_MASTER_SPEC_KLTN_SPRING_REACT.md`: **the source of truth**, written in Vietnamese. Section numbers below (§N) refer to this file.
@@ -141,7 +146,7 @@ The approval comes from the owner's instruction: “cứ làm trên branch main 
 
 **Real-time (§14):** Server-Sent Events, with SSE only as an invalidation signal.
 - A `ServiceImpl` publishes a `RealtimeEvent`.
-- `@TransactionalEventListener(AFTER_COMMIT)` hands it to `SseHub`, which broadcasts `{type, sessionId}` to `GET /api/events`.
+- `@TransactionalEventListener(AFTER_COMMIT)` hands it to `SseHub`, which enqueues `{type, sessionId}` sends on its dedicated executor for `GET /api/events`; dispatch/send errors cannot fail the committed HTTP request.
 - On the frontend, the `useRealtime` hook (via `@microsoft/fetch-event-source`, so the JWT header can be sent) maps each event type (`FLOOR_PLAN`, `RESERVATION`, `ORDER`) to TanStack Query keys to invalidate.
 - The data itself is always re-fetched over REST.
 - Fallback: `refetchInterval` of 30s on the live screens.

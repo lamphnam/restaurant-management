@@ -1,7 +1,13 @@
 # Kết quả Phase 2 — Gọi món, Bếp, Tiêu hao, Phục vụ và SSE
 
+> Đây là bằng chứng nghiệm thu ban đầu. Ba mục review sau đó (giới hạn 99/50, khóa phiên ACTIVE
+> và gửi SSE bất đồng bộ) được sửa và kiểm riêng tại [phase-2-review.md](phase-2-review.md).
+
 Ngày thực hiện: **23/10/2026**, Asia/Ho_Chi_Minh. Branch: `feat/phase-1-implement`.
-Phase 2 đã triển khai và kiểm theo phạm vi dưới đây. **Chưa commit/push; chưa bắt đầu Phase 3.**
+Phase 2 đã triển khai và kiểm theo phạm vi dưới đây. Trạng thái tại đợt nghiệm thu ban đầu:
+**chưa commit/push; chưa bắt đầu Phase 3**. Lúc chuẩn bị tài liệu tiếp, HEAD đã là `cadcfab`,
+các sửa review/popup vẫn chưa commit. Xem [bàn giao Phase 3](../PHASE_3_HANDOFF.md)
+cho hiện trạng tiếp nối; đây mới là chuẩn bị tài liệu, chưa triển khai Phase 3.
 
 ## 1. Phạm vi và quyết định bảo toàn
 

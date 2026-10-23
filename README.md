@@ -28,13 +28,31 @@ Kế hoạch triển khai: `docs/phase_instructions/`.
   frontend**, **46 kiểm tra API Neon**, **7 kiểm tra Chrome dùng API mock**,
   **4 test guard QA**. Build backend, frontend và lint đã pass trong đợt sửa review.
   Chi tiết và giới hạn: [review Phase 1](docs/phase_results/phase-1-review.md).
-- Phase 2: **127 test backend**, **16 test frontend / 41 assertions**;
+- Phase 2 sau ba mục review: **150 test backend**, **18 test frontend / 47 assertions**;
   build hai phía và lint pass. Checklist, kiểm Neon/browser thật, tác động dữ liệu
   và lệnh tái lập: [phase-2.md](docs/phase_results/phase-2.md).
-  Phase 3 chưa bắt đầu. Chưa commit/push.
+  Chi tiết sửa review: [phase-2-review.md](docs/phase_results/phase-2-review.md).
+  Gọi món giới hạn 99 phần/dòng, 50 dòng/đợt; mọi PATCH món khóa Session → OrderItem
+  và yêu cầu phiên ACTIVE; SSE gửi qua executor riêng sau commit.
+  Phase 3 chưa bắt đầu. Các sửa review chưa commit/push.
+- Đã sửa dropdown/popup không hiện khi bật giảm chuyển động: 59 kiểm tra API mock
+  và 9 kiểm tra app/API thật chỉ đọc pass; frontend test/build/lint pass.
+  Xem [báo cáo popup](docs/phase_results/phase-2-popup-fix.md).
 
 Tra cứu tài liệu từ [docs/README.md](docs/README.md). Các số liệu nghiệm thu ban đầu,
 sửa review và snapshot dữ liệu có mốc thời gian riêng; không cộng chúng thành một lần chạy.
+
+## Chuẩn bị Phase 3
+
+Chủ dự án đã test tay lại popup và xác nhận thấy ổn ngày 23/10/2026.
+Tài liệu bàn giao đã chuẩn bị; **chưa triển khai Phase 3**, chưa commit/push.
+
+- [PHASE_3_HANDOFF](docs/PHASE_3_HANDOFF.md): baseline, code hiện có, các quyết định cần giữ, dữ liệu và QA.
+- [Hướng dẫn Phase 3](docs/phase_instructions/phase-3.md): API/quyền, thanh toán/hóa đơn,
+  danh mục/nhập/tồn/lô/kiểm kê/loại bỏ/biến động; checklist 23–32 và phần 35–36 liên quan.
+- [Prompt triển khai](docs/phase_instructions/phase-3-prompt.md): chỉ dùng khi chủ dự án yêu cầu bắt đầu.
+
+Đối soát và báo cáo vẫn thuộc Phase 4. Chuẩn bị tài liệu không khởi động phase tiếp theo.
 
 ## Yêu cầu môi trường
 
@@ -71,9 +89,9 @@ API dùng JWT stateless, không dùng đăng nhập HTTP Basic hay session cooki
 ```
 
 Test `contextLoads()` mặc định đã được bỏ để build không phụ thuộc Neon.
-Mốc kiểm chứng Phase 2 là **127 test backend**, không cần DB: giữ baseline
+Mốc kiểm chứng sau review Phase 2 là **150 test backend**, không cần DB: giữ baseline
 83 test Phase 1; thêm tổng tiền/giá snapshot, gọi thêm, guard OrderItem, tiêu hao,
-ma trận quyền Phase 2, event sau commit/rollback và client SSE bị ngắt.
+ma trận quyền Phase 2, event sau commit/rollback, giới hạn đơn, khóa phiên ACTIVE và client SSE bị treo/lỗi.
 Kiểm kê/loại bỏ thuộc Phase 3.
 Flyway quản lý schema; không dùng `ddl-auto: update` để tự sinh bảng.
 

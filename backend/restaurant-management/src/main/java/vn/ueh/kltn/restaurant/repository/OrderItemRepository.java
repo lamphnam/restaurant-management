@@ -17,6 +17,10 @@ import java.util.Optional;
 
 public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
 
+    // Scalar lookup avoids loading a stale item into the persistence context before its locks.
+    @Query("select i.order.session.id from OrderItem i where i.id = :id")
+    Optional<Long> findSessionIdById(@Param("id") Long id);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select entity from OrderItem entity where entity.id = :id")
     Optional<OrderItem> findLockedById(@Param("id") Long id);

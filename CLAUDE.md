@@ -18,8 +18,13 @@ InventoryController/IngredientService (read only), TableController/TableService/
 PhaseOneSeeder has independent gates. Phase 2 extends ServiceSessionController/ServiceSessionService
 with detail, new order batches, cancellation and serving; KitchenController/KitchenService handles
 queue/start/unavailable/complete. Completion locks OrderItem and writes current-recipe CONSUMPTION
-atomically; READY/SERVED retries do nothing. RealtimeEventListener broadcasts through SseHub only
-AFTER_COMMIT. Failed SSE sends remove the emitter without completing an already failed AsyncContext.
+atomically; READY/SERVED retries in ACTIVE sessions do nothing. All five item PATCH workflows
+lock ServiceSession before OrderItem and reject CLOSED sessions, including same-target retries.
+Orders accept 1–50 lines and 1–99 portions per line (owner approved 23/10/2026).
+RealtimeEventListener dispatches through SseHub only AFTER_COMMIT. Broadcast/heartbeat sends
+use a dedicated four-worker executor with a bounded 256-task queue, never CallerRuns.
+Dispatch/send failures cannot fail the committed HTTP request. Failed sends remove the emitter
+without completing an already failed AsyncContext; polling/reconnect recovers dropped signals.
 The routes /accounts, /menu, /floor-plan, /reservations, /sessions/:id, /kitchen and
 /awaiting-service are implemented. Other business screens remain placeholders for Phase 3–4.
 Verification is recorded in `docs/phase_results/phase-1.md` (75 backend tests, 13 frontend tests,
@@ -30,11 +35,23 @@ the session picker filters reservations server-side and never blocks walk-ins,
 and mutating QA scripts require an explicit environment flag. Review verification:
 83 backend tests, 46 live API checks, 7 mocked-API browser checks and 4 QA-guard tests.
 Frontend baseline: 13 tests / 27 assertions, production build and lint passed.
-Phase 2 verification and DB impact are recorded in `docs/phase_results/phase-2.md`:
-127 backend tests; 16 frontend tests / 41 assertions; both builds and lint passed.
-Start the next task by reading that report and `docs/TRACEABILITY.md`.
+Phase 2 baseline verification and DB impact are recorded in `docs/phase_results/phase-2.md`.
+The three critical review fixes and verification are in `docs/phase_results/phase-2-review.md`:
+150 backend tests; 18 frontend tests / 47 assertions; both builds and lint passed.
+The popup follow-up is in `docs/phase_results/phase-2-popup-fix.md`: reduced-motion CSS
+uses `transition: none` to preserve synchronous popup alignment; 59 mocked-API browser
+checks and 9 real read-only checks passed. Avoid global positive transition durations
+on every property, which interpolate the left/top measurements used by popup alignment.
+The owner manually retested the popup fix and reported it working on 23/10/2026.
+Phase 3 documentation is ready in `docs/PHASE_3_HANDOFF.md`,
+`docs/phase_instructions/phase-3.md` and `docs/phase_instructions/phase-3-prompt.md`.
+Read these and `docs/TRACEABILITY.md` for the next phase; preparing them does not authorize coding.
 Phase 3 has not started; only begin it at the owner's request. No payment, closing/releasing
 tables, full inventory, reconciliation or reports have been added. Do not commit/push until requested.
+Payment must lock ServiceSession before loading items/totals, sharing the item-workflow lock.
+POST payment duplicates return 409; READY items and zero-amount sessions remain payable (D8).
+Inventory stocktakes must recompute the ledger sum (D7), including existing CONSUMPTION;
+do not assume zero opening stock or rewrite movements to match demo seed.
 Neon availability is dated evidence in the phase report; run the read-only readiness script again
 before QA/demo instead of assuming the previous session/table snapshot is still current.
 The Java root package is `vn.ueh.kltn.restaurant`.

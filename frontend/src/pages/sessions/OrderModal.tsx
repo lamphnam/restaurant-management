@@ -6,6 +6,7 @@ import { MoneyText } from '../../components/MoneyText'
 import { useApiFeedback } from '../../hooks/useApiFeedback'
 import { refreshLiveQueries } from '../../realtime/invalidation'
 import type { OrderLine } from '../../types/sessions'
+import { MAX_ORDER_LINES, MAX_ORDER_QUANTITY, orderLinesError } from '../../utils/orderLimits'
 
 export default function OrderModal({ sessionId, onClose }: { sessionId: number; onClose: () => void }) {
   const [form] = Form.useForm<{ items: OrderLine[] }>()
@@ -21,7 +22,7 @@ export default function OrderModal({ sessionId, onClose }: { sessionId: number; 
     {menu.isPending ? <Spin /> : <Form form={form} layout="vertical" initialValues={{ items: [{ quantity: 1 }] }}
       onFinish={(values) => save.mutate(values)} disabled={save.isPending || !!menu.error}>
       {menu.data?.length === 0 && <Empty description="Chưa có món đang kinh doanh" />}
-      <Form.List name="items" rules={[{ validator: async (_, lines) => { if (!lines?.length) throw new Error('Vui lòng chọn ít nhất một món') } }]}>{(fields, { add, remove }, { errors }) => <>
+      <Form.List name="items" rules={[{ validator: async (_, lines) => { const error = orderLinesError(lines?.length ?? 0); if (error) throw new Error(error) } }]}>{(fields, { add, remove }, { errors }) => <>
         {fields.map(({ key, name }) => <div className="order-form-line" key={key}>
           <div className="order-form-choice">
             <Form.Item name={[name, 'menuItemId']} label={`Món ${name + 1}`} rules={[{ required: true, message: 'Chọn món' }]}>
@@ -29,14 +30,14 @@ export default function OrderModal({ sessionId, onClose }: { sessionId: number; 
                 title: item.name, content: <>{item.name} · <MoneyText amount={item.price} /></> }))}
                 optionRender={(option) => option.data.content} />
             </Form.Item>
-            <Form.Item name={[name, 'quantity']} label="Số lượng" rules={[{ required: true, message: 'Nhập số lượng' }, { type: 'integer', min: 1, max: 2147483647, message: 'Nhập số nguyên lớn hơn 0' }]}>
-              <InputNumber min={1} max={2147483647} precision={0} style={{ width: '100%' }} />
+            <Form.Item name={[name, 'quantity']} label="Số lượng" rules={[{ required: true, message: 'Nhập số lượng' }, { type: 'integer', min: 1, max: MAX_ORDER_QUANTITY, message: `Nhập số nguyên từ 1 đến ${MAX_ORDER_QUANTITY}` }]}>
+              <InputNumber min={1} max={MAX_ORDER_QUANTITY} precision={0} style={{ width: '100%' }} />
             </Form.Item>
           </div>
           <Form.Item name={[name, 'note']} label="Ghi chú cho bếp" rules={[{ max: 500, message: 'Ghi chú tối đa 500 ký tự' }]}><Input.TextArea maxLength={500} autoSize={{ minRows: 1, maxRows: 3 }} /></Form.Item>
           <Button danger onClick={() => remove(name)} aria-label={`Bỏ món ${name + 1}`}>Bỏ dòng</Button>
         </div>)}
-        <Form.ErrorList errors={errors} /><Button onClick={() => add({ quantity: 1 })}>Thêm món</Button>
+        <Form.ErrorList errors={errors} /><Button disabled={save.isPending || fields.length >= MAX_ORDER_LINES} onClick={() => add({ quantity: 1 })}>Thêm món</Button>
       </>}</Form.List>
       <Space className="form-actions"><Button onClick={onClose} disabled={save.isPending}>Đóng</Button>
         <Button type="primary" htmlType="submit" loading={save.isPending} disabled={!menu.data?.length}>Gửi bếp</Button></Space>

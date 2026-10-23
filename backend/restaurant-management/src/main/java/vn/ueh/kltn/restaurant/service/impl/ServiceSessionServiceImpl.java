@@ -42,6 +42,7 @@ import vn.ueh.kltn.restaurant.repository.ReservationRepository;
 import vn.ueh.kltn.restaurant.repository.ServiceSessionRepository;
 import vn.ueh.kltn.restaurant.security.CurrentUser;
 import vn.ueh.kltn.restaurant.service.ServiceSessionService;
+import vn.ueh.kltn.restaurant.validation.OrderLimits;
 
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -173,6 +174,20 @@ public class ServiceSessionServiceImpl implements ServiceSessionService {
         if (request.items() == null || request.items().isEmpty()) {
             throw new BusinessException(ErrorCode.INVALID_INPUT, "Vui lòng chọn ít nhất một món");
         }
+        if (request.items().size() > OrderLimits.MAX_LINES) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "Mỗi đợt gọi món tối đa 50 dòng");
+        }
+        for (OrderLineRequest line : request.items()) {
+            if (line == null
+                    || line.menuItemId() == null
+                    || line.quantity() == null
+                    || line.quantity() < 1
+                    || line.quantity() > OrderLimits.MAX_QUANTITY_PER_LINE) {
+                throw new BusinessException(
+                        ErrorCode.INVALID_INPUT,
+                        "Mỗi dòng cần chọn món và số lượng từ 1 đến 99 phần");
+            }
+        }
         List<Long> menuIds =
                 request.items().stream().map(OrderLineRequest::menuItemId).distinct().toList();
         Map<Long, MenuItem> choices =
@@ -229,11 +244,33 @@ public class ServiceSessionServiceImpl implements ServiceSessionService {
     }
 
     private OrderItem lockedItem(Long id) {
-        return items.findLockedById(id)
-                .orElseThrow(
-                        () ->
-                                new BusinessException(
-                                        ErrorCode.NOT_FOUND, "Không tìm thấy món trong đơn"));
+        Long sessionId =
+                items.findSessionIdById(id)
+                        .orElseThrow(
+                                () ->
+                                        new BusinessException(
+                                                ErrorCode.NOT_FOUND,
+                                                "Không tìm thấy món trong đơn"));
+        // Keep this order consistent with kitchen mutations and the future payment workflow.
+        ServiceSession session =
+                sessions.findLockedById(sessionId)
+                        .orElseThrow(
+                                () ->
+                                        new BusinessException(
+                                                ErrorCode.NOT_FOUND,
+                                                "Không tìm thấy phiên phục vụ"));
+        OrderItem item =
+                items.findLockedById(id)
+                        .orElseThrow(
+                                () ->
+                                        new BusinessException(
+                                                ErrorCode.NOT_FOUND,
+                                                "Không tìm thấy món trong đơn"));
+        if (session.getStatus() != SessionStatus.ACTIVE) {
+            throw new BusinessException(
+                    ErrorCode.INVALID_STATE, "Không thể cập nhật món của phiên đã kết thúc");
+        }
+        return item;
     }
 
     private void publishIfChanged(OrderItem item, OrderItemStatus before) {

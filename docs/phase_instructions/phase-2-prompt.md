@@ -1,5 +1,9 @@
 # Prompt triển khai Phase 2
 
+> Nguồn yêu cầu lịch sử: Phase 2 đã triển khai và sửa review/popup. Snapshot trong prompt
+> là mốc trước Phase 2. Công việc tiếp theo xem [bàn giao Phase 3](../PHASE_3_HANDOFF.md)
+> và [prompt Phase 3](phase-3-prompt.md); không chạy lại Phase 2 hoặc tự bắt đầu Phase 3.
+
 Chỉ giao prompt này khi chủ dự án yêu cầu bắt đầu Phase 2. Việc chuẩn bị file không khởi động phase.
 
 ```text
@@ -24,10 +28,10 @@ Chỉ làm Phase 2. Không commit/push và không bắt đầu Phase 3 cho tới
 - Mở rộng ServiceSessionController/ServiceSessionService: GET /api/sessions/{id}; POST /{id}/orders tạo FoodOrder mới mỗi đợt; PATCH /items/{orderItemId}/cancel và /serve; GET /items/awaiting-service.
 - Thêm KitchenController/KitchenService: GET queue, PATCH items/{id}/start, /unavailable {reason}, /complete. API/role đúng bảng ở hướng dẫn Phase 2 và master §13.
 - GET session cho WAITER/MANAGER/CASHIER; gọi/hủy WAITER/MANAGER; serve/awaiting-service chỉ WAITER; bếp KITCHEN_STAFF/HEAD_CHEF.
-- Chỉ gọi món ON_SALE, quantity > 0, items không rỗng, note/reason tối đa 500; phiên phải ACTIVE; giá snapshot khi tạo OrderItem. Người/thời điểm từ CurrentUser/Clock. Tạm tính loại CANCELLED/UNAVAILABLE và dùng snapshot.
-- Khóa OrderItem cho chuyển trạng thái. Complete cùng transaction: READY/SERVED → no-op; khác COOKING → 409; mỗi recipe line tạo CONSUMPTION âm = -(quantityPerServing × quantity), lotId null, orderItemId/người/thời điểm đúng, rồi markReady. Recipe rỗng vẫn hoàn thành, tồn âm cho phép. Lặp/song song không trừ kho hai lần; rollback không lưu một phần.
+- Chỉ gọi món ON_SALE, quantity từ 1–99, items từ 1–50 dòng (chủ dự án chốt review 23/10/2026), note/reason tối đa 500; phiên phải ACTIVE; giá snapshot khi tạo OrderItem. Người/thời điểm từ CurrentUser/Clock. Tạm tính loại CANCELLED/UNAVAILABLE và dùng snapshot.
+- Mọi chuyển trạng thái lấy sessionId bằng query scalar, khóa Session → OrderItem và kiểm ACTIVE trước cả no-op. Complete cùng transaction: READY/SERVED → no-op trong phiên ACTIVE; khác COOKING → 409; mỗi recipe line tạo CONSUMPTION âm = -(quantityPerServing × quantity), lotId null, orderItemId/người/thời điểm đúng, rồi markReady. Recipe rỗng vẫn hoàn thành, tồn âm cho phép. Lặp/song song không trừ kho hai lần; rollback không lưu một phần.
 - UNAVAILABLE bắt buộc lý do và không tiêu hao; hủy chỉ PENDING; serve chỉ READY; PATCH cùng đích 200/no-op. Không phát event cho no-op.
-- Thêm EventController GET /api/events, SseHub, RealtimeEvent, listener AFTER_COMMIT, heartbeat 20s, SseEmitter timeout 30 phút. SSE chỉ payload type/sessionId theo §14.
+- Thêm EventController GET /api/events, SseHub, RealtimeEvent, listener AFTER_COMMIT, heartbeat 20s, SseEmitter timeout 30 phút. Broadcast/heartbeat enqueue executor riêng, không gửi trên thread HTTP; bắt Exception cho từng send và dispatch, không CallerRuns khi queue đầy. SSE chỉ payload type/sessionId theo §14.
 - Nối publish tại create/cancel reservation và open session hiện có; hủy reservation đã CANCELLED không phát thêm. Rollback không broadcast. Giữ handler client SSE ngắt chỉ debug, không ghi JSON vào stream.
 - Query session/queue/awaiting-service tránh N+1; mapping trong transaction đọc, OSIV=false. Không lộ entity/passwordHash/SQL.
 

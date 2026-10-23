@@ -11,6 +11,7 @@ import vn.ueh.kltn.restaurant.dto.response.OrderQueueItemResponse;
 import vn.ueh.kltn.restaurant.entity.Account;
 import vn.ueh.kltn.restaurant.entity.OrderItem;
 import vn.ueh.kltn.restaurant.entity.RecipeItem;
+import vn.ueh.kltn.restaurant.entity.ServiceSession;
 import vn.ueh.kltn.restaurant.entity.StockMovement;
 import vn.ueh.kltn.restaurant.enums.MovementType;
 import vn.ueh.kltn.restaurant.enums.OrderItemStatus;
@@ -22,6 +23,7 @@ import vn.ueh.kltn.restaurant.realtime.RealtimeEvent;
 import vn.ueh.kltn.restaurant.repository.AccountRepository;
 import vn.ueh.kltn.restaurant.repository.OrderItemRepository;
 import vn.ueh.kltn.restaurant.repository.RecipeItemRepository;
+import vn.ueh.kltn.restaurant.repository.ServiceSessionRepository;
 import vn.ueh.kltn.restaurant.repository.StockMovementRepository;
 import vn.ueh.kltn.restaurant.security.CurrentUser;
 import vn.ueh.kltn.restaurant.service.KitchenService;
@@ -42,6 +44,7 @@ public class KitchenServiceImpl implements KitchenService {
     private final CurrentUser currentUser;
     private final Clock clock;
     private final ApplicationEventPublisher events;
+    private final ServiceSessionRepository sessions;
 
     public List<OrderQueueItemResponse> queue() {
         return items
@@ -111,11 +114,33 @@ public class KitchenServiceImpl implements KitchenService {
     }
 
     private OrderItem locked(Long id) {
-        return items.findLockedById(id)
-                .orElseThrow(
-                        () ->
-                                new BusinessException(
-                                        ErrorCode.NOT_FOUND, "Không tìm thấy món trong đơn"));
+        Long sessionId =
+                items.findSessionIdById(id)
+                        .orElseThrow(
+                                () ->
+                                        new BusinessException(
+                                                ErrorCode.NOT_FOUND,
+                                                "Không tìm thấy món trong đơn"));
+        // All item mutations and payment must use the same Session -> OrderItem lock order.
+        ServiceSession session =
+                sessions.findLockedById(sessionId)
+                        .orElseThrow(
+                                () ->
+                                        new BusinessException(
+                                                ErrorCode.NOT_FOUND,
+                                                "Không tìm thấy phiên phục vụ"));
+        OrderItem item =
+                items.findLockedById(id)
+                        .orElseThrow(
+                                () ->
+                                        new BusinessException(
+                                                ErrorCode.NOT_FOUND,
+                                                "Không tìm thấy món trong đơn"));
+        if (session.getStatus() != SessionStatus.ACTIVE) {
+            throw new BusinessException(
+                    ErrorCode.INVALID_STATE, "Không thể cập nhật món của phiên đã kết thúc");
+        }
+        return item;
     }
 
     private void publishIfChanged(OrderItem item, OrderItemStatus before) {

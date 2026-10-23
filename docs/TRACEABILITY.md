@@ -6,6 +6,11 @@ Tên Việt (khóa luận) ↔ tên code: xem Phụ lục A của spec.
 **Phạm vi theo §19 (khi hoàn tất):** `Đã làm` / `Đơn giản hóa` (phần cắt theo §1.2) / `Chưa hiện thực` (cắt, §1.3). Cột Phạm vi mô tả mục tiêu bàn giao, không phải tiến độ hiện tại. Cột Hiện trạng theo dõi riêng bằng `Chưa làm`, `Đang làm (Phase N)` hoặc `Đã làm`; khi chốt báo cáo Phase 4 phải đối chiếu kết quả thực tế với ba giá trị §19. `Đang làm` nghĩa đã hiện thực một phần, không có nghĩa agent đang triển khai phase đó.
 Cột *Phase* là phase dự kiến hiện thực (docs/phase_instructions). Cập nhật cột *Hiện trạng* khi xong từng phase.
 
+Mốc 23/10/2026: Phase 2 đã triển khai/sửa review và popup; chủ dự án test tay popup thấy ổn.
+[Bàn giao Phase 3](PHASE_3_HANDOFF.md), [hướng dẫn](phase_instructions/phase-3.md) và
+[prompt](phase_instructions/phase-3-prompt.md) mới là tài liệu chuẩn bị, chưa có code Phase 3.
+Giữ FR-09/11–15 là Chưa làm; FR-04/16 còn một phần; FR-10/17 chờ Phase 4.
+
 ## 1. Functional Requirements
 
 | FR | Use Case | Phạm vi | Phase | Controller | Service | Entity | Hiện trạng |
@@ -141,6 +146,11 @@ dự kiến; không suy ra đã xong từ các entity hoặc ledger được dù
 
 ## 9. Phần đã hiện thực ở Phase 2 (23/10/2026)
 
+Ba mục review Critical được sửa tiếp tại [phase-2-review.md](phase_results/phase-2-review.md):
+giới hạn 99 phần/dòng và 50 dòng/đợt do chủ dự án chốt; mọi PATCH món khóa Session → OrderItem,
+kiểm phiên ACTIVE trước cả no-op; SSE send chạy executor riêng sau commit, lỗi dispatch/send
+không làm HTTP request đã commit thất bại. Không triển khai Phase 3 hoặc đổi schema.
+
 - FR-05/BR-04/UC8.2: `ServiceSessionServiceImpl.detail/order` và query fetch phục vụ chi tiết phiên;
   mỗi lần gửi tạo FoodOrder mới, kiểm ACTIVE/ON_SALE, snapshot giá và tính tạm tính trên server.
 - FR-06: `cancel` chỉ PENDING; KitchenService báo UNAVAILABLE có lý do và không tiêu hao.
@@ -162,5 +172,26 @@ dự kiến; không suy ra đã xong từ các entity hoặc ledger được dù
   chưa benchmark tải nhiều user hoặc toàn hệ thống.
 - NFR-10/11/12: các màn Phase 2 dùng Ant Design, nhãn StatusTag, MoneyText, giờ Việt Nam;
   kiểm Chrome headless/tablet viewport. Chưa nghiệm thu Edge hoặc thiết bị tablet thật.
+  Đã sửa CSS reduced motion làm sai vị trí popup; 59 kiểm tra popup dùng API mock và
+  9 kiểm tra app/API thật chỉ đọc pass, xem [báo cáo popup](phase_results/phase-2-popup-fix.md).
 - Bằng chứng từng checklist, số test, tác động Neon và giới hạn:
   [phase-2.md](phase_results/phase-2.md). FR-04 và phần kho/thanh toán/báo cáo vẫn chờ Phase 3–4.
+
+## 10. Chuẩn bị Phase 3 — chưa triển khai
+
+Tài liệu ngày 23/10/2026 không thay đổi trạng thái nghiệm thu các FR. Phạm vi dự kiến:
+
+| Requirement/UC | Phần sẽ làm ở Phase 3 | Điều kiện mới cập nhật Hiện trạng |
+|---|---|---|
+| FR-04, FR-09 / UC11.1 | Payment, Invoice, đóng phiên/trả bàn | Checklist 29–32, race một Invoice, khóa chung Session với món |
+| FR-11 / UC2 | Danh mục NVL đầy đủ, D12 | API/quyền, ngừng/kích hoạt, chặn đổi unit khi có movement, lookup recipe giữ đúng |
+| FR-12 / UC10.3 | Nhập + lô + RECEIPT | Checklist 23, rollback đủ bộ, seed có gate |
+| FR-13 / UC6.2 | SUM tồn/âm/thấp, cảnh báo HSD | Checklist 26–27, biên ngày Việt Nam, không tồn lô/FEFO |
+| FR-14 / UC10.1 | Kiểm kê/ADJUSTMENT | Checklist 24, D7 tính lại tại POST, zero không movement |
+| FR-15 / UC10.2 | DISPOSAL | Checklist 25, lock Ingredient, không vượt tồn tổng, đúng lô/reason |
+| FR-16 / UC6.3 và lịch sử Invoice | Biến động bốn loại/nguồn + Invoice filters/page | Checklist 28 và QA hóa đơn/nguồn/role |
+| TR-11, NFR-02/08/10 | Payment invalidation/polling, trả bàn, reload/tablet/popup | Phần Phase 3 của checklist 35–36, phân biệt mock và Neon thật |
+
+FR-10/UC11.2 và FR-17/UC6.1 vẫn Phase 4. Không tạo báo cáo nghiệm thu Phase 3
+trước khi code/QA; khi hoàn tất mới có `docs/phase_results/phase-3.md`.
+Đợt chuẩn bị này chỉ chỉnh tài liệu, không chạy lại build/QA hoặc truy cập/sửa Neon.
