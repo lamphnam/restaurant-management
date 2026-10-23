@@ -35,7 +35,7 @@ import vn.ueh.kltn.restaurant.enums.Role;
 import vn.ueh.kltn.restaurant.exception.GlobalExceptionHandler;
 import vn.ueh.kltn.restaurant.security.ApiSecurityErrorHandler;
 import vn.ueh.kltn.restaurant.service.AccountService;
-import vn.ueh.kltn.restaurant.service.IngredientService;
+import vn.ueh.kltn.restaurant.service.InventoryService;
 import vn.ueh.kltn.restaurant.service.MenuService;
 import vn.ueh.kltn.restaurant.service.ReservationService;
 import vn.ueh.kltn.restaurant.service.ServiceSessionService;
@@ -219,8 +219,8 @@ class PhaseOneSecurityTest {
         }
 
         @Bean
-        IngredientService ingredients() {
-            return mock(IngredientService.class);
+        InventoryService ingredients() {
+            return mock(InventoryService.class);
         }
 
         @Bean

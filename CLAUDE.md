@@ -43,18 +43,18 @@ uses `transition: none` to preserve synchronous popup alignment; 59 mocked-API b
 checks and 9 real read-only checks passed. Avoid global positive transition durations
 on every property, which interpolate the left/top measurements used by popup alignment.
 The owner manually retested the popup fix and reported it working on 23/10/2026.
-Phase 3 documentation is ready in `docs/PHASE_3_HANDOFF.md`,
-`docs/phase_instructions/phase-3.md` and `docs/phase_instructions/phase-3-prompt.md`.
-Read these and `docs/TRACEABILITY.md` for the next phase; preparing them does not authorize coding.
-Phase 3 has not started; only begin it at the owner's request. No payment, closing/releasing
-tables, full inventory, reconciliation or reports have been added. Do not commit/push until requested.
-Payment must lock ServiceSession before loading items/totals, sharing the item-workflow lock.
-POST payment duplicates return 409; READY items and zero-amount sessions remain payable (D8).
-Inventory stocktakes must recompute the ledger sum (D7), including existing CONSUMPTION;
-do not assume zero opening stock or rewrite movements to match demo seed.
-Neon availability is dated evidence in the phase report; run the read-only readiness script again
-before QA/demo instead of assuming the previous session/table snapshot is still current.
-The Java root package is `vn.ueh.kltn.restaurant`.
+Phase 0–3 are implemented; all PR #1 and Phase 2 review/popup fixes remain intact. Phase 3
+adds PaymentService (preview, locked payment, table release, zero-amount and ready item billing D8,
+duplicate payment 409), Invoices (query, filters), and full InventoryService (ingredient CRUD,
+D12 unit change blocking, receipts with atomic lot & RECEIPT movements, D7 stocktake ledger sum
+recomputation, disposals with stock boundary validation, attention lots, movements audit log).
+PhaseThreeSeeder has independent gates and preserves prior Phase 2 CONSUMPTION movements.
+The routes /payment, /invoices, /inventory, /inventory/receipts and /inventory/stocktake are implemented.
+Phase 3 evidence is in `docs/phase_results/phase-3.md`: 176 backend tests (+26 new tests);
+25 frontend tests / 76 assertions; clean verify/build/lint passed; 111/111 live API QA checks passed.
+Phase 4 is the final phase (Reconciliation /reconciliations/**, reports /payments/summary, overall
+checklist 33-36). Preparation is not permission to code. Do not start Phase 4 on your own.
+Do not commit/push until requested. The Java root package is `vn.ueh.kltn.restaurant`.
 
 - `CODEX_MASTER_SPEC_KLTN_SPRING_REACT.md`: **the source of truth**, written in Vietnamese. Section numbers below (§N) refer to this file.
 - `CODEX_MASTER_SPEC_KLTN_ASPNET_FINAL.md`: the superseded ASP.NET version, for reference only. When the two disagree, the Spring/React spec wins.

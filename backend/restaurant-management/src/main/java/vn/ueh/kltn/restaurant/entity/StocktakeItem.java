@@ -47,8 +47,14 @@ public class StocktakeItem {
     @Column(name = "note", nullable = true, length = 500)
     private String note;
 
-    public StocktakeItem(Ingredient ingredient, BigDecimal systemQuantity, BigDecimal actualQuantity, String note) {
-        this.ingredient = ingredient; this.systemQuantity = systemQuantity; this.actualQuantity = actualQuantity;
+    public StocktakeItem(
+            Ingredient ingredient,
+            BigDecimal systemQuantity,
+            BigDecimal actualQuantity,
+            String note) {
+        this.ingredient = ingredient;
+        this.systemQuantity = systemQuantity;
+        this.actualQuantity = actualQuantity;
         this.note = note;
     }
     void attachTo(Stocktake stocktake) {

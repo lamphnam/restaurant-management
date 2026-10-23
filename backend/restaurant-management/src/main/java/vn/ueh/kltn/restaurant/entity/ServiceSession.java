@@ -49,8 +49,13 @@ public class ServiceSession {
     @Column(name = "status", nullable = false, length = 30)
     private SessionStatus status;
 
-    public ServiceSession(DiningTable table, Reservation reservation, Account createdBy, Instant openedAt) {
-        this.table = table; this.reservation = reservation;
+    public ServiceSession(
+            DiningTable table,
+            Reservation reservation,
+            Account createdBy,
+            Instant openedAt) {
+        this.table = table;
+        this.reservation = reservation;
         this.createdBy = createdBy;
         this.openedAt = openedAt;
         this.status = SessionStatus.ACTIVE;

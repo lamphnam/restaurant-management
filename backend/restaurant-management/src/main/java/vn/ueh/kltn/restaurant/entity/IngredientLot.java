@@ -35,10 +35,15 @@ public class IngredientLot {
     private LocalDate expiryDate;
 
     public IngredientLot(Ingredient ingredient, String lotNumber, LocalDate expiryDate) {
-        this.ingredient = ingredient; this.lotNumber = lotNumber;
+        this.ingredient = ingredient;
+        this.lotNumber = lotNumber;
         this.expiryDate = expiryDate;
     }
-    public boolean isExpired(LocalDate today) { return expiryDate != null && expiryDate.isBefore(today); }
+
+    public boolean isExpired(LocalDate today) {
+        return expiryDate != null && expiryDate.isBefore(today);
+    }
+
     public boolean isExpiringSoon(LocalDate today, int days) {
         return expiryDate != null && !expiryDate.isBefore(today) && !expiryDate.isAfter(today.plusDays(days));
     }
