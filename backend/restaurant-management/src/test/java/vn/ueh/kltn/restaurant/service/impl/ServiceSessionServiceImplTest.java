@@ -8,6 +8,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -22,6 +23,7 @@ import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -34,8 +36,12 @@ import vn.ueh.kltn.restaurant.enums.SessionStatus;
 import vn.ueh.kltn.restaurant.enums.TableStatus;
 import vn.ueh.kltn.restaurant.exception.BusinessException;
 import vn.ueh.kltn.restaurant.exception.ErrorCode;
+import vn.ueh.kltn.restaurant.realtime.RealtimeEvent;
 import vn.ueh.kltn.restaurant.repository.AccountRepository;
 import vn.ueh.kltn.restaurant.repository.DiningTableRepository;
+import vn.ueh.kltn.restaurant.repository.FoodOrderRepository;
+import vn.ueh.kltn.restaurant.repository.MenuItemRepository;
+import vn.ueh.kltn.restaurant.repository.OrderItemRepository;
 import vn.ueh.kltn.restaurant.repository.ReservationRepository;
 import vn.ueh.kltn.restaurant.repository.ServiceSessionRepository;
 import vn.ueh.kltn.restaurant.security.CurrentUser;
@@ -50,6 +56,7 @@ class ServiceSessionServiceImplTest {
     private final ServiceSessionRepository sessions = mock(ServiceSessionRepository.class);
     private final AccountRepository accounts = mock(AccountRepository.class);
     private final CurrentUser user = mock(CurrentUser.class);
+    private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
     private ServiceSessionServiceImpl service;
     private DiningTable table;
 
@@ -57,7 +64,16 @@ class ServiceSessionServiceImplTest {
     void setup() {
         service =
                 new ServiceSessionServiceImpl(
-                        tables, reservations, sessions, accounts, user, CLOCK);
+                        tables,
+                        reservations,
+                        sessions,
+                        accounts,
+                        user,
+                        CLOCK,
+                        mock(FoodOrderRepository.class),
+                        mock(OrderItemRepository.class),
+                        mock(MenuItemRepository.class),
+                        events);
         table = table(1L, 4);
         when(tables.findLockedById(1L)).thenReturn(Optional.of(table));
         when(user.accountId()).thenReturn(2L);
@@ -73,6 +89,7 @@ class ServiceSessionServiceImplTest {
         assertEquals(SessionStatus.ACTIVE, result.status());
         assertEquals(TableStatus.OCCUPIED, table.getStatus());
         verifyNoInteractions(reservations);
+        verify(events).publishEvent(new RealtimeEvent(RealtimeEvent.Type.FLOOR_PLAN, 7L));
     }
 
     @Test
@@ -85,6 +102,8 @@ class ServiceSessionServiceImplTest {
         InOrder order = inOrder(tables, reservations);
         order.verify(tables).findLockedById(1L);
         order.verify(reservations).findLockedById(1L);
+        verify(events).publishEvent(new RealtimeEvent(RealtimeEvent.Type.FLOOR_PLAN, 7L));
+        verify(events).publishEvent(new RealtimeEvent(RealtimeEvent.Type.RESERVATION, null));
     }
 
     private ErrorCode failure(Long reservationId) {
@@ -105,6 +124,7 @@ class ServiceSessionServiceImplTest {
         table.occupy();
         when(sessions.existsByTableIdAndStatus(1L, SessionStatus.ACTIVE)).thenReturn(true);
         assertEquals(ErrorCode.SESSION_ALREADY_ACTIVE, failure(null));
+        verifyNoInteractions(events);
     }
 
     @Test

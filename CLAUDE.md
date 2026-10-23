@@ -12,13 +12,16 @@ The Git repository has been initialized. Backend is in
 builds have been verified. Phase 0 now includes the V1 migration (18 domain
 tables), entities/repositories, JWT login and `/me`, frontend authentication,
 role guards and navigation, shared status labels, and account/area/table seed.
-Phase 0 is complete. Phase 1 and all seven PR #1 review fixes are implemented;
-the owner requested documentation and preparation for Phase 2, which has not started:
-AccountController/AccountService, MenuController/MenuService (including recipe diff),
-InventoryController/IngredientService (read only), TableController/TableService/ReservationService,
-and ServiceSessionController/ServiceSessionService (opening only). PhaseOneSeeder has independent gates.
-The four routes /accounts, /menu, /floor-plan and /reservations are implemented;
-other business screens and /sessions/:id remain placeholders. No Phase 2 work has started.
+Phase 0–2 are implemented. Phase 1 and all seven PR #1 review fixes remain intact:
+AccountController/AccountService, MenuController/MenuService (including locked recipe diff),
+InventoryController/IngredientService (read only), TableController/TableService/ReservationService.
+PhaseOneSeeder has independent gates. Phase 2 extends ServiceSessionController/ServiceSessionService
+with detail, new order batches, cancellation and serving; KitchenController/KitchenService handles
+queue/start/unavailable/complete. Completion locks OrderItem and writes current-recipe CONSUMPTION
+atomically; READY/SERVED retries do nothing. RealtimeEventListener broadcasts through SseHub only
+AFTER_COMMIT. Failed SSE sends remove the emitter without completing an already failed AsyncContext.
+The routes /accounts, /menu, /floor-plan, /reservations, /sessions/:id, /kitchen and
+/awaiting-service are implemented. Other business screens remain placeholders for Phase 3–4.
 Verification is recorded in `docs/phase_results/phase-1.md` (75 backend tests, 13 frontend tests,
 186 live API assertions, 17 functional browser checks and 5 visual/validation checks).
 The Phase 1 review fixes are recorded separately in `docs/phase_results/phase-1-review.md`:
@@ -27,12 +30,13 @@ the session picker filters reservations server-side and never blocks walk-ins,
 and mutating QA scripts require an explicit environment flag. Review verification:
 83 backend tests, 46 live API checks, 7 mocked-API browser checks and 4 QA-guard tests.
 Frontend baseline: 13 tests / 27 assertions, production build and lint passed.
-Start the next task by reading `docs/PHASE_2_HANDOFF.md`, then
-`docs/phase_instructions/phase-2.md`. A ready-to-use implementation prompt is in
-`docs/phase_instructions/phase-2-prompt.md`; creating these documents is not permission
-to begin Phase 2. Do not commit/push until the owner requests it.
-The latest recorded Neon snapshot is 9 ACTIVE sessions / 3 free tables, with no
-confirmed booking for 27/10; this is dated evidence, not a live availability guarantee.
+Phase 2 verification and DB impact are recorded in `docs/phase_results/phase-2.md`:
+127 backend tests; 16 frontend tests / 41 assertions; both builds and lint passed.
+Start the next task by reading that report and `docs/TRACEABILITY.md`.
+Phase 3 has not started; only begin it at the owner's request. No payment, closing/releasing
+tables, full inventory, reconciliation or reports have been added. Do not commit/push until requested.
+Neon availability is dated evidence in the phase report; run the read-only readiness script again
+before QA/demo instead of assuming the previous session/table snapshot is still current.
 The Java root package is `vn.ueh.kltn.restaurant`.
 
 - `CODEX_MASTER_SPEC_KLTN_SPRING_REACT.md`: **the source of truth**, written in Vietnamese. Section numbers below (§N) refer to this file.

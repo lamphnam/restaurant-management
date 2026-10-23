@@ -3,30 +3,54 @@ package vn.ueh.kltn.restaurant.service.impl;
 import lombok.RequiredArgsConstructor;
 
 import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import vn.ueh.kltn.restaurant.dto.request.CreateOrderRequest;
 import vn.ueh.kltn.restaurant.dto.request.OpenSessionRequest;
+import vn.ueh.kltn.restaurant.dto.request.OrderLineRequest;
+import vn.ueh.kltn.restaurant.dto.response.FoodOrderResponse;
 import vn.ueh.kltn.restaurant.dto.response.OpenSessionResponse;
+import vn.ueh.kltn.restaurant.dto.response.OrderItemResponse;
+import vn.ueh.kltn.restaurant.dto.response.OrderQueueItemResponse;
+import vn.ueh.kltn.restaurant.dto.response.SessionDetailResponse;
 import vn.ueh.kltn.restaurant.entity.DiningTable;
+import vn.ueh.kltn.restaurant.entity.FoodOrder;
+import vn.ueh.kltn.restaurant.entity.MenuItem;
+import vn.ueh.kltn.restaurant.entity.OrderItem;
 import vn.ueh.kltn.restaurant.entity.Reservation;
 import vn.ueh.kltn.restaurant.entity.ServiceSession;
+import vn.ueh.kltn.restaurant.enums.MenuItemStatus;
+import vn.ueh.kltn.restaurant.enums.OrderItemStatus;
 import vn.ueh.kltn.restaurant.enums.ReservationStatus;
 import vn.ueh.kltn.restaurant.enums.SessionStatus;
 import vn.ueh.kltn.restaurant.enums.TableStatus;
 import vn.ueh.kltn.restaurant.exception.BusinessException;
 import vn.ueh.kltn.restaurant.exception.ErrorCode;
+import vn.ueh.kltn.restaurant.mapper.FoodOrderMapper;
+import vn.ueh.kltn.restaurant.mapper.ReservationMapper;
 import vn.ueh.kltn.restaurant.mapper.ServiceSessionMapper;
+import vn.ueh.kltn.restaurant.realtime.RealtimeEvent;
 import vn.ueh.kltn.restaurant.repository.AccountRepository;
 import vn.ueh.kltn.restaurant.repository.DiningTableRepository;
+import vn.ueh.kltn.restaurant.repository.FoodOrderRepository;
+import vn.ueh.kltn.restaurant.repository.MenuItemRepository;
+import vn.ueh.kltn.restaurant.repository.OrderItemRepository;
 import vn.ueh.kltn.restaurant.repository.ReservationRepository;
 import vn.ueh.kltn.restaurant.repository.ServiceSessionRepository;
 import vn.ueh.kltn.restaurant.security.CurrentUser;
 import vn.ueh.kltn.restaurant.service.ServiceSessionService;
 
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -37,6 +61,10 @@ public class ServiceSessionServiceImpl implements ServiceSessionService {
     private final AccountRepository accounts;
     private final CurrentUser currentUser;
     private final Clock clock;
+    private final FoodOrderRepository orders;
+    private final OrderItemRepository items;
+    private final MenuItemRepository menu;
+    private final ApplicationEventPublisher events;
 
     @Transactional
     public OpenSessionResponse open(OpenSessionRequest request) {
@@ -89,7 +117,130 @@ public class ServiceSessionServiceImpl implements ServiceSessionService {
             }
             throw exception;
         }
-        // Phase 2: publish FLOOR_PLAN (+ RESERVATION when attached), delivered after commit.
+        events.publishEvent(new RealtimeEvent(RealtimeEvent.Type.FLOOR_PLAN, session.getId()));
+        if (reservation != null) {
+            events.publishEvent(new RealtimeEvent(RealtimeEvent.Type.RESERVATION, null));
+        }
         return ServiceSessionMapper.toResponse(session);
+    }
+
+    @Transactional(readOnly = true)
+    public SessionDetailResponse detail(Long id) {
+        ServiceSession session =
+                sessions.findDetailById(id)
+                        .orElseThrow(
+                                () ->
+                                        new BusinessException(
+                                                ErrorCode.NOT_FOUND,
+                                                "Không tìm thấy phiên phục vụ"));
+        List<FoodOrder> foodOrders = orders.findDetailsBySessionId(id);
+        List<FoodOrderResponse> responses =
+                foodOrders.stream().map(FoodOrderMapper::order).toList();
+        BigDecimal total =
+                foodOrders.stream()
+                        .map(FoodOrder::calculateTotal)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return new SessionDetailResponse(
+                session.getId(),
+                session.getTable().getId(),
+                session.getTable().getName(),
+                session.getTable().getArea().getName(),
+                session.getReservation() == null
+                        ? null
+                        : ReservationMapper.toResponse(session.getReservation(), clock.instant()),
+                session.getOpenedAt(),
+                session.getClosedAt(),
+                session.getStatus(),
+                responses,
+                total);
+    }
+
+    @Transactional
+    public FoodOrderResponse order(Long id, CreateOrderRequest request) {
+        // Serialize with the future payment workflow's session lock; no closing workflow is added
+        // here.
+        ServiceSession session =
+                sessions.findLockedById(id)
+                        .orElseThrow(
+                                () ->
+                                        new BusinessException(
+                                                ErrorCode.NOT_FOUND,
+                                                "Không tìm thấy phiên phục vụ"));
+        if (session.getStatus() != SessionStatus.ACTIVE) {
+            throw new BusinessException(
+                    ErrorCode.INVALID_STATE, "Chỉ gọi món trong phiên đang hoạt động");
+        }
+        if (request.items() == null || request.items().isEmpty()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "Vui lòng chọn ít nhất một món");
+        }
+        List<Long> menuIds =
+                request.items().stream().map(OrderLineRequest::menuItemId).distinct().toList();
+        Map<Long, MenuItem> choices =
+                menu.findAllById(menuIds).stream()
+                        .collect(Collectors.toMap(MenuItem::getId, Function.identity()));
+        var order =
+                new FoodOrder(
+                        session,
+                        accounts.getReferenceById(currentUser.accountId()),
+                        clock.instant());
+        for (OrderLineRequest line : request.items()) {
+            MenuItem item = choices.get(line.menuItemId());
+            if (item == null) {
+                throw new BusinessException(ErrorCode.NOT_FOUND, "Không tìm thấy món đã chọn");
+            }
+            if (item.getStatus() != MenuItemStatus.ON_SALE) {
+                throw new BusinessException(
+                        ErrorCode.INVALID_STATE, "Món " + item.getName() + " đã ngừng kinh doanh");
+            }
+            order.addItem(new OrderItem(item, line.quantity(), line.note()));
+        }
+        orders.saveAndFlush(order);
+        events.publishEvent(new RealtimeEvent(RealtimeEvent.Type.ORDER, session.getId()));
+        return FoodOrderMapper.order(order);
+    }
+
+    @Transactional
+    public OrderItemResponse cancel(Long id) {
+        OrderItem item = lockedItem(id);
+        OrderItemStatus before = item.getStatus();
+        item.cancel();
+        publishIfChanged(item, before);
+        return FoodOrderMapper.item(item);
+    }
+
+    @Transactional
+    public OrderItemResponse serve(Long id) {
+        OrderItem item = lockedItem(id);
+        OrderItemStatus before = item.getStatus();
+        item.markServed();
+        publishIfChanged(item, before);
+        return FoodOrderMapper.item(item);
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrderQueueItemResponse> awaitingService() {
+        return items
+                .findQueue(
+                        SessionStatus.ACTIVE,
+                        Set.of(OrderItemStatus.READY, OrderItemStatus.UNAVAILABLE))
+                .stream()
+                .map(FoodOrderMapper::queueItem)
+                .toList();
+    }
+
+    private OrderItem lockedItem(Long id) {
+        return items.findLockedById(id)
+                .orElseThrow(
+                        () ->
+                                new BusinessException(
+                                        ErrorCode.NOT_FOUND, "Không tìm thấy món trong đơn"));
+    }
+
+    private void publishIfChanged(OrderItem item, OrderItemStatus before) {
+        if (before != item.getStatus()) {
+            events.publishEvent(
+                    new RealtimeEvent(
+                            RealtimeEvent.Type.ORDER, item.getOrder().getSession().getId()));
+        }
     }
 }

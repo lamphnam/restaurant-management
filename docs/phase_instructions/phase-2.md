@@ -1,6 +1,8 @@
 # Phase 2 — Gọi món + Bếp + Real-time (24/10)
 
-**Trạng thái:** tài liệu đã chuẩn bị, chưa triển khai. Ngày 24/10 là lịch dự kiến, không phải ngày nghiệm thu.
+**Trạng thái:** đã triển khai ngày 23/10/2026 theo yêu cầu chủ dự án;
+kết quả và giới hạn ở [báo cáo Phase 2](../phase_results/phase-2.md).
+Ngày 24/10 trong tiêu đề là lịch dự kiến ban đầu.
 
 **Đọc trước:** [CLAUDE.md](../../CLAUDE.md), [bàn giao Phase 2](../PHASE_2_HANDOFF.md),
 [review Phase 1](../phase_results/phase-1-review.md),

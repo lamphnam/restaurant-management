@@ -4,7 +4,7 @@ Prototype hỗ trợ vận hành bán hàng tại bàn và quản lý nguyên v�
 Yêu cầu nghiệp vụ: `CODEX_MASTER_SPEC_KLTN_SPRING_REACT.md`.
 Kế hoạch triển khai: `docs/phase_instructions/`.
 
-## Trạng thái hiện tại — Phase 1 đã sửa review, chuẩn bị Phase 2
+## Trạng thái hiện tại — Phase 2
 
 - Backend: Java 21, Spring Boot 4.1.1, Maven wrapper; đã có các dependencies
   theo spec, cấu hình Neon, Flyway và JPA `ddl-auto: validate`.
@@ -13,8 +13,11 @@ Kế hoạch triển khai: `docs/phase_instructions/`.
 - Có migration V1 với đúng 18 bảng domain, entity/repository và các constraint/index
   theo spec. JPA dùng `ddl-auto: validate`, không tự sửa schema.
 - Đã có đăng nhập JWT, tài khoản, thực đơn/định lượng, đọc NVL, sơ đồ bàn,
-  đặt bàn và mở phiên. Bốn route Phase 1 đã có giao diện; các route còn lại
-  và `/sessions/:id` vẫn là khung. Chưa có gọi món/SSE/thanh toán.
+  đặt bàn và mở phiên. Phase 2 bổ sung chi tiết phiên, gọi món/gọi thêm/hủy,
+  bếp, tiêu hao CONSUMPTION và xác nhận phục vụ.
+- `/sessions/:id`, `/kitchen`, `/awaiting-service` đã có giao diện. SSE sau commit
+  làm mới dữ liệu REST, có heartbeat 20 giây, reconnect và polling dự phòng 30 giây.
+  Chưa triển khai thanh toán/đóng phiên, kho đầy đủ, đối soát hoặc báo cáo.
 - Seed nền tảng: 6 tài khoản, 3 khu vực, 12 bàn. Seed Phase 1 có cổng riêng:
   10 món, 10 NVL, định lượng cho 7 món, 3 đặt bàn. Không seed kho ở phase này.
 - QA chạy trực tiếp Neon `main` theo duyệt 22/10/2026, không tạo branch.
@@ -25,9 +28,10 @@ Kế hoạch triển khai: `docs/phase_instructions/`.
   frontend**, **46 kiểm tra API Neon**, **7 kiểm tra Chrome dùng API mock**,
   **4 test guard QA**. Build backend, frontend và lint đã pass trong đợt sửa review.
   Chi tiết và giới hạn: [review Phase 1](docs/phase_results/phase-1-review.md).
-- Phase 2 **chưa triển khai**. Bản bàn giao: [PHASE_2_HANDOFF](docs/PHASE_2_HANDOFF.md).
-  Hướng dẫn: [phase-2.md](docs/phase_instructions/phase-2.md).
-  Prompt sẵn để giao việc: [phase-2-prompt.md](docs/phase_instructions/phase-2-prompt.md).
+- Phase 2: **127 test backend**, **16 test frontend / 41 assertions**;
+  build hai phía và lint pass. Checklist, kiểm Neon/browser thật, tác động dữ liệu
+  và lệnh tái lập: [phase-2.md](docs/phase_results/phase-2.md).
+  Phase 3 chưa bắt đầu. Chưa commit/push.
 
 Tra cứu tài liệu từ [docs/README.md](docs/README.md). Các số liệu nghiệm thu ban đầu,
 sửa review và snapshot dữ liệu có mốc thời gian riêng; không cộng chúng thành một lần chạy.
@@ -67,10 +71,10 @@ API dùng JWT stateless, không dùng đăng nhập HTTP Basic hay session cooki
 ```
 
 Test `contextLoads()` mặc định đã được bỏ để build không phụ thuộc Neon.
-Mốc kiểm chứng sau review Phase 1 là **83 test backend**, không cần DB: auth/JWT,
-validation/exception handler, phân quyền, đặt bàn/mở phiên, tài khoản, định lượng,
-sơ đồ bàn, seed gate và entity guard của Reservation. Các nhóm tổng tiền,
-chuyển trạng thái OrderItem và tiêu hao thuộc Phase 2; kiểm kê/loại bỏ thuộc Phase 3.
+Mốc kiểm chứng Phase 2 là **127 test backend**, không cần DB: giữ baseline
+83 test Phase 1; thêm tổng tiền/giá snapshot, gọi thêm, guard OrderItem, tiêu hao,
+ma trận quyền Phase 2, event sau commit/rollback và client SSE bị ngắt.
+Kiểm kê/loại bỏ thuộc Phase 3.
 Flyway quản lý schema; không dùng `ddl-auto: update` để tự sinh bảng.
 
 ## Chạy frontend
@@ -125,6 +129,9 @@ Lệnh chạy lại test và kiểm tra API/Chrome sau review Phase 0:
 
 Sửa review Phase 1 và lệnh kiểm tra hồi quy:
 [phase-1-review.md](docs/phase_results/phase-1-review.md).
+Kiểm Phase 2: [phase-2.md](docs/phase_results/phase-2.md), các script
+`scripts/phase2-api-check.mjs` và `scripts/phase2-browser-check.mjs` dùng app/Neon thật.
+Script browser mở thêm một phiên để kiểm event sơ đồ bàn; đọc readiness trước mỗi lần chạy.
 Chạy `node scripts/phase1-demo-readiness.mjs` để kiểm chỉ đọc trước demo/QA.
 Các script QA ghi dữ liệu cần `$env:PHASE1_QA_ALLOW_WRITES = 'main'` cho lần chạy
 đó; chúng không tự reset. Script kiểm thử mở phiên sẽ chiếm bàn đến khi dữ liệu

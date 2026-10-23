@@ -12,11 +12,12 @@ Hướng dẫn làm từng phase cho `CODEX_MASTER_SPEC_KLTN_SPRING_REACT.md` (�
 
 Cách dùng: gõ `/phase <N>` (skill `.claude/skills/phase`), hoặc dán nội dung `phase-N.md` cho agent.
 
-Mốc hiện tại (22/10/2026): Phase 0 xong; Phase 1 đã triển khai và sửa cả 7 mục review;
-Phase 2 chưa bắt đầu. Ngày trong bảng là kế hoạch, không phải bằng chứng nghiệm thu.
-Trước khi bắt đầu Phase 2 đọc [bàn giao](../PHASE_2_HANDOFF.md) và
-[kết quả review Phase 1](../phase_results/phase-1-review.md).
-Prompt đầy đủ sẵn để giao: [phase-2-prompt.md](phase-2-prompt.md).
+Mốc hiện tại (23/10/2026): Phase 0–2 đã triển khai; cả 7 mục review Phase 1 được giữ.
+Đọc [kết quả Phase 2](../phase_results/phase-2.md) và [TRACEABILITY](../TRACEABILITY.md)
+trước việc tiếp theo. Phase 3 chưa bắt đầu, cần yêu cầu riêng từ chủ dự án.
+Ngày trong bảng là kế hoạch, không phải bằng chứng nghiệm thu.
+Nguồn yêu cầu Phase 2 được giữ trong [bàn giao](../PHASE_2_HANDOFF.md),
+[review Phase 1](../phase_results/phase-1-review.md) và [prompt](phase-2-prompt.md).
 
 Quy tắc chung mọi phase:
 - Trước khi code: báo requirement/UC, entity, business rule, file dự kiến, checklist sẽ kiểm (spec §0.2).

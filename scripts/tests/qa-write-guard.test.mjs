@@ -10,7 +10,7 @@ test('write approval must name main explicitly', () => {
   assert.doesNotThrow(() => requireWriteApproval('test', { PHASE1_QA_ALLOW_WRITES: 'main' }))
 })
 
-for (const script of ['phase1-api-check', 'phase1-browser-check', 'phase1-review-api-check']) {
+for (const script of ['phase1-api-check', 'phase1-browser-check', 'phase1-review-api-check', 'phase2-api-check', 'phase2-browser-check', 'phase2-layout-check']) {
   test(`${script} refuses before HTTP requests or browser setup`, () => {
     const environment = { ...process.env, API_URL: 'http://127.0.0.1:1', FRONTEND_URL: 'http://127.0.0.1:1', PLAYWRIGHT_MODULE: 'missing-module' }
     delete environment.PHASE1_QA_ALLOW_WRITES

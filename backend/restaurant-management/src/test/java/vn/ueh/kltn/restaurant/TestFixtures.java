@@ -5,9 +5,12 @@ import org.springframework.test.util.ReflectionTestUtils;
 import vn.ueh.kltn.restaurant.entity.Account;
 import vn.ueh.kltn.restaurant.entity.DiningArea;
 import vn.ueh.kltn.restaurant.entity.DiningTable;
+import vn.ueh.kltn.restaurant.entity.FoodOrder;
 import vn.ueh.kltn.restaurant.entity.Ingredient;
 import vn.ueh.kltn.restaurant.entity.MenuItem;
+import vn.ueh.kltn.restaurant.entity.OrderItem;
 import vn.ueh.kltn.restaurant.entity.Reservation;
+import vn.ueh.kltn.restaurant.entity.ServiceSession;
 import vn.ueh.kltn.restaurant.enums.Role;
 
 import java.math.BigDecimal;
@@ -55,5 +58,16 @@ public final class TestFixtures {
 
     public static MenuItem menu() {
         return id(new MenuItem("Phở bò", new BigDecimal("50000")), 1L);
+    }
+
+    public static ServiceSession session() {
+        return id(new ServiceSession(table(1L, 4), null, account(), NOW), 7L);
+    }
+
+    public static OrderItem item() {
+        var order = id(new FoodOrder(session(), account(), NOW), 8L);
+        var item = id(new OrderItem(menu(), 3, "[QA] Không hành"), 9L);
+        order.addItem(item);
+        return item;
     }
 }

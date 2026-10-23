@@ -23,15 +23,17 @@ dependencies. Không đưa thông tin kết nối database hoặc JWT secret và
 
 Đã có đăng nhập, route guard, menu theo role và bốn trang Phase 1:
 `/accounts`, `/menu` (gồm định lượng), `/floor-plan`, `/reservations`.
-`/sessions/:id`, `/awaiting-service`, `/kitchen` vẫn là placeholder chờ Phase 2;
+`/sessions/:id`, `/awaiting-service`, `/kitchen` đã có giao diện Phase 2;
 thanh toán, kho đầy đủ, đối soát và báo cáo chờ Phase 3–4.
 
 Mốc sau review Phase 1: build/lint pass, 13 test Bun / 27 assertions.
+Mốc Phase 2: build/lint pass, 16 test / 41 assertions; kiểm browser dùng API/Neon thật
+và giới hạn tại [báo cáo Phase 2](../docs/phase_results/phase-2.md).
 Kiểm thử hồi quy modal mở phiên: 7 kiểm tra Chrome headless dùng API mock,
 không ghi vào Neon. Xem lệnh chạy trong
 [báo cáo review](../docs/phase_results/phase-1-review.md).
 
-## Quy ước cần giữ khi làm Phase 2
+## Quy ước đã dùng, cần giữ
 
 - `api/<name>Api.ts`, `types/<name>.ts`, page lazy-load trong `router.tsx`.
   Giữ Ant Design, TanStack Query và Axios hiện có.
@@ -41,11 +43,13 @@ không ghi vào Neon. Xem lệnh chạy trong
   chống stale 401 và chính sách không retry 4xx trong `api/queryClient.ts`.
 - Query key hiện có: `['accounts']`, `['menu-items', filters]`,
   `['menu-items', id, 'recipe']`, `['ingredients']`, `['floor-plan']`,
-  `['reservations', filters]`. Phase 2 nối `['session', id]`, `['kitchen']`,
+  `['reservations', filters]`. Phase 2 đã nối `['session', id]`, `['kitchen']`,
   `['awaiting-service']`; số `id` phải cùng kiểu giữa route và event.
 - Modal walk-in không tải hoặc chờ đặt bàn; chế độ đặt trước mới gọi query
   có `tableId`, `unexpired=true`, `status=CONFIRMED`. Không quay lại quét cả quán.
-- Chưa có `useRealtime`; thư viện `@microsoft/fetch-event-source` đã cài.
+- `realtime/useRealtime.ts` gắn một lần trong AppLayout, dùng bearer header,
+  cleanup theo token, invalidate toàn bộ live key khi reconnect. Sơ đồ bàn/bếp/
+  chờ phục vụ/chi tiết phiên có polling 30 giây và refetch khi focus.
   Thiết kế SSE, quyền từng thao tác và checklist nằm ở
   [hướng dẫn Phase 2](../docs/phase_instructions/phase-2.md).
 

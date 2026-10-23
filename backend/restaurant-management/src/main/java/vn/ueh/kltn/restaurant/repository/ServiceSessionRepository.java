@@ -22,4 +22,9 @@ public interface ServiceSessionRepository extends JpaRepository<ServiceSession, 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select entity from ServiceSession entity where entity.id = :id")
     Optional<ServiceSession> findLockedById(@Param("id") Long id);
+
+    @Query(
+            "select s from ServiceSession s join fetch s.table t join fetch t.area"
+                    + " left join fetch s.reservation where s.id = :id")
+    Optional<ServiceSession> findDetailById(Long id);
 }
