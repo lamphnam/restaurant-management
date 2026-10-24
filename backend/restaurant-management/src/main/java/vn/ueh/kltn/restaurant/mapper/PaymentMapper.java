@@ -37,7 +37,7 @@ public final class PaymentMapper {
     public static OpenSessionPaymentResponse toOpenSessionResponse(
             ServiceSession session,
             BigDecimal provisionalTotal,
-            boolean hasPendingOrCookingItems,
+            boolean hasBlockingItems,
             int totalItems) {
         DiningTable table = session.getTable();
         DiningArea area = table.getArea();
@@ -48,15 +48,16 @@ public final class PaymentMapper {
                 area != null ? area.getName() : null,
                 session.getOpenedAt(),
                 provisionalTotal,
-                hasPendingOrCookingItems,
-                totalItems);
+                hasBlockingItems,
+                totalItems,
+                table.getCode());
     }
 
     public static PaymentPreviewResponse toPreviewResponse(
             ServiceSession session,
             List<FoodOrder> orders,
             BigDecimal total,
-            boolean hasPendingOrCooking,
+            boolean hasBlocking,
             List<PaymentPreviewResponse.BlockingItemResponse> blockingItems) {
         DiningTable table = session.getTable();
         DiningArea area = table.getArea();
@@ -92,8 +93,9 @@ public final class PaymentMapper {
                 area != null ? area.getName() : null,
                 session.getOpenedAt(),
                 total,
-                hasPendingOrCooking,
+                hasBlocking,
                 blockingItems,
-                orderResponses);
+                orderResponses,
+                table.getCode());
     }
 }

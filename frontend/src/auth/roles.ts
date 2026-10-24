@@ -11,7 +11,6 @@ export const navigation: { path: string; label: string; description: string; rol
   { path: '/menu', label: 'Thực đơn', description: 'Danh mục món ăn và định lượng nguyên vật liệu.', roles: ['OWNER', 'HEAD_CHEF'] },
   { path: '/floor-plan', label: 'Sơ đồ bàn', description: 'Theo dõi bố trí bàn và các phiên phục vụ.', roles: ['WAITER', 'MANAGER', 'CASHIER', 'OWNER'] },
   { path: '/reservations', label: 'Đặt bàn', description: 'Tra cứu và theo dõi lịch đặt bàn của khách.', roles: ['MANAGER', 'WAITER', 'OWNER'] },
-  { path: '/awaiting-service', label: 'Món chờ phục vụ', description: 'Theo dõi món đã hoàn thành và cần mang ra bàn.', roles: ['WAITER'] },
   { path: '/kitchen', label: 'Bếp', description: 'Theo dõi món đang chờ và đang chế biến.', roles: ['KITCHEN_STAFF', 'HEAD_CHEF'] },
   { path: '/payment', label: 'Thanh toán', description: 'Theo dõi các phiên phục vụ cần thanh toán.', roles: ['CASHIER'] },
   { path: '/invoices', label: 'Lịch sử hóa đơn', description: 'Tra cứu các giao dịch đã thanh toán.', roles: ['CASHIER', 'MANAGER', 'OWNER'] },

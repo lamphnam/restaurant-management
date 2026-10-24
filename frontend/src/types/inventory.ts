@@ -13,6 +13,8 @@ export interface Ingredient {
   trackLot: boolean
   trackExpiry: boolean
   status: IngredientStatus
+  reservedStock: number
+  availableStock: number
   currentStock: number
   belowMinStock: boolean
 }
@@ -79,6 +81,8 @@ export interface StocktakeTemplateItem {
   ingredientId: number
   ingredientName: string
   unit: string
+  reservedStock: number
+  availableStock: number
   currentStock: number
 }
 

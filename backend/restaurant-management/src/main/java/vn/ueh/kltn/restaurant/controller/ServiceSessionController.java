@@ -61,8 +61,14 @@ public class ServiceSessionController {
         return sessions.serve(orderItemId);
     }
 
-    @GetMapping("/items/awaiting-service")
+    @PatchMapping("/items/{orderItemId}/acknowledge-unavailable")
     @PreAuthorize("hasRole('WAITER')")
+    public OrderItemResponse acknowledgeUnavailable(@PathVariable Long orderItemId) {
+        return sessions.acknowledgeUnavailable(orderItemId);
+    }
+
+    @GetMapping("/items/awaiting-service")
+    @PreAuthorize("hasAnyRole('WAITER','MANAGER','CASHIER','OWNER')")
     public List<OrderQueueItemResponse> awaitingService() {
         return sessions.awaitingService();
     }

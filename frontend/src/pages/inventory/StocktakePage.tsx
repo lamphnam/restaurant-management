@@ -252,7 +252,7 @@ export default function StocktakePage() {
             type="info"
             showIcon
             message="Nhập kết quả thực đếm"
-            description="Chỉ lưu các nguyên vật liệu đã nhập số lượng thực tế. Nếu đã đếm và thấy khớp, bấm Khớp tồn hệ thống ở dòng đó. Để trống để bỏ qua; nhập 0 khi không còn hàng. Chênh lệch được tính lại theo tồn hệ thống tại thời điểm xác nhận."
+            description="Chỉ lưu các nguyên vật liệu đã nhập số lượng thực tế. Nếu đã đếm và thấy khớp, bấm Khớp tồn hệ thống ở dòng đó. Để trống để bỏ qua; nhập 0 khi không còn hàng. Tồn sổ bao gồm lượng đã giữ cho món đang nấu; số thực đếm không được thấp hơn lượng đang giữ. Chênh lệch được tính lại tại thời điểm xác nhận."
             style={{ marginBottom: 16 }}
           />
 

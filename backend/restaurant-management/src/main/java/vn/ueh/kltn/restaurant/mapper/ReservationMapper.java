@@ -24,7 +24,8 @@ public final class ReservationMapper {
                 r.getStatus(),
                 r.getCreatedAt(),
                 r.getCreatedBy().getId(),
-                r.getStatus() == ReservationStatus.CONFIRMED && r.getEndTime().isBefore(now));
+                r.getStatus() == ReservationStatus.CONFIRMED && r.getEndTime().isBefore(now),
+                r.getTable().getCode());
     }
 
     public static UpcomingReservationResponse upcoming(Reservation r) {

@@ -86,6 +86,24 @@ public class Reservation {
         this.status = ReservationStatus.CONFIRMED;
     }
 
+    public void updateInfo(
+            DiningTable table,
+            String customerName,
+            String customerPhone,
+            int guestCount,
+            Instant startTime,
+            Instant endTime,
+            String note) {
+        requireConfirmed();
+        this.table = table;
+        this.customerName = customerName.trim();
+        this.customerPhone = customerPhone;
+        this.guestCount = guestCount;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.note = note;
+    }
+
     public void cancel() {
         if (status == ReservationStatus.CANCELLED) return;
         requireConfirmed();

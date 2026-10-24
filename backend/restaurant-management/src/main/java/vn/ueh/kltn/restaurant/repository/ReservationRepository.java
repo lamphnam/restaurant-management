@@ -22,6 +22,20 @@ import java.util.Optional;
 
 public interface ReservationRepository
         extends JpaRepository<Reservation, Long>, JpaSpecificationExecutor<Reservation> {
+    @Query("select r.table.id from Reservation r where r.id = :id")
+    Optional<Long> findTableIdById(@Param("id") Long id);
+
+    @Query(
+            "select (count(r) > 0) from Reservation r where r.table.id = :tableId and r.id <>"
+                + " :excludedId and r.status in :statuses and :startTime < r.endTime and :endTime >"
+                + " r.startTime")
+    boolean existsOverlapExcluding(
+            Long tableId,
+            Instant startTime,
+            Instant endTime,
+            Collection<ReservationStatus> statuses,
+            Long excludedId);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select r from Reservation r where r.id = :id")
     Optional<Reservation> findLockedById(@Param("id") Long id);

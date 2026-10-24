@@ -16,4 +16,5 @@ public record SessionDetailResponse(
         Instant closedAt,
         SessionStatus status,
         List<FoodOrderResponse> orders,
-        BigDecimal total) {}
+        BigDecimal total,
+        String tableCode) {}

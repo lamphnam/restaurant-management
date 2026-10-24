@@ -17,4 +17,5 @@ public record ReservationResponse(
         ReservationStatus status,
         Instant createdAt,
         Long createdById,
-        boolean overdue) {}
+        boolean overdue,
+        String tableCode) {}

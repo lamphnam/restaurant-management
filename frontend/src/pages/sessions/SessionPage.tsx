@@ -1,7 +1,8 @@
 import { Alert, Button, Card, Descriptions, Empty, Popconfirm, Result, Skeleton, Space, Typography } from 'antd'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
+import { BackNavigation } from '../../components/BackNavigation'
 import { sessionApi } from '../../api/sessionApi'
 import { useAuth } from '../../auth/useAuth'
 import { MoneyText } from '../../components/MoneyText'
@@ -24,13 +25,14 @@ export default function SessionPage() {
       await refreshLiveQueries(cache, { type: 'ORDER', sessionId })
       void message.success(action === 'cancel' ? 'Đã hủy món' : 'Đã xác nhận phục vụ')
     } })
-  if (!validId) return <Result status="404" title="Mã phiên không hợp lệ" />
-  if (query.isPending) return <Skeleton active />
-  if (!query.data) return <Result status="warning" title="Chưa tải được phiên phục vụ" extra={<Button onClick={() => void query.refetch()}>Thử lại</Button>} />
+  const back = <BackNavigation to="/floor-plan" label="Về sơ đồ bàn" />
+  if (!validId) return <section>{back}<Result status="404" title="Mã phiên không hợp lệ" /></section>
+  if (query.isPending) return <section>{back}<Skeleton active /></section>
+  if (!query.data) return <section>{back}<Result status="warning" title="Chưa tải được phiên phục vụ" extra={<Button onClick={() => void query.refetch()}>Thử lại</Button>} /></section>
   const session = query.data
   return <section>
-    <Link to="/floor-plan">← Sơ đồ bàn</Link>
-    <div className="page-heading"><div><Typography.Title level={1}>Phiên #{session.sessionId} · {session.tableName}</Typography.Title>
+    {back}
+    <div className="page-heading"><div><Typography.Title level={1}>Phiên #{session.sessionId} · {session.tableCode ?? session.tableName}</Typography.Title>
       <Typography.Paragraph>{session.areaName} · Mở lúc {formatTime(session.openedAt)}</Typography.Paragraph></div>
       <Space wrap><StatusTag group="SessionStatus" value={session.status} />
         <Button type="primary" size="large" disabled={session.status !== 'ACTIVE'} onClick={() => setOrdering(true)}>{session.orders.length ? 'Gọi thêm' : 'Gọi món'}</Button></Space></div>
@@ -52,9 +54,9 @@ export default function SessionPage() {
           {item.unavailableReason && <Alert type="warning" showIcon title={`Lý do: ${item.unavailableReason}`} />}
         </div><div className="session-item-price"><MoneyText amount={item.subtotal} /><small>Đơn giá: <MoneyText amount={item.unitPriceAtOrder} /></small></div></div>
         <Space wrap>
-          {item.status === 'PENDING' && <Popconfirm title="Hủy món này?" description="Món đã hủy sẽ không được chế biến." okText="Hủy món" cancelText="Giữ món" onConfirm={() => change.mutate({ id: item.id, action: 'cancel' })} disabled={change.isPending}>
+          {session.status === 'ACTIVE' && item.status === 'PENDING' && <Popconfirm title="Hủy món này?" description="Món đã hủy sẽ không được chế biến." okText="Hủy món" cancelText="Giữ món" onConfirm={() => change.mutate({ id: item.id, action: 'cancel' })} disabled={change.isPending}>
             <Button danger disabled={change.isPending} loading={change.isPending && change.variables?.id === item.id}>Hủy món</Button></Popconfirm>}
-          {account?.role === 'WAITER' && item.status === 'READY' && <Button type="primary" size="large" disabled={change.isPending} loading={change.isPending && change.variables?.id === item.id}
+          {session.status === 'ACTIVE' && account?.role === 'WAITER' && item.status === 'READY' && <Button type="primary" size="large" disabled={change.isPending} loading={change.isPending && change.variables?.id === item.id}
             onClick={() => change.mutate({ id: item.id, action: 'serve' })}>Đã phục vụ</Button>}
         </Space>
       </article>)}

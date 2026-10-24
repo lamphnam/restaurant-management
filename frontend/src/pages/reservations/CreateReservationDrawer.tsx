@@ -5,42 +5,42 @@ import axios from 'axios'
 import { useState } from 'react'
 import { reservationApi } from '../../api/reservationApi'
 import { useApiFeedback } from '../../hooks/useApiFeedback'
-import type { CreateReservation } from '../../types/tables'
+import type { CreateReservation, Reservation } from '../../types/tables'
 import type { ApiError } from '../../types/auth'
-import { formatTime, nowInAppZone, toInstant } from '../../utils/time'
+import { formatTime, nowInAppZone, toInstant, instantForPicker } from '../../utils/time'
 
 interface ReservationForm { customerName: string; customerPhone: string; guestCount: number; startTime: Dayjs; endTime: Dayjs; note?: string }
-function ChooseTable({ values, back, onClose, onFailure }: { values: Omit<CreateReservation, 'tableId'>; back: () => void; onClose: () => void; onFailure: (error: unknown) => void }) {
-  const [tableId, setTableId] = useState<number>()
+function ChooseTable({ values, back, onClose, onFailure, reservation }: { values: Omit<CreateReservation, 'tableId'>; back: () => void; onClose: () => void; onFailure: (error: unknown) => void; reservation?: Reservation }) {
+  const [tableId, setTableId] = useState<number | undefined>(reservation?.tableId)
   const cache = useQueryClient()
-  const params = { startTime: values.startTime, endTime: values.endTime, guestCount: values.guestCount }
+  const params = { startTime: values.startTime, endTime: values.endTime, guestCount: values.guestCount, excludedId: reservation?.id }
   const query = useQuery({ queryKey: ['available-tables', params], queryFn: ({ signal }) => reservationApi.available(params, signal), refetchOnWindowFocus: true })
   const { message } = useApiFeedback(query.error)
-  const save = useMutation({ mutationFn: () => reservationApi.create({ ...values, tableId: tableId! }),
-    onSuccess: async () => { await Promise.all([cache.invalidateQueries({ queryKey: ['reservations'] }), cache.invalidateQueries({ queryKey: ['floor-plan'] })]); void message.success('Đã tạo đặt bàn'); onClose() },
+  const save = useMutation({ mutationFn: () => reservation ? reservationApi.update(reservation.id, { ...values, tableId: tableId! }) : reservationApi.create({ ...values, tableId: tableId! }),
+    onSuccess: async () => { await Promise.all([cache.invalidateQueries({ queryKey: ['reservations'] }), cache.invalidateQueries({ queryKey: ['floor-plan'] })]); void message.success(reservation ? 'Đã cập nhật đặt bàn' : 'Đã tạo đặt bàn'); onClose() },
     onError: (error) => { onFailure(error); setTableId(undefined); void query.refetch() } })
   return <>
     <div className="reservation-summary"><strong>{values.customerName} · {values.guestCount} khách</strong><span>{formatTime(values.startTime)} – {formatTime(values.endTime)}</span></div>
     {query.isPending ? <Spin /> : query.data?.length ? <Radio.Group aria-label="Bàn phù hợp" className="available-table-list" value={tableId} onChange={(event) => setTableId(event.target.value)} disabled={save.isPending}>
-      {query.data.map((table) => <Radio key={table.id} value={table.id}><strong>{table.name}</strong><span>{table.areaName} · {table.capacity} khách</span></Radio>)}
+      {query.data.map((table) => <Radio key={table.id} value={table.id}><strong>{table.code ?? table.name} · {table.name}</strong><span>{table.areaName} · {table.capacity} khách</span></Radio>)}
     </Radio.Group> : <Empty description="Chưa có bàn phù hợp trong khung giờ này. Thử đổi giờ hoặc số khách." />}
     <Space className="form-actions"><Button disabled={save.isPending} onClick={back}>Quay lại</Button><Button type="primary" disabled={!tableId || !query.data?.some((table) => table.id === tableId)} loading={save.isPending} onClick={() => save.mutate()}>Lưu đặt bàn</Button></Space>
   </>
 }
 
-export default function CreateReservationDrawer({ onClose }: { onClose: () => void }) {
+export default function CreateReservationDrawer({ onClose, reservation }: { onClose: () => void; reservation?: Reservation }) {
   const [form] = Form.useForm<ReservationForm>()
   const { report } = useApiFeedback()
   const [values, setValues] = useState<Omit<CreateReservation, 'tableId'> | null>(null)
   const start = nowInAppZone().add(1, 'hour').startOf('hour')
-  return <Drawer open title="Tạo đặt bàn" width={640} onClose={onClose}>
+  return <Drawer open title={reservation ? "Sửa đặt bàn" : "Tạo đặt bàn"} width={640} onClose={onClose}>
     <Steps size="small" current={values ? 1 : 0} items={[{ title: 'Thông tin khách' }, { title: 'Chọn bàn' }]} />
     <Typography.Paragraph className="page-note">Thời gian theo giờ Việt Nam.</Typography.Paragraph>
-    {values && <ChooseTable values={values} back={() => setValues(null)} onClose={onClose} onFailure={(error) => {
+    {values && <ChooseTable reservation={reservation} values={values} back={() => setValues(null)} onClose={onClose} onFailure={(error) => {
       report(error, form)
       if (axios.isAxiosError<ApiError>(error) && Object.keys(error.response?.data.fieldErrors ?? {}).length) setValues(null)
     }} />}
-    <Form form={form} layout="vertical" style={{ display: values ? 'none' : undefined }} initialValues={{ guestCount: 2, startTime: start, endTime: start.add(2, 'hour') }}
+    <Form form={form} layout="vertical" style={{ display: values ? 'none' : undefined }} initialValues={reservation ? { ...reservation, startTime: instantForPicker(reservation.startTime), endTime: instantForPicker(reservation.endTime) } : { guestCount: 2, startTime: start, endTime: start.add(2, 'hour') }}
       onFinish={(value) => setValues({ ...value, startTime: toInstant(value.startTime), endTime: toInstant(value.endTime) })}>
       <Form.Item name="customerName" label="Tên khách" rules={[{ required: true, whitespace: true, message: 'Vui lòng nhập tên khách' }, { max: 100 }]}><Input maxLength={100} /></Form.Item>
       <Form.Item name="customerPhone" label="Số điện thoại" rules={[{ required: true, message: 'Vui lòng nhập số điện thoại' }, { pattern: /^0\d{9}$/, message: 'Nhập 10 chữ số, bắt đầu bằng 0' }]}><Input type="tel" maxLength={15} /></Form.Item>

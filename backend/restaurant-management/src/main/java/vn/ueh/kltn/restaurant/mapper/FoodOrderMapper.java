@@ -50,6 +50,7 @@ public final class FoodOrderMapper {
                 item.getNote(),
                 order.getCreatedAt(),
                 item.getStatus(),
-                item.getUnavailableReason());
+                item.getUnavailableReason(),
+                order.getSession().getTable().getCode());
     }
 }

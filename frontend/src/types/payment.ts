@@ -3,11 +3,12 @@ export type PaymentMethod = 'CASH' | 'BANK_TRANSFER'
 export interface OpenSessionPayment {
   sessionId: number
   tableId: number
+  tableCode?: string
   tableName: string
   areaName: string | null
   openedAt: string
   provisionalTotal: number
-  hasPendingOrCookingItems: boolean
+  hasBlockingItems: boolean
   totalItems: number
 }
 
@@ -41,11 +42,12 @@ export interface OrderPreview {
 export interface PaymentPreview {
   sessionId: number
   tableId: number
+  tableCode?: string
   tableName: string
   areaName: string | null
   openedAt: string
   provisionalTotal: number
-  hasPendingOrCookingItems: boolean
+  hasBlockingItems: boolean
   blockingItems: BlockingItem[]
   orders: OrderPreview[]
 }
@@ -58,6 +60,7 @@ export interface PaySessionPayload {
 export interface Invoice {
   id: number
   sessionId: number
+  tableCode?: string
   tableName: string
   areaName: string | null
   cashierId: number

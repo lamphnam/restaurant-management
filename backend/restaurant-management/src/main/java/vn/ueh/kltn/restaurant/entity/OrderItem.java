@@ -16,11 +16,16 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import vn.ueh.kltn.restaurant.enums.OrderItemStatus;
 import vn.ueh.kltn.restaurant.exception.BusinessException;
 import vn.ueh.kltn.restaurant.exception.ErrorCode;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.List;
 
 @Entity
 @Table(name = "order_item")
@@ -54,6 +59,32 @@ public class OrderItem {
 
     @Column(name = "unit_price_at_order", nullable = false, precision = 14, scale = 0)
     private BigDecimal unitPriceAtOrder;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "ingredient_requirements", columnDefinition = "jsonb")
+    private List<IngredientRequirement> ingredientRequirements;
+
+    public void captureRequirements(List<IngredientRequirement> requirements) {
+        if (ingredientRequirements != null) return;
+        if (status != OrderItemStatus.PENDING && status != OrderItemStatus.COOKING)
+            throw new BusinessException(ErrorCode.INVALID_STATE);
+        ingredientRequirements = List.copyOf(requirements);
+    }
+
+    @Column(name = "unavailable_acknowledged_at")
+    private Instant unavailableAcknowledgedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "unavailable_acknowledged_by_id")
+    private Account unavailableAcknowledgedBy;
+
+    public boolean acknowledgeUnavailable(Account actor, Instant now) {
+        requireStatus(OrderItemStatus.UNAVAILABLE);
+        if (unavailableAcknowledgedAt != null) return false;
+        unavailableAcknowledgedBy = actor;
+        unavailableAcknowledgedAt = now;
+        return true;
+    }
 
     public OrderItem(MenuItem menuItem, int quantity, String note) {
         if (quantity <= 0)

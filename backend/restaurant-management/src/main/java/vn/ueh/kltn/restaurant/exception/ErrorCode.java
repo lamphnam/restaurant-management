@@ -31,16 +31,21 @@ public enum ErrorCode {
     SESSION_NOT_ACTIVE(HttpStatus.CONFLICT, "Phiên phục vụ không ở trạng thái đang hoạt động"),
     SESSION_ALREADY_PAID(HttpStatus.CONFLICT, "Phiên phục vụ đã được thanh toán"),
     PAYMENT_BLOCKED_PENDING_ITEMS(
-            HttpStatus.BAD_REQUEST, "Không thể thanh toán khi còn món đang chờ chế biến hoặc đang nấu"),
+            HttpStatus.BAD_REQUEST,
+            "Không thể thanh toán khi còn món chưa phục vụ (chờ chế biến, đang nấu hoặc hoàn"
+                    + " thành)"),
     UNIT_CHANGE_BLOCKED(
-            HttpStatus.CONFLICT, "Không thể thay đổi đơn vị tính của nguyên vật liệu đã có biến động kho"),
+            HttpStatus.CONFLICT,
+            "Không thể thay đổi đơn vị tính của nguyên vật liệu đã có biến động kho"),
     INSUFFICIENT_STOCK(HttpStatus.BAD_REQUEST, "Số lượng tồn kho không đủ để xuất hủy"),
     INVALID_DISPOSAL(HttpStatus.BAD_REQUEST, "Số lượng xuất hủy phải lớn hơn 0"),
     INVALID_STOCKTAKE(HttpStatus.BAD_REQUEST, "Dữ liệu kiểm kê không hợp lệ"),
     INVALID_QUANTITY(HttpStatus.BAD_REQUEST, "Số lượng không hợp lệ"),
     EXPIRY_DATE_REQUIRED(
-            HttpStatus.BAD_REQUEST, "Nguyên vật liệu có theo dõi hạn sử dụng bắt buộc phải nhập hạn sử dụng"),
-    LOT_INGREDIENT_MISMATCH(HttpStatus.BAD_REQUEST, "Lô nguyên vật liệu không thuộc về nguyên vật liệu đã chọn"),
+            HttpStatus.BAD_REQUEST,
+            "Nguyên vật liệu có theo dõi hạn sử dụng bắt buộc phải nhập hạn sử dụng"),
+    LOT_INGREDIENT_MISMATCH(
+            HttpStatus.BAD_REQUEST, "Lô nguyên vật liệu không thuộc về nguyên vật liệu đã chọn"),
     RESERVATION_NOT_CONFIRMED(HttpStatus.CONFLICT, "Đặt bàn không còn ở trạng thái đã xác nhận"),
     RESERVATION_TABLE_MISMATCH(HttpStatus.CONFLICT, "Đặt bàn không thuộc bàn đã chọn"),
     RESERVATION_EXPIRED(HttpStatus.CONFLICT, "Đặt bàn đã quá giờ kết thúc"),

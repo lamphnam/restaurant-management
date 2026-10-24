@@ -10,12 +10,22 @@ public final class TableMapper {
 
     public static AvailableTableResponse available(DiningTable table) {
         return new AvailableTableResponse(
-                table.getId(), table.getName(), table.getCapacity(), table.getArea().getName());
+                table.getId(),
+                table.getName(),
+                table.getCapacity(),
+                table.getArea().getName(),
+                table.getCode());
     }
 
     public static FloorPlanTableResponse floor(
             DiningTable t, Long sessionId, UpcomingReservationResponse upcoming) {
         return new FloorPlanTableResponse(
-                t.getId(), t.getName(), t.getCapacity(), t.getStatus(), sessionId, upcoming);
+                t.getId(),
+                t.getName(),
+                t.getCapacity(),
+                t.getStatus(),
+                sessionId,
+                upcoming,
+                t.getCode());
     }
 }

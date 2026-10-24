@@ -141,6 +141,11 @@ class PhaseOneSecurityTest {
                                     "{\"tableId\":1,\"customerName\":\"Khách\",\"customerPhone\":\"0910000001\",\"guestCount\":2,\"startTime\":\"2026-10-23T10:00:00Z\",\"endTime\":\"2026-10-23T12:00:00Z\"}",
                                     Role.MANAGER),
                             endpoint(
+                                    HttpMethod.PUT,
+                                    "/api/reservations/1",
+                                    "{\"tableId\":1,\"customerName\":\"Khách\",\"customerPhone\":\"0910000001\",\"guestCount\":2,\"startTime\":\"2026-10-25T10:00:00Z\",\"endTime\":\"2026-10-25T12:00:00Z\"}",
+                                    Role.MANAGER),
+                            endpoint(
                                     HttpMethod.PATCH,
                                     "/api/reservations/1/cancel",
                                     null,

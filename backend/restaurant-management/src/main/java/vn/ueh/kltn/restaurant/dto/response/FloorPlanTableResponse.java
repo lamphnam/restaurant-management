@@ -8,4 +8,5 @@ public record FloorPlanTableResponse(
         int capacity,
         TableStatus status,
         Long activeSessionId,
-        UpcomingReservationResponse upcomingReservation) {}
+        UpcomingReservationResponse upcomingReservation,
+        String code) {}

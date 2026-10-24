@@ -23,6 +23,11 @@ public interface ReservationService {
 
     List<AvailableTableResponse> available(Instant startTime, Instant endTime, int guestCount);
 
+    List<AvailableTableResponse> available(
+            Instant startTime, Instant endTime, int guestCount, Long excludedId);
+
+    ReservationResponse update(Long id, CreateReservationRequest request);
+
     ReservationResponse create(CreateReservationRequest request);
 
     ReservationResponse cancel(Long id);

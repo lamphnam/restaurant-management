@@ -1,7 +1,6 @@
 package vn.ueh.kltn.restaurant.service.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -107,7 +106,7 @@ class PaymentServiceImplTest {
         assertEquals(10L, resp.sessionId());
         assertEquals("T1", resp.tableName());
         assertEquals(new BigDecimal("100000"), resp.provisionalTotal());
-        assertFalse(resp.hasPendingOrCookingItems());
+        assertTrue(resp.hasBlockingItems());
         assertEquals(1, resp.totalItems());
     }
 
@@ -139,8 +138,8 @@ class PaymentServiceImplTest {
         PaymentPreviewResponse preview = service.previewSession(activeSession.getId());
 
         assertEquals(activeSession.getId(), preview.sessionId());
-        assertTrue(preview.hasPendingOrCookingItems());
-        assertEquals(1, preview.blockingItems().size());
+        assertTrue(preview.hasBlockingItems());
+        assertEquals(2, preview.blockingItems().size());
         assertEquals(pendingItem.getId(), preview.blockingItems().get(0).id());
         // Provisional total = 1 * 50000 (pending) + 2 * 40000 (ready) + 0 (cancelled) = 130000
         assertEquals(new BigDecimal("130000"), preview.provisionalTotal());
@@ -255,7 +254,7 @@ class PaymentServiceImplTest {
     }
 
     @Test
-    void payAllowsReadyItemsAndCalculatesTotalServerSide() {
+    void payAllowsServedItemsAndCalculatesTotalServerSide() {
         ServiceSession activeSession = session();
         DiningTable table = activeSession.getTable();
         table.occupy();
@@ -267,6 +266,7 @@ class PaymentServiceImplTest {
         OrderItem readyItem = id(new OrderItem(menu(), 3, null), 31L);
         readyItem.startCooking();
         readyItem.markReady();
+        readyItem.markServed();
         order.addItem(readyItem);
 
         when(foodOrders.findDetailsBySessionId(activeSession.getId())).thenReturn(List.of(order));
@@ -287,6 +287,28 @@ class PaymentServiceImplTest {
         verify(events)
                 .publishEvent(
                         new RealtimeEvent(RealtimeEvent.Type.FLOOR_PLAN, activeSession.getId()));
+    }
+
+    @Test
+    void payRejectsReadyEvenThroughDirectServiceCall() {
+        ServiceSession session = session();
+        OrderItem item = id(new OrderItem(menu(), 2, null), 51L);
+        item.startCooking();
+        item.markReady();
+        FoodOrder order = id(new FoodOrder(session, account(), NOW), 50L);
+        order.addItem(item);
+        when(sessions.findLockedById(session.getId())).thenReturn(Optional.of(session));
+        when(foodOrders.findDetailsBySessionId(session.getId())).thenReturn(List.of(order));
+        assertEquals(
+                ErrorCode.PAYMENT_BLOCKED_PENDING_ITEMS,
+                assertThrows(
+                                BusinessException.class,
+                                () ->
+                                        service.pay(
+                                                new PaySessionRequest(
+                                                        session.getId(), PaymentMethod.CASH)))
+                        .getErrorCode());
+        assertEquals(SessionStatus.ACTIVE, session.getStatus());
     }
 
     @Test

@@ -15,4 +15,5 @@ public record OrderQueueItemResponse(
         String note,
         Instant orderedAt,
         OrderItemStatus status,
-        String unavailableReason) {}
+        String unavailableReason,
+        String tableCode) {}

@@ -22,4 +22,6 @@ public interface ServiceSessionService {
     OrderItemResponse serve(Long id);
 
     List<OrderQueueItemResponse> awaitingService();
+
+    OrderItemResponse acknowledgeUnavailable(Long id);
 }

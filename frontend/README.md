@@ -33,7 +33,7 @@ Chrome/Edge và tablet viewport đã kiểm; chưa kiểm tablet vật lý.
 | `/reservations` | MANAGER, WAITER, OWNER | Đặt bàn/tra cứu, thao tác theo role |
 | `/sessions/:id` | WAITER, MANAGER | Chi tiết/gọi món; CASHIER dùng payment riêng |
 | `/kitchen` | KITCHEN_STAFF, HEAD_CHEF | Queue/trạng thái món |
-| `/awaiting-service` | WAITER | Món chờ phục vụ |
+| `/awaiting-service` | WAITER | Redirect /floor-plan; notifications on table cards |
 | `/payment` | CASHIER | Danh sách/preview/payment |
 | `/invoices` | CASHIER, MANAGER, OWNER | Lịch sử hóa đơn |
 | `/inventory` | OWNER, HEAD_CHEF | Tồn/danh mục/lô/biến động, thao tác theo role |
@@ -55,7 +55,7 @@ UI role guard không thay backend authorization. Không mở lại `/sessions/:i
 - Stocktake actual ban đầu trống, chỉ gửi dòng đã đếm. Xóa ô bỏ dòng, 0 chỉ gửi khi nhập0.
   Ghi chú đơn thuần không đánh dấu đã đếm; server tính lại systemQuantity, UI chỉ tính tạm.
   Nút Khớp tồn hệ thống từng dòng điền số đang hiển thị sau thao tác người dùng; không sao chép tồn âm.
-- Payment không gửi amount; pending/cooking chặn, READY/0đ hợp lệ. Invoice/stock nghiệp vụ ở backend.
+- Payment không gửi amount; PENDING/COOKING/READY chặn, SERVED/UNAVAILABLE/CANCELLED hợp lệ; giữ phiên 0đ. Invoice/stock nghiệp vụ ở backend.
 
 ## Query keys và realtime
 
@@ -67,10 +67,10 @@ UI role guard không thay backend authorization. Không mở lại `/sessions/:i
 | Kho | `['inventory','ingredients',filters]`, `ingredients-active`, `ingredients-lookup`, `lots-attention`, `movements`, `receipts-list`, `stocktakes-list`, `stocktake-template` dưới prefix inventory |
 
 FLOOR_PLAN invalidate floor-plan/payment/session/awaiting-service. ORDER invalidate
-kitchen/session/awaiting-service/payment; RESERVATION invalidate reservations/floor-plan.
+kitchen/session/awaiting-service/payment/inventory; RESERVATION invalidate reservations/floor-plan.
 useRealtime gắn một lần trong AppLayout, bearer header, cleanup theo token,
 invalidate toàn bộ live prefixes khi reconnect. Live screens polling30s/focus;
-kho không có SSE. Mutation kho invalidate prefix inventory; payment invalidate các key liên quan.
+inventory nhận invalidation ORDER khi giữ/giải phóng/tiêu hao, danh sách tồn polling30s. Mutation kho invalidate prefix inventory; payment invalidate các key liên quan.
 
 ## Đối soát và báo cáo Phase 4
 
@@ -98,3 +98,15 @@ kho không có SSE. Mutation kho invalidate prefix inventory; payment invalidate
 [checklist](../docs/phase_instructions/phase-4-checklist.md) ghi phạm vi kiểm và cách chạy lại.
 Giữ các nguồn hồi quy [Phase1](../docs/phase_results/phase-1-review.md),
 [Phase2](../docs/phase_results/phase-2-review.md), [popup](../docs/phase_results/phase-2-popup-fix.md).
+
+## KLTN issues 24/10/2026
+
+- Kitchen groups by orderId. Detail query key `['kitchen','order',id]` reads a kitchen-only batch API.
+- Start returns started=false for a warning (no mutation); confirming resubmits confirmLowStock=true.
+  Structured409 ingredients drives the shortage dialog; reason Hết nguyên liệu is a draft, never auto-submitted.
+- Floor-plan fetches awaiting-service once, matches both tableId/activeSessionId. Badge counts are rows.
+  Read roles: WAITER/MANAGER/CASHIER/OWNER. Only WAITER gets serve/ack actions.
+- RecipeDrawer remains available to HEAD_CHEF; price/name actions remain OWNER-only.
+- New codes supplement legacy names. Reservation edit reuses the two-step form and sends excludedId to availability.
+- Current behavioral UI checks (all HTTP mocked): `node scripts/issues-browser-check.mjs`, frontend on15173.
+  Set BROWSER_CHANNEL=msedge for Edge. Results/screen captures: .cache/issues-ui-{channel}.

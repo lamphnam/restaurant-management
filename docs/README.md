@@ -1,5 +1,10 @@
 # Tài liệu dự án
 
+> **Cập nhật 24/10/2026:** triển khai 8 KLTN issues; D5/D8 đã thay thế, có sửa reservation,
+> giữ chỗ nguyên liệu lúc Start, hai badge trên bàn và migration V2–V4. Xem [báo cáo implementation](phase_results/kltn-issues-implementation.md).
+> Phần Phase 0–4 bên dưới giữ bằng chứng lịch sử ngày23/10. Không chạy QA ghi lên Neon production.
+
+
 Cập nhật **23/10/2026**, Asia/Ho_Chi_Minh. **Phase 0–4, review giao diện và cả 9 sửa PR #4 đã triển khai.**
 Mốc code đã đối chiếu: branch `feat/phase-4-implement`, commit `67e1af2` (đã gồm sửa PR #4);
 `1b3699f` là mốc trước sửa. Đây là trạng thái commit local, không xác nhận PR đã merge hoặc push.

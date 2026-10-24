@@ -55,6 +55,7 @@ import vn.ueh.kltn.restaurant.exception.ErrorCode;
 import vn.ueh.kltn.restaurant.repository.AccountRepository;
 import vn.ueh.kltn.restaurant.repository.IngredientLotRepository;
 import vn.ueh.kltn.restaurant.repository.IngredientRepository;
+import vn.ueh.kltn.restaurant.repository.OrderItemRepository;
 import vn.ueh.kltn.restaurant.repository.StockMovementRepository;
 import vn.ueh.kltn.restaurant.repository.StockReceiptItemRepository;
 import vn.ueh.kltn.restaurant.repository.StockReceiptRepository;
@@ -89,10 +90,13 @@ class InventoryServiceImplTest {
                     new AppProperties.Alert(7),
                     new AppProperties.Reservation(60));
 
+    private final OrderItemRepository orderItems = mock(OrderItemRepository.class);
+    private final CookingInventory cookingInventory = mock(CookingInventory.class);
     private InventoryServiceImpl service;
 
     @BeforeEach
     void setUp() {
+        when(orderItems.reservedQuantity(any(), any())).thenReturn(BigDecimal.ZERO);
         service =
                 new InventoryServiceImpl(
                         ingredients,
@@ -105,7 +109,9 @@ class InventoryServiceImplTest {
                         accounts,
                         currentUser,
                         CLOCK,
-                        properties);
+                        properties,
+                        orderItems,
+                        cookingInventory);
     }
 
     @Test
@@ -154,7 +160,7 @@ class InventoryServiceImplTest {
     @Test
     void updateIngredientEnforcesD12UnitCannotChangeWhenMovementExists() {
         Ingredient ing = id(new Ingredient("Thịt bò", "kg", BigDecimal.ONE, false, false), 1L);
-        when(ingredients.findById(1L)).thenReturn(Optional.of(ing));
+        when(ingredients.findLockedById(1L)).thenReturn(Optional.of(ing));
         when(ingredients.existsByNameIgnoreCaseAndIdNot("Thịt bò", 1L)).thenReturn(false);
 
         // Movements exist for this ingredient!
@@ -176,7 +182,7 @@ class InventoryServiceImplTest {
     @Test
     void updateIngredientAllowsUnitChangeWhenNoMovementExists() {
         Ingredient ing = id(new Ingredient("Gia vị mới", "kg", BigDecimal.ONE, false, false), 2L);
-        when(ingredients.findById(2L)).thenReturn(Optional.of(ing));
+        when(ingredients.findLockedById(2L)).thenReturn(Optional.of(ing));
         when(ingredients.existsByNameIgnoreCaseAndIdNot("Gia vị mới", 2L)).thenReturn(false);
 
         // No movements exist
@@ -196,7 +202,7 @@ class InventoryServiceImplTest {
     @Test
     void updateIngredientAllowsNameAndMinStockChangeEvenWhenMovementExists() {
         Ingredient ing = id(new Ingredient("Thịt bò", "kg", BigDecimal.ONE, false, false), 1L);
-        when(ingredients.findById(1L)).thenReturn(Optional.of(ing));
+        when(ingredients.findLockedById(1L)).thenReturn(Optional.of(ing));
         when(ingredients.existsByNameIgnoreCaseAndIdNot("Thịt bò Úc", 1L)).thenReturn(false);
 
         // Movements exist
@@ -218,7 +224,7 @@ class InventoryServiceImplTest {
     @Test
     void createReceiptAtomicallyCreatesLotItemAndMovement() {
         Ingredient ing = id(new Ingredient("Thịt bò", "kg", BigDecimal.ONE, true, true), 1L);
-        when(ingredients.findById(1L)).thenReturn(Optional.of(ing));
+        when(ingredients.findLockedById(1L)).thenReturn(Optional.of(ing));
 
         Account actor = account();
         when(currentUser.accountId()).thenReturn(actor.getId());
@@ -253,7 +259,7 @@ class InventoryServiceImplTest {
     void createReceiptRejectsInactiveIngredient() {
         Ingredient ing = id(new Ingredient("Thịt bò", "kg", BigDecimal.ONE, false, false), 1L);
         ing.deactivate();
-        when(ingredients.findById(1L)).thenReturn(Optional.of(ing));
+        when(ingredients.findLockedById(1L)).thenReturn(Optional.of(ing));
 
         Account actor = account();
         when(currentUser.accountId()).thenReturn(actor.getId());
@@ -277,7 +283,7 @@ class InventoryServiceImplTest {
     @Test
     void createReceiptRejectsMissingExpiryDateWhenTrackExpiryIsTrue() {
         Ingredient ing = id(new Ingredient("Sữa tươi", "hộp", BigDecimal.ONE, true, true), 1L);
-        when(ingredients.findById(1L)).thenReturn(Optional.of(ing));
+        when(ingredients.findLockedById(1L)).thenReturn(Optional.of(ing));
 
         Account actor = account();
         when(currentUser.accountId()).thenReturn(actor.getId());

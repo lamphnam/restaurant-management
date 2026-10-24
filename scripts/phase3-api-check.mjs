@@ -222,7 +222,7 @@ if (preview.orders.length === 0) {
 
 const expectedTotal = Number(preview.provisionalTotal)
 check(expectedTotal > 0, `Provisional total is positive: ${expectedTotal}`)
-check(preview.hasPendingOrCookingItems === true, 'Session with pending item is NOT payable')
+check(preview.hasBlockingItems === true, 'Session with pending item is NOT payable')
 
 // Attempting to pay must return 400 PAYMENT_BLOCKED_PENDING_ITEMS
 await call('CASHIER', 'POST', '/payments', {
@@ -242,7 +242,7 @@ await call('WAITER', 'PATCH', `/sessions/items/${itemId}/serve`)
 
 // Preview now payable
 const previewReady = await call('CASHIER', 'GET', `/payments/sessions/${sessionToPay}`)
-check(!previewReady.hasPendingOrCookingItems, 'Session is payable after item served')
+check(!previewReady.hasBlockingItems, 'Session is payable after item served')
 check(Number(previewReady.provisionalTotal) === expectedTotal, `Provisional total matches: ${expectedTotal}`)
 
 // Pay with BANK_TRANSFER
@@ -276,7 +276,7 @@ check(sessionZero.sessionId > 0, `Opened zero-amount session on Table ${freeTabl
 
 const previewZero = await call('CASHIER', 'GET', `/payments/sessions/${sessionZero.sessionId}`)
 check(Number(previewZero.provisionalTotal) === 0, 'Session has 0 total amount')
-check(!previewZero.hasPendingOrCookingItems, 'D8 verified: Zero-amount session is payable')
+check(!previewZero.hasBlockingItems, 'D8 verified: Zero-amount session is payable')
 
 const invoiceZero = await call('CASHIER', 'POST', '/payments', {
   sessionId: sessionZero.sessionId,

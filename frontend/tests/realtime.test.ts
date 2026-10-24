@@ -3,7 +3,7 @@ import { createQueryClient } from '../src/api/queryClient'
 import { eventKeys, liveQueryOptions, refreshLiveQueries } from '../src/realtime/invalidation'
 
 test('event keys normalize session ids and retain payment compatibility', () => {
-  expect(eventKeys({ type: 'ORDER', sessionId: Number('7') })).toEqual([['kitchen'], ['session', 7], ['awaiting-service'], ['payment']])
+  expect(eventKeys({ type: 'ORDER', sessionId: Number('7') })).toEqual([['kitchen'], ['session', 7], ['awaiting-service'], ['payment'], ['inventory']])
   expect(eventKeys({ type: 'FLOOR_PLAN', sessionId: 7 })).toEqual([['floor-plan'], ['payment'], ['session', 7], ['awaiting-service']])
   expect(eventKeys({ type: 'RESERVATION' })).toEqual([['reservations'], ['floor-plan']])
 })

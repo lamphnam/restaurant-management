@@ -10,5 +10,9 @@ public enum OrderItemStatus {
     UNAVAILABLE,
     CANCELLED;
 
+    public boolean blocksPayment() {
+        return this == PENDING || this == COOKING || this == READY;
+    }
+
     public static final Set<OrderItemStatus> NON_BILLABLE = Set.of(CANCELLED, UNAVAILABLE);
 }

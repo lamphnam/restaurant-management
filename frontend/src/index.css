@@ -188,3 +188,10 @@ a:focus-visible, button:focus-visible { outline: 3px solid #176b77; outline-offs
   .session-item-price { text-align: left; padding-top: 0; }
   .order-form-choice { grid-template-columns: minmax(0, 1fr) 96px; gap: 8px; }
 }
+
+.kitchen-batches { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 24px; }
+.kitchen-batches .queue-card { margin: 0; }
+.table-notifications { display: flex; min-height: 44px; margin-top: 12px; }
+.table-notifications .ant-btn { min-height: 44px; font-weight: 600; }
+.stock-shortage { color: #b42318; }
+.back-navigation { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 16px; border: 1px solid #c5d7df; border-radius: 8px; background: #fff; font-weight: 600; margin-bottom: 16px; }

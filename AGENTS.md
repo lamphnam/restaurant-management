@@ -2,15 +2,37 @@
 
 This file provides guidance to Codex (claude.ai/code) when working with code in this repository.
 
-## Project status
+## Current override — 24/10/2026 KLTN issues
+
+The user authorized all eight implementation issues across the requested phases. See
+`docs/phase_results/kltn-issues-implementation.md` for current contracts and verification.
+This supersedes historical D5/D8 and the reservation-edit scope cut below.
+- D5: Start reserves a JSONB ingredient snapshot on OrderItem under Session → Item → Menu → Ingredient-ID locks;
+  Complete consumes once from that snapshot; UNAVAILABLE releases reservations. No new domain table/status.
+  All stock writers share Ingredient locks; disposal uses available stock, stocktake rejects actual < held.
+  Never reset/mask historical negative stock. Legacy COOKING NULL snapshots are guarded at first processing.
+- D8: PENDING/COOKING/READY block payment; SERVED/UNAVAILABLE/CANCELLED allow it; READY remains billable.
+- Two independent badges on each table replace the serving sidebar. Four floor-plan roles may read;
+  only WAITER serves/acknowledges. Ack metadata is persistent/idempotent without changing UNAVAILABLE.
+- MANAGER may PUT CONFIRMED/unlinked reservations; table source/target locks ascending before Reservation.
+- V2–V4 supplement V1 with snapshot/ack/code columns; names, IDs, historical ledger/invoices remain intact.
+- The user explicitly authorized Java21 deployment on24/10/2026 after validation:
+  `scripts/deploy-oracle-wsl.ps1 -UseWslSsh`. Release `20261024-191117-a3343614` is live at
+  `https://dnrestaurant.dpdns.org/` (API `/api/*`); Flyway V2–V4 applied successfully.
+  Production postchecks were read-only; invoice totals, stock and session/table states were unchanged.
+  No mutating production QA/data repair is authorized by that deployment. The old main-QA permission
+  below is historical. Integration tests opt in only to loopback `kltn_issues_test`, with isolated schemas.
+- HEAD_CHEF recipe editing verified by real API tests and browser mocks; do not broaden menu permissions.
+
+## Project status (Phase 0–4 baseline, historical)
 
 This is a graduation-thesis (KLTN, UEH) prototype for a ~30–50 table dine-in restaurant.
 Both table service/sales and ingredient inventory must demo end to end. Deadline: **2026-10-27**.
-Last documentation update: **2026-10-23**, Asia/Ho_Chi_Minh.
+Last documentation update: **2026-10-24**, Asia/Ho_Chi_Minh.
 
 Backend: `backend/restaurant-management/`, Java 21, Spring Boot 4.1.1, Maven wrapper;
 root package `vn.ueh.kltn.restaurant`. Frontend: `frontend/`, React, TypeScript, Vite, **Bun**.
-Schema is Flyway V1 with exactly 18 domain tables; JPA validates it. Database: existing Neon `main`.
+Schema is Flyway V1 plus V2–V4 with exactly 18 domain tables; JPA validates it. Database: existing Neon `main`.
 
 **Phase 0–4, the UI review and all nine PR #4 fixes are implemented.**
 Current documentation index: `docs/README.md`; latest QA: `docs/phase_results/phase-4-pr-review.md`.
@@ -26,7 +48,7 @@ Do not commit, push, reset, stash or discard them without the user's instruction
   Orders accept 1–50 lines and 1–99 portions per line. SSE dispatch/send is isolated AFTER_COMMIT,
   on a dedicated four-worker executor/queue 256, never CallerRuns. Polling fallback: 30 seconds.
   Reduced-motion CSS uses `transition: none`; never restore global positive durations that interpolate popup left/top.
-- Phase 3: locked payment, duplicate payment 409, snapshot billing, READY/zero-amount billing (D8),
+- Phase 3: locked payment, duplicate payment 409, snapshot billing, historical READY/zero-amount billing (D8, superseded above),
   CLOSED sessions/table release; invoice history; ingredient CRUD (D12), atomic receipts/lots,
   stock ledger, stocktakes, disposals, attention lots and movement history.
 - PR #3 review: stocktake actual inputs start blank, only counted lines are sent, clearing omits a line,
@@ -110,7 +132,7 @@ and TRACEABILITY for current status. No next phase or cut feature is authorized 
   - Exception: implementation scope follows §1 of this spec.
 - **Do not change** business rules, roles, tables, columns, relationships, statuses or scope without the user's approval.
   - Exactly **18 domain tables** (§7); never add a 19th.
-  - The features cut in §1.3 stay out unless the user asks: forgot-password/OTP, profile edit, change password, area/table CRUD, editing reservations, per-lot stock.
+  - The features cut in §1.3 stay out unless the user asks: forgot-password/OTP, profile edit, change password, area/table CRUD, per-lot stock. Reservation editing was authorized 24/10/2026.
 - Keep it simple. §4.5 bans:
   - microservices, multi-module Maven, Clean/Hexagonal architecture, CQRS;
   - generic repositories / `BaseService<T>`;

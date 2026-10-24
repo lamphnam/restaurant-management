@@ -26,6 +26,12 @@
 > Chưa nghiệm thu tablet vật lý, tải nhiều user hoặc thực diễn backup/restore.
 > Lịch §22 là kế hoạch gốc; không commit/push hoặc mở rộng phạm vi khi chưa được giao.
 
+> **Cập nhật nghiệp vụ 24/10/2026 — 8 issues:** yêu cầu mới thay thế D5/D8 và phần cắt sửa đặt bàn.
+> Start giữ chỗ nguyên liệu bằng snapshot JSONB; Complete ghi consumption theo snapshot; không tạo thêm tồn âm.
+> READY chặn thanh toán. Hai badge trên bàn thay trang phục vụ riêng. Mã mới giữ nguyên tên/ID lịch sử.
+> Contract, migration V2–V4, kiểm thử và giới hạn: [báo cáo implementation](docs/phase_results/kltn-issues-implementation.md).
+> Các số QA ngày 23/10 phía trên là lịch sử, không phải kết quả của lượt này.
+
 ---
 
 # 0. NGUYÊN TẮC BẮT BUỘC KHI AGENT LÀM VIỆC
@@ -95,7 +101,7 @@ Web Application nội bộ cho một quán ăn phục vụ tại bàn khoảng 3
 
 | UC/FR | Giữ lại | Bỏ phần |
 |---|---|---|
-| UC7 Đặt bàn (FR-03) | Tạo, hủy, tra cứu; kiểm tra sức chứa + trùng lịch; gợi ý bàn phù hợp | Sửa đặt bàn (muốn đổi thì hủy rồi tạo lại) |
+| UC7 Đặt bàn (FR-03) | Tạo, sửa CONFIRMED chưa gắn session, hủy, tra cứu; sức chứa/trùng lịch | Không sửa SEATED/CANCELLED; bổ sung sửa theo yêu cầu 24/10 |
 | FR-06 Điều chỉnh/hủy món | Hủy món khi còn `PENDING`; bếp báo “Không thể chế biến” | Sửa số lượng/ghi chú món đã gửi bếp |
 | UC10.1 Kiểm kê (FR-14) | Kiểm kê theo NVL, tạo điều chỉnh khi lệch | Kiểm kê theo từng lô |
 | FR-13 Lô/HSD | Lô + HSD ghi nhận khi nhập; cảnh báo lô sắp hết hạn/đã hết hạn | Tồn theo lô; tiêu hao/kiểm kê theo lô; FEFO |
@@ -112,10 +118,10 @@ Ghi “**Chưa hiện thực — hướng phát triển**” trong `docs/TRACEAB
 - UC12.1 Sửa thông tin cá nhân.
 - UC12.2 Đổi mật khẩu.
 - UC3 Thêm/sửa/ngừng khu vực và bàn — dữ liệu khu vực/bàn lấy từ seed, chỉ hiển thị trên sơ đồ bàn.
-- Sửa đặt bàn; điều chỉnh số lượng món.
+- Điều chỉnh số lượng món đã gửi bếp. Sửa đặt bàn đã được bổ sung ngày 24/10/2026.
 - Quản lý tồn theo lô.
 
-**Backlog nếu còn thời gian** (theo thứ tự, chỉ làm khi người dùng đồng ý): UC12.2 đổi mật khẩu → sửa đặt bàn → UC3 → UC1.2.
+**Backlog nếu còn thời gian** (theo thứ tự, chỉ làm khi người dùng đồng ý): UC12.2 đổi mật khẩu → UC3 → UC1.2.
 
 ## 1.4 Ngoài phạm vi (như bản cũ)
 
@@ -408,7 +414,7 @@ Sáu vai trò nội bộ: `OWNER`, `MANAGER`, `CASHIER`, `WAITER`, `KITCHEN_STAF
 | OWNER | Báo cáo, Tài khoản, Thực đơn, Kho, Hóa đơn, Sơ đồ bàn (xem), Đặt bàn (xem) | Tài khoản/vai trò; thực đơn, giá, ngừng kinh doanh; danh mục NVL; định lượng; xem doanh thu, tồn, lô/HSD, biến động | `/reports` |
 | MANAGER | Đặt bàn, Sơ đồ bàn, Phiên phục vụ, Đối soát, Hóa đơn | Tạo/hủy/tra cứu đặt bàn; hỗ trợ mở phiên, gọi món, hủy món; xác nhận đối soát | `/reservations` |
 | CASHIER | Thanh toán, Hóa đơn, Đối soát | Xem phiên cần thanh toán, xác nhận thanh toán, lập đối soát | `/payment` |
-| WAITER | Sơ đồ bàn, Phiên phục vụ, Món chờ phục vụ, Đặt bàn (xem) | Tra cứu đặt bàn, mở phiên, gọi món/gọi thêm, hủy món, xác nhận đã phục vụ | `/floor-plan` |
+| WAITER | Sơ đồ bàn (kèm thông báo), Phiên phục vụ, Đặt bàn (xem) | Tra cứu đặt bàn, mở phiên, gọi món/gọi thêm, hủy món, xác nhận đã phục vụ | `/floor-plan` |
 | KITCHEN_STAFF | Bếp | Bắt đầu chế biến, không thể chế biến + lý do, hoàn thành | `/kitchen` |
 | HEAD_CHEF | Bếp, Kho, Nhập, Kiểm kê, Thực đơn (chỉ định lượng) | Mọi chức năng bếp; xem tồn/lô/HSD/cảnh báo/biến động; định lượng; nhập; kiểm kê; loại bỏ | `/kitchen` |
 
@@ -480,6 +486,7 @@ status         VARCHAR(30)   CHECK enum AccountStatus
 ```text
 id      PK
 name    VARCHAR(100)
+code    VARCHAR(40) NOT NULL UNIQUE
 status  VARCHAR(30)
 ```
 
@@ -488,6 +495,7 @@ status  VARCHAR(30)
 id        PK
 area_id   FK -> dining_area
 name      VARCHAR(50)
+code      VARCHAR(64) NOT NULL UNIQUE
 capacity  INT                CHECK (capacity > 0)
 status    VARCHAR(30)
 ```
@@ -540,6 +548,9 @@ note                 VARCHAR(500)      NULL   -- chỉ MỘT cột note
 status               VARCHAR(30)
 unavailable_reason   VARCHAR(500)      NULL
 unit_price_at_order  NUMERIC(14,0)     CHECK (>= 0)
+ingredient_requirements JSONB NULL    -- [{ingredientId, unit, quantity}] snapshot lúc Start
+unavailable_acknowledged_at TIMESTAMPTZ NULL
+unavailable_acknowledged_by_id FK -> account NULL
 CHECK (status <> 'UNAVAILABLE' OR unavailable_reason IS NOT NULL)
 ```
 `unit_price_at_order` = snapshot `MenuItem.price` lúc gọi; đổi giá món sau đó không ảnh hưởng.
@@ -684,7 +695,7 @@ Class Diagram là mô hình trực quan, không phải API bắt buộc. Code ph
 | DiningTable | `updateInfo()`, `activate()`, `deactivate()` | Không cần (UC3 bỏ) |
 | Reservation | `checkOverlap()` | `ReservationServiceImpl.checkOverlap()` (cần truy vấn DB) |
 | Reservation | `cancel()`, `confirmSeated()` | Entity method, kiểm tra trạng thái hợp lệ |
-| Reservation | `updateInfo()` | Không cần (bỏ sửa đặt bàn) |
+| Reservation | `updateInfo()` | Đã bổ sung: chỉ CONFIRMED, giữ metadata tạo |
 | ServiceSession | `calculateTotal()`, `checkPayable()` | `PaymentServiceImpl` (dựa trên chi tiết của phiên) |
 | ServiceSession | `close()` | Entity method: `CLOSED` + `closedAt` |
 | FoodOrder | `addItem()`, `calculateTotal()` | Entity method |
@@ -767,14 +778,14 @@ Composition trên Class Diagram **không** có nghĩa là xóa cascade ở DB. M
 | D2 | Walk-in ở bàn sắp có khách đặt | Cho phép. Sơ đồ bàn trả kèm đặt bàn sắp tới trong `app.reservation.upcoming-warning-minutes` (mặc định 60); UI hỏi xác nhận trước khi mở phiên walk-in. Backend không chặn. |
 | D3 | Mở phiên cho khách đặt trước | Chỉ gắn được đơn `CONFIRMED`, cùng `tableId`, `endTime > now`. |
 | D4 | Hủy món | Chỉ khi `PENDING` (WAITER, MANAGER). Món `COOKING` không hủy; bếp dùng “Không thể chế biến” nếu cần. |
-| D5 | Tiêu hao làm tồn âm | Vẫn cho hoàn thành món (không chặn bếp). Trang tồn kho tô đỏ tồn âm để Bếp trưởng kiểm kê. |
-| D6 | Loại bỏ | Chọn NVL; lô tùy chọn (chỉ ghi nguồn). Số lượng không vượt **tồn tổng** của NVL. |
+| D5 | Kiểm soát tồn chế biến | Start khóa NVL, kiểm `ledger - reserved - required`: âm → chặn; dưới min nhưng không âm → warning, xác nhận phải kiểm lại. Snapshot được giữ khi COOKING; Complete ghi tiêu hao một lần; UNAVAILABLE giải phóng. Tồn âm lịch sử không bị chỉnh sửa. |
+| D6 | Loại bỏ | Chọn NVL; lô tùy chọn (chỉ ghi nguồn). Số lượng không vượt **tồn khả dụng** (ledger trừ giữ chỗ COOKING) của NVL. |
 | D7 | Kiểm kê | Theo NVL (`lotId = NULL`). `systemQuantity` do backend tính lúc xác nhận, không lấy từ client. Chỉ gửi số thực đếm đã nhập; ô trống không được coi là 0 hoặc tồn hệ thống cũ. Chặn ID trùng/NVL ngừng dùng, khóa Ingredient tăng dần trước SUM (review PR #3, 23/10/2026). |
-| D8 | Thanh toán | Món `READY` chưa `SERVED` vẫn tính tiền, không chặn. Chỉ chặn khi còn `PENDING`/`COOKING`. Phiên có tổng 0đ (khách về, không gọi món) vẫn thanh toán được với `amount = 0` để đóng phiên. |
+| D8 | Thanh toán | PENDING/COOKING/READY chặn thanh toán. SERVED/UNAVAILABLE/CANCELLED không chặn; hai trạng thái sau subtotal 0. READY vẫn có tạm tính. Giữ thanh toán phiên 0đ, một invoice/session và transaction đóng/trả bàn. |
 | D9 | Đối soát | Xem chi tiết bên dưới bảng. |
 | D10 | Khóa tài khoản / đổi vai trò | Khóa chặn đăng nhập mới. JWT đã cấp giữ quyền trong claim `role` đến hết hạn `app.jwt.expiration-hours` (12h cho demo), kể cả sau khi khóa hoặc đổi vai trò. `/api/auth/me` trả role từ JWT để UI và backend cùng nguồn; tên hiện tại vẫn đọc từ DB. Đăng nhập lại nhận role mới. Chủ dự án duyệt mở rộng này ngày 22/10/2026. |
 | D11 | Định lượng | Lưu kiểu “thay toàn bộ định lượng của món” (PUT). Xóa dòng định lượng được phép (không phải dữ liệu lịch sử). Tiêu hao đã ghi không đổi. |
-| D12 | Đổi đơn vị tính NVL | Chặn nếu NVL đã có `StockMovement`. |
+| D12 | Đổi đơn vị tính NVL | Chặn nếu NVL đã có `StockMovement` hoặc lượng đang giữ cho COOKING; kiểm dưới khóa Ingredient. |
 
 **D9 — Đối soát:**
 - `systemRevenue` = Σ `Invoice.amount` trong khoảng; backend tính.
@@ -837,14 +848,14 @@ Ký hiệu `[TX]` = toàn bộ trong một transaction. `[EV: X]` = sau commit p
 ## 12.5 FR-18 — Định lượng (OWNER, HEAD_CHEF)
 - Xem định lượng của món.
 - Lưu toàn bộ danh sách dòng `{ingredientId, quantityPerServing > 0}` (D11): không trùng NVL; dòng thêm mới chỉ nhận NVL `ACTIVE`, dòng đã có được giữ/sửa số lượng khi NVL đã `INACTIVE` (sửa theo review Phase 1 của chủ dự án ngày 22/10/2026). Khóa `MenuItem` trước khi đọc và diff để hai PUT cùng món thực thi tuần tự. `[TX]`
-- Thay đổi chỉ ảnh hưởng các lần tiêu hao sau đó.
+- Thay đổi chỉ ảnh hưởng các lần Start chưa có snapshot. Món đã Start tiếp tục dùng snapshot; consumption lịch sử và giá đã snapshot không đổi.
 
 ## 12.6 Sơ đồ bàn
 - Grid theo khu vực (chỉ khu vực `ACTIVE`).
 - Mỗi bàn hiển thị: tên, sức chứa, trạng thái, `sessionId` đang mở (nếu có), đặt bàn đang hiệu lực/sắp tới (D2).
-- Dữ liệu khu vực/bàn đến từ seed (UC3 bỏ).
+- Dữ liệu khu vực/bàn đến từ seed (UC3 CRUD vẫn bỏ). V4 bổ sung mã unique toàn cục, ví dụ area T01/table T01-B01; giữ tên, PK/FK cũ. Hai badge READY/UNAVAILABLE độc lập theo phiên ACTIVE; đếm dòng món, không đếm quantity.
 
-## 12.7 UC7 — Đặt bàn (MANAGER tạo/hủy; WAITER, OWNER xem)
+## 12.7 UC7 — Đặt bàn (MANAGER tạo/sửa/hủy; WAITER, OWNER xem)
 
 **Tạo:**
 1. Nhập tên khách, SĐT, số khách, bắt đầu, kết thúc, ghi chú.
@@ -855,6 +866,10 @@ Ký hiệu `[TX]` = toàn bộ trong một transaction. `[EV: X]` = sau commit p
    - kiểm tra trùng lịch (D1) bằng `newStart < existingEnd AND newEnd > existingStart` (chạm biên không tính trùng);
    - lưu `CONFIRMED`, `createdAt = now`.
    - `[EV: RESERVATION]`
+
+**Sửa:** PUT cùng fields như tạo. Chỉ CONFIRMED chưa gắn bất kỳ session; giữ createdAt/createdBy.
+Đọc scalar tableId, khóa bàn nguồn/đích tăng dần, rồi khóa Reservation; nếu nguồn vừa đổi trả409 để tải lại.
+Kiểm sức chứa/khu vực ACTIVE/thời gian/trùng lịch loại trừ chính ID đang sửa. Giữ chính sách create hiện có: chỉ start < end, không tự cấm lịch quá khứ.
 
 **Hủy:** chỉ khi `CONFIRMED` → `CANCELLED`, không DELETE. `[EV: RESERVATION]`
 
@@ -894,30 +909,28 @@ hoặc trả no-op. Phiên `CLOSED` luôn trả 409, kể cả item đã ở tr�
 phải giữ cùng thứ tự Session → OrderItem khi cần khóa chi tiết. Quy tắc bổ sung theo review 23/10/2026.
 
 ## 12.10 UC9 — Bếp (KITCHEN_STAFF, HEAD_CHEF)
-- **Hàng chờ:** món `PENDING` + `COOKING` của các phiên đang hoạt động, sắp theo `FoodOrder.createdAt`. Hiển thị bàn, món, số lượng, ghi chú, thời gian gọi.
-- **Bắt đầu chế biến:** `PENDING → COOKING`. `[EV: ORDER]`
-- **Không thể chế biến:** `PENDING | COOKING → UNAVAILABLE`, lý do bắt buộc, **không** sinh tiêu hao. `[EV: ORDER]`
-- **Hoàn thành** `[TX]`:
-  1. khóa dòng `ServiceSession` → `OrderItem`, kiểm phiên `ACTIVE`;
-  2. nếu đã `READY`/`SERVED` → trả về thành công, **không làm gì thêm** (idempotent);
-  3. nếu không phải `COOKING` → lỗi 409;
-  4. đọc `RecipeItem` của món; với mỗi dòng tạo `StockMovement`:
-     - `CONSUMPTION`;
-     - `quantityChange = −calculateConsumption(quantity)`;
-     - `orderItemId`;
-     - `lotId = NULL`;
-     - `performedById` = người bấm;
-  5. món chưa có định lượng → vẫn hoàn thành, không sinh movement;
-  6. `markReady()`.
-  - `[EV: ORDER]`
+- Hàng chờ REST vẫn trả PENDING/COOKING theo createdAt/orderId/itemId; UI nhóm một card/FoodOrder.
+- GET batch riêng cho Bếp trả đủ món của batch thuộc phiên ACTIVE; không mở quyền đọc cả session.
+- **Start [TX]:** Session → OrderItem → MenuItem → các Ingredient theo ID tăng dần.
+  Đọc recipe dưới khóa MenuItem; refresh Ingredient sau lock; tính lượng cần theo unit gốc × quantity.
+  `available = SUM(ledger) - SUM(snapshot của các dòng COOKING)`.
+  Nếu projected < 0, trả409 INSUFFICIENT_STOCK kèm ingredients có cấu trúc; không chuyển trạng thái/giữ chỗ.
+  Nếu 0 <= projected < min và chưa confirmLowStock, trả200 started=false kèm chi tiết, không side effect.
+  Xác nhận phải kiểm lại trong transaction mới. Hợp lệ: capture snapshot, chuyển COOKING, phát ORDER sau commit.
+- Snapshot JSONB trên order_item không tạo bảng mới; NULL là dòng legacy/chưa Start; [] là recipe rỗng hợp lệ.
+- **Complete [TX]:** Session → OrderItem → Ingredient tăng dần; kiểm tồn đủ cho snapshot (loại chính giữ chỗ của item khỏi tổng).
+  Ghi CONSUMPTION âm, lotId=NULL, actor JWT; chuyển READY trong cùng transaction. Retry READY/SERVED không trừ thêm.
+  Snapshot không đổi khi sửa recipe. COOKING legacy NULL kiểm/capture recipe hiện tại khi xử lý lần đầu; thiếu thì chặn, không tạo lịch sử giả.
+- **Unavailable [TX]:** PENDING/COOKING → UNAVAILABLE, lý do bắt buộc. Nếu đang giữ chỗ, khóa Ingredient rồi đổi trạng thái để giải phóng; không tạo consumption/bù trừ ledger.
+- Recipe rỗng vẫn Start/Complete không movement như trước. Không thêm FEFO hoặc suy tồn theo lô.
 
-Tồn âm sau tiêu hao vẫn cho phép (D5).
-
-## 12.11 UC8.3 — Theo dõi và xác nhận phục vụ (WAITER)
-- **Màn hình “Món chờ phục vụ”:**
-  - món `READY` của các phiên đang hoạt động;
-  - mục riêng “Không thể chế biến — cần báo khách”: các món `UNAVAILABLE` kèm lý do.
-- **Xác nhận:** chỉ `READY → SERVED`. `[EV: ORDER]`
+## 12.11 UC8.3 — Thông báo trên sơ đồ bàn
+- Bỏ mục sidebar Món chờ phục vụ; URL cũ của WAITER redirect /floor-plan.
+- Hai badge riêng mỗi bàn/activeSessionId: READY và UNAVAILABLE chưa acknowledged; đếm OrderItem, không đếm phần.
+- WAITER/MANAGER/CASHIER/OWNER xem nội dung; chỉ WAITER được serve và acknowledge.
+- READY → SERVED giữ API hiện có. Acknowledge chỉ UNAVAILABLE, lưu actor/thời điểm một lần, retry no-op;
+  không đổi status, subtotal, kho hoặc eligibility. Phiên CLOSED không được cập nhật, không lên queue.
+- Một query tổng awaiting-service + floor-plan; không fetch từng bàn. SSE/polling30s/reconnect giữ dữ liệu mới.
 
 ## 12.12 UC10.3 — Nhập NVL (HEAD_CHEF)
 Chỉ ghi nhận hàng đã kiểm tra/chấp nhận. Form nhiều dòng `{ingredientId, quantity > 0, lotNumber?, expiryDate?}`.
@@ -933,6 +946,8 @@ Chỉ ghi nhận hàng đã kiểm tra/chấp nhận. Form nhiều dòng `{ingre
 Không quản lý nhà cung cấp/PO/công nợ.
 
 ## 12.13 UC10.1 — Kiểm kê (HEAD_CHEF)
+
+Số thực đếm bao gồm lượng đang giữ cho COOKING; chặn actual < reserved để không phá cam kết nguyên liệu. Nhập/kiểm kê/loại bỏ dùng cùng khóa Ingredient với bếp.
 1. Form điền sẵn tồn hệ thống hiện tại của các NVL `ACTIVE`.
 2. Ô thực tế ban đầu trống; nhập số đã đếm (≥ 0) và ghi chú nếu có, UI hiển thị chênh lệch tạm tính.
    Chỉ gửi dòng có số thực đếm; xóa ô thì bỏ dòng, nhập 0 tường minh vẫn gửi 0. Ghi chú đơn thuần không coi là đã đếm.
@@ -951,10 +966,10 @@ Không quản lý nhà cung cấp/PO/công nợ.
 - Input: NVL, lô (tùy chọn, D6), số lượng, lý do.
 - Validation:
   - số lượng > 0;
-  - không vượt tồn tổng;
+  - không vượt tồn khả dụng sau khi trừ giữ chỗ;
   - lý do bắt buộc;
   - nếu chọn lô, lô phải thuộc NVL đó.
-- `[TX]`: khóa dòng `Ingredient` → tính tồn → tạo `StockMovement` `DISPOSAL`, `quantityChange = −quantity`.
+- `[TX]`: khóa dòng `Ingredient` → tính khả dụng (ledger trừ giữ chỗ) → chặn xuất vượt khả dụng → tạo DISPOSAL âm.
 - Không có phiếu loại bỏ riêng (`disposal_receipt`).
 
 ## 12.15 UC6.2 — Tồn kho và cảnh báo (OWNER, HEAD_CHEF)
@@ -1073,8 +1088,9 @@ Cột “Vai trò” dùng đúng giá trị enum `Role` (mục 6): `OWNER`, `MA
 |---|---|---|---|
 | GET | `/api/tables/floor-plan` | WAITER, MANAGER, CASHIER, OWNER | Khu vực → bàn: trạng thái, phiên đang mở, đặt bàn hiệu lực/sắp tới |
 | GET | `/api/reservations` | MANAGER, WAITER, OWNER | Lọc `?date&status&q&tableId&unexpired`; phân trang. `tableId` tùy chọn, `unexpired=true` lọc `endTime > now`, mặc định false để giữ lịch sử. Bổ sung theo review Phase 1 ngày 22/10/2026. |
-| GET | `/api/reservations/available-tables` | MANAGER | `?startTime&endTime&guestCount` → bàn đủ sức chứa, không trùng lịch |
+| GET | `/api/reservations/available-tables` | MANAGER | `?startTime&endTime&guestCount&excludedId?` → bàn phù hợp, loại chính reservation khi sửa |
 | POST | `/api/reservations` | MANAGER | Tạo đặt bàn |
+| PUT | `/api/reservations/{id}` | MANAGER | Sửa CONFIRMED chưa gắn session, cùng request như tạo |
 | PATCH | `/api/reservations/{id}/cancel` | MANAGER | Hủy |
 
 ## 13.5 ServiceSessionController
@@ -1085,13 +1101,15 @@ Cột “Vai trò” dùng đúng giá trị enum `Role` (mục 6): `OWNER`, `MA
 | POST | `/api/sessions/{id}/orders` | WAITER, MANAGER | `{items:[{menuItemId, quantity, note?}]}` tạo đợt gọi món |
 | PATCH | `/api/sessions/items/{orderItemId}/cancel` | WAITER, MANAGER | Hủy món (chỉ `PENDING`) |
 | PATCH | `/api/sessions/items/{orderItemId}/serve` | WAITER | `READY → SERVED` |
-| GET | `/api/sessions/items/awaiting-service` | WAITER | Món `READY` + món `UNAVAILABLE` của phiên đang hoạt động |
+| GET | `/api/sessions/items/awaiting-service` | WAITER, MANAGER, CASHIER, OWNER | READY + UNAVAILABLE chưa acknowledged, chỉ phiên ACTIVE |
+| PATCH | `/api/sessions/items/{orderItemId}/acknowledge-unavailable` | WAITER | Xác nhận đã báo khách, idempotent |
 
 ## 13.6 KitchenController
 | Method | Path | Vai trò | Mô tả |
 |---|---|---|---|
 | GET | `/api/kitchen/queue` | KITCHEN_STAFF, HEAD_CHEF | Món `PENDING` + `COOKING` |
-| PATCH | `/api/kitchen/items/{id}/start` | KITCHEN_STAFF, HEAD_CHEF | Bắt đầu chế biến |
+| GET | `/api/kitchen/orders/{id}` | KITCHEN_STAFF, HEAD_CHEF | Mọi món trong batch thuộc phiên ACTIVE |
+| PATCH | `/api/kitchen/items/{id}/start` | KITCHEN_STAFF, HEAD_CHEF | `{confirmLowStock?: boolean}`; 200 `{started,item,ingredients}`; thiếu trả409 kèm ingredients |
 | PATCH | `/api/kitchen/items/{id}/unavailable` | KITCHEN_STAFF, HEAD_CHEF | `{reason}` |
 | PATCH | `/api/kitchen/items/{id}/complete` | KITCHEN_STAFF, HEAD_CHEF | Hoàn thành + tiêu hao |
 
@@ -1183,7 +1201,7 @@ Swagger UI bật ở profile `local` để thử API nhanh.
 |---|---|
 | `FLOOR_PLAN` | `['floor-plan']`, `['payment']`, `['session', sessionId]`, `['awaiting-service']` |
 | `RESERVATION` | `['reservations']`, `['floor-plan']` |
-| `ORDER` | `['kitchen']`, `['session', sessionId]`, `['awaiting-service']`, `['payment']` |
+| `ORDER` | `['kitchen']`, `['session', sessionId]`, `['awaiting-service']`, `['payment']`, `['inventory']` |
 
 - **Dự phòng:** các query của sơ đồ bàn, bếp, món chờ phục vụ, thanh toán đặt `refetchInterval: 30_000` và `refetchOnWindowFocus: true`.
 - Kho/báo cáo không cần real-time.
@@ -1197,7 +1215,7 @@ Swagger UI bật ở profile `local` để thử API nhanh.
 | `/login` | Đăng nhập | công khai | SĐT + mật khẩu | |
 | `/floor-plan` | Sơ đồ bàn | WAITER, MANAGER (CASHIER, OWNER chỉ xem) | Grid theo khu vực; card bàn: tên, sức chứa, trạng thái (màu), đặt bàn sắp tới; nút **Mở phiên** / **Xem phiên** | ✔ |
 | `/sessions/:id` | Phiên phục vụ | WAITER, MANAGER | Thông tin bàn/đặt bàn/giờ mở; các đợt gọi món; từng món + tag trạng thái; **Gọi món/Gọi thêm** (modal chọn món đang kinh doanh, số lượng, ghi chú); **Hủy món** (chỉ hiện khi Chờ chế biến); **Đã phục vụ**; tạm tính | ✔ |
-| `/awaiting-service` | Món chờ phục vụ | WAITER | Món hoàn thành chờ mang ra; mục món không thể chế biến + lý do | ✔ |
+| `/awaiting-service` | Redirect | WAITER | Về /floor-plan; không có sidebar riêng | ✔ |
 | `/reservations` | Đặt bàn | MANAGER (WAITER, OWNER chỉ xem) | Danh sách + lọc; **Tạo** (chọn giờ, số khách → gợi ý bàn phù hợp); **Hủy** | ✔ |
 | `/kitchen` | Bếp | KITCHEN_STAFF, HEAD_CHEF | Hai cột Chờ chế biến / Đang chế biến; card món: bàn, món, SL, ghi chú, giờ gọi; nút **Bắt đầu**, **Không thể chế biến** (nhập lý do), **Hoàn thành**; chữ lớn, dùng tốt trên tablet | ✔ |
 | `/payment` | Thanh toán | CASHIER | Danh sách phiên đang mở → xem trước hóa đơn → chọn phương thức → xác nhận | ✔ |
@@ -1254,8 +1272,8 @@ Index thêm cho FK khi cần.
 | Tạo đặt bàn | `DiningTable` | — |
 | Mở phiên | `DiningTable` | partial unique phiên đang hoạt động |
 | Chuyển trạng thái món (bếp, hủy, phục vụ) | `ServiceSession` → `OrderItem`, kiểm phiên ACTIVE | CHECK lý do |
-| Hoàn thành món + tiêu hao | `ServiceSession` → `OrderItem`, kiểm phiên ACTIVE | unique `CONSUMPTION` theo (chi tiết, NVL) |
-| Nhập hàng + lô + movement | — | unique `receipt_item_id` |
+| Hoàn thành món + tiêu hao | Session → OrderItem → Ingredient tăng dần, dùng snapshot | unique `CONSUMPTION` theo (chi tiết, NVL) |
+| Nhập hàng + lô + movement | toàn bộ Ingredient tăng dần | unique `receipt_item_id` |
 | Kiểm kê + điều chỉnh | toàn bộ `Ingredient` theo ID tăng dần trước SUM | unique `stocktake_item_id` |
 | Loại bỏ | `Ingredient` | CHECK dấu/lý do |
 | Thanh toán + Invoice + đóng phiên + bàn | `ServiceSession` | unique `invoice.session_id` |
@@ -1303,7 +1321,7 @@ Agent tạo `docs/TRACEABILITY.md` tối thiểu như sau. Cột Trạng thái d
 |---|---|---|---|---|---|
 | FR-01 | UC1.1, UC4 (UC1.2, UC12 chưa hiện thực) | Đơn giản hóa | Auth, Account | AuthService, AccountService | Account |
 | FR-02 | UC5, UC3 (UC3 chưa hiện thực — seed) | Đơn giản hóa | Menu, Table | MenuService, TableService | MenuItem, DiningArea, DiningTable |
-| FR-03 | UC7 (không sửa đặt bàn) | Đơn giản hóa | Table | ReservationService | Reservation, DiningTable |
+| FR-03 | UC7 (gồm sửa CONFIRMED) | Đơn giản hóa | Table | ReservationService | Reservation, DiningTable |
 | FR-04 | UC8.1, UC11.1 | Đã làm | ServiceSession, Payment | ServiceSessionService, PaymentService | DiningTable, ServiceSession |
 | FR-05 | UC8.2 | Đã làm | ServiceSession | ServiceSessionService | FoodOrder, OrderItem |
 | FR-06 | UC8.2, UC9 (chỉ hủy khi chờ chế biến) | Đơn giản hóa | ServiceSession, Kitchen | ServiceSessionService, KitchenService | OrderItem |
@@ -1419,7 +1437,7 @@ Xóa test `contextLoads()` mặc định của start.spring.io (cần kết nố
 
 **Thanh toán/đối soát**
 29. Món hủy / không thể chế biến không tính tiền; tổng dùng giá snapshot.
-30. Còn món chưa xong → không thanh toán được.
+30. Còn PENDING/COOKING/READY → không thanh toán được; SERVED/UNAVAILABLE/CANCELLED hợp lệ.
 31. Bấm thanh toán 2 lần không tạo hóa đơn thứ hai.
 32. Thanh toán xong: phiên đóng, bàn → Trống.
 33. Đối soát chỉ lấy hóa đơn trong khoảng; không làm đổi doanh thu.

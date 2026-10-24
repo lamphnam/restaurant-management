@@ -90,7 +90,7 @@ export default function PaymentPage() {
       render: (tableName: string, record) => (
         <Space orientation="vertical" size={0}>
           <Text strong style={{ fontSize: 16 }}>
-            {tableName}
+            {record.tableCode ?? tableName}
           </Text>
           {record.areaName && <Text type="secondary">{record.areaName}</Text>}
         </Space>
@@ -118,7 +118,7 @@ export default function PaymentPage() {
       title: 'Trạng thái món',
       key: 'status',
       render: (_, record) =>
-        record.hasPendingOrCookingItems ? (
+        record.hasBlockingItems ? (
           <Tag color="gold">Còn món chưa xong</Tag>
         ) : (
           <Tag color="green">Sẵn sàng thanh toán</Tag>
@@ -176,7 +176,7 @@ export default function PaymentPage() {
         title={
           preview ? (
             <Space>
-              <span>Thanh toán bàn {preview.tableName}</span>
+              <span>Thanh toán bàn {preview.tableCode ?? preview.tableName}</span>
               {preview.areaName && <Tag>{preview.areaName}</Tag>}
             </Space>
           ) : (
@@ -214,18 +214,18 @@ export default function PaymentPage() {
                         ?
                       </p>
                       <p style={{ color: '#faad14', margin: 0 }}>
-                        Bàn {preview.tableName} sẽ được trả về trạng thái Trống và phiên phục vụ sẽ đóng.
+                        Bàn {preview.tableCode ?? preview.tableName} sẽ được trả về trạng thái Trống và phiên phục vụ sẽ đóng.
                       </p>
                     </div>
                   }
                   onConfirm={() => selectedSessionId && payMutation.mutate(selectedSessionId)}
                   okText="Xác nhận"
                   cancelText="Hủy"
-                  disabled={preview.hasPendingOrCookingItems || payMutation.isPending}
+                  disabled={preview.hasBlockingItems || payMutation.isPending}
                 >
                   <Button
                     type="primary"
-                    disabled={preview.hasPendingOrCookingItems}
+                    disabled={preview.hasBlockingItems}
                     loading={payMutation.isPending}
                   >
                     Xác nhận thanh toán
@@ -238,7 +238,7 @@ export default function PaymentPage() {
       >
         {preview && (
           <Space open-orientation="vertical" direction="vertical" size="middle" style={{ width: '100%' }}>
-            {preview.hasPendingOrCookingItems && (
+            {preview.hasBlockingItems && (
               <Alert
                 type="warning"
                 showIcon
@@ -246,8 +246,8 @@ export default function PaymentPage() {
                 description={
                   <div>
                     <p style={{ marginBottom: 8 }}>
-                      Còn <strong>{preview.blockingItems.length}</strong> món đang chờ chế biến hoặc đang nấu.
-                      Vui lòng hoàn thành hoặc hủy các món này trước khi thanh toán:
+                      Còn <strong>{preview.blockingItems.length}</strong> món chưa phục vụ (chờ chế biến, đang nấu hoặc hoàn thành).
+                      Vui lòng xử lý và xác nhận đã phục vụ; món không thể chế biến hoặc đã hủy không chặn thanh toán:
                     </p>
                     <ul style={{ paddingLeft: 20, margin: 0 }}>
                       {preview.blockingItems.map((item) => (
@@ -265,7 +265,7 @@ export default function PaymentPage() {
             <Card size="small" title="Thông tin phiên">
               <Space split={<Text type="secondary">|</Text>}>
                 <Text>
-                  Bàn: <strong>{preview.tableName}</strong>
+                  Bàn: <strong>{preview.tableCode ?? preview.tableName}</strong>
                 </Text>
                 {preview.areaName && <Text>Khu vực: {preview.areaName}</Text>}
                 <Text>Giờ mở: {formatTime(preview.openedAt)}</Text>

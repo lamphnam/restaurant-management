@@ -13,4 +13,6 @@ public record IngredientResponse(
         boolean trackExpiry,
         IngredientStatus status,
         BigDecimal currentStock,
-        boolean belowMinStock) {}
+        boolean belowMinStock,
+        BigDecimal reservedStock,
+        BigDecimal availableStock) {}

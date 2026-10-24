@@ -2,6 +2,8 @@ import { Badge, Button, Empty, Skeleton, Space, Typography } from 'antd'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { TableNotifications } from './TableNotifications'
+import { sessionApi } from '../../api/sessionApi'
 import { tableApi } from '../../api/tableApi'
 import { useAuth } from '../../auth/useAuth'
 import { StatusTag } from '../../components/StatusTag'
@@ -17,18 +19,22 @@ export default function FloorPlanPage() {
   const [selected, setSelected] = useState<FloorTable | null>(null)
   const navigate = useNavigate()
   const query = useQuery({ queryKey: ['floor-plan'], queryFn: ({ signal }) => tableApi.floorPlan(signal), ...liveQueryOptions })
+  const notifications = useQuery({ queryKey: ['awaiting-service'], queryFn: ({ signal }) => sessionApi.awaitingService(signal), ...liveQueryOptions })
+  useApiFeedback(notifications.error)
   useApiFeedback(query.error)
   return <section>
     <div className="page-heading"><div><Typography.Title level={1}>Sơ đồ bàn</Typography.Title>
       <Typography.Paragraph>Chọn bàn để đón khách và theo dõi lượt đặt trước.</Typography.Paragraph></div>
-      <Button loading={query.isFetching} onClick={() => void query.refetch()}>Làm mới</Button></div>
+      <Button loading={query.isFetching} onClick={() => { void query.refetch(); void notifications.refetch() }}>Làm mới</Button></div>
     <div className="floor-legend"><StatusTag group="TableStatus" value="AVAILABLE" /><StatusTag group="TableStatus" value="OCCUPIED" /><StatusTag group="TableStatus" value="INACTIVE" /><span>Tự cập nhật trực tiếp · Kiểm tra dự phòng mỗi 30 giây</span></div>
     {query.isPending ? <Skeleton active /> : (query.data ?? []).length === 0 ? <Empty description="Chưa có bàn trong khu vực đang hoạt động." /> : query.data?.map((area) => <section className="floor-area" key={area.id} aria-label={area.name}>
-      <div className="area-heading"><Typography.Title level={2}>{area.name}</Typography.Title><span>{area.tables.length} bàn</span></div>
+      <div className="area-heading"><Typography.Title level={2}>{area.name} {area.code && <small>({area.code})</small>}</Typography.Title><span>{area.tables.length} bàn</span></div>
       <div className="floor-grid">{area.tables.map((table) => <article className={`table-card table-${table.status.toLowerCase()}`} key={table.id} data-table-name={table.name}>
-        <div className="table-card-heading"><Typography.Title level={3}>{table.name}</Typography.Title><StatusTag group="TableStatus" value={table.status} /></div>
+        <div className="table-card-heading"><Typography.Title level={3}>{table.code ?? table.name}</Typography.Title><StatusTag group="TableStatus" value={table.status} /></div>
+        <div className="muted-text">Tên bàn: {table.name}</div>
         <div className="table-capacity"><span className="table-symbol" aria-hidden="true" />{table.capacity} khách</div>
         <div className="reservation-preview">{table.upcomingReservation ? <><Badge status="warning" text="Có đặt trước" /><strong>{table.upcomingReservation.customerName}</strong><span>{formatTime(table.upcomingReservation.startTime)}</span></> : <span className="muted-text">Chưa có đặt trước sắp tới</span>}</div>
+        <TableNotifications key={`${table.id}-${table.activeSessionId}`} table={table} items={notifications.data ?? []} canAct={account?.role === 'WAITER'} />
         <Space className="table-actions">
           {canOpen && table.status === 'AVAILABLE' && <Button type="primary" onClick={() => setSelected(table)}>Mở phiên</Button>}
           {canOpen && table.activeSessionId && <Button onClick={() => navigate(`/sessions/${table.activeSessionId}`)}>Xem phiên</Button>}

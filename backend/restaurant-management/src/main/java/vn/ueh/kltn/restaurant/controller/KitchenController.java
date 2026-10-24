@@ -12,7 +12,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import vn.ueh.kltn.restaurant.dto.request.StartCookingRequest;
 import vn.ueh.kltn.restaurant.dto.request.UnavailableRequest;
+import vn.ueh.kltn.restaurant.dto.response.CookingStartResponse;
 import vn.ueh.kltn.restaurant.dto.response.OrderItemResponse;
 import vn.ueh.kltn.restaurant.dto.response.OrderQueueItemResponse;
 import vn.ueh.kltn.restaurant.service.KitchenService;
@@ -31,9 +33,15 @@ public class KitchenController {
         return kitchen.queue();
     }
 
+    @GetMapping("/orders/{id}")
+    public List<OrderQueueItemResponse> batch(@PathVariable Long id) {
+        return kitchen.batch(id);
+    }
+
     @PatchMapping("/items/{id}/start")
-    public OrderItemResponse start(@PathVariable Long id) {
-        return kitchen.start(id);
+    public CookingStartResponse start(
+            @PathVariable Long id, @RequestBody(required = false) StartCookingRequest request) {
+        return kitchen.start(id, request != null && Boolean.TRUE.equals(request.confirmLowStock()));
     }
 
     @PatchMapping("/items/{id}/unavailable")

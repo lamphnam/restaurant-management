@@ -188,20 +188,17 @@ public class PaymentServiceImpl implements PaymentService {
                             .map(FoodOrder::calculateTotal)
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-            boolean hasPendingOrCooking =
+            boolean hasBlocking =
                     sessionOrders.stream()
                             .flatMap(order -> order.getItems().stream())
-                            .anyMatch(
-                                    item ->
-                                            item.getStatus() == OrderItemStatus.PENDING
-                                                    || item.getStatus() == OrderItemStatus.COOKING);
+                            .anyMatch(item -> item.getStatus().blocksPayment());
 
             int totalItems =
                     sessionOrders.stream().mapToInt(order -> order.getItems().size()).sum();
 
             results.add(
                     PaymentMapper.toOpenSessionResponse(
-                            session, provisionalTotal, hasPendingOrCooking, totalItems));
+                            session, provisionalTotal, hasBlocking, totalItems));
         }
 
         return results;
@@ -225,13 +222,12 @@ public class PaymentServiceImpl implements PaymentService {
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         List<PaymentPreviewResponse.BlockingItemResponse> blockingItems = new ArrayList<>();
-        boolean hasPendingOrCooking = false;
+        boolean hasBlocking = false;
 
         for (FoodOrder order : orders) {
             for (OrderItem item : order.getItems()) {
-                if (item.getStatus() == OrderItemStatus.PENDING
-                        || item.getStatus() == OrderItemStatus.COOKING) {
-                    hasPendingOrCooking = true;
+                if (item.getStatus().blocksPayment()) {
+                    hasBlocking = true;
                     blockingItems.add(
                             new PaymentPreviewResponse.BlockingItemResponse(
                                     item.getId(),
@@ -244,7 +240,7 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         return PaymentMapper.toPreviewResponse(
-                session, orders, provisionalTotal, hasPendingOrCooking, blockingItems);
+                session, orders, provisionalTotal, hasBlocking, blockingItems);
     }
 
     @Override
@@ -269,15 +265,13 @@ public class PaymentServiceImpl implements PaymentService {
         boolean hasBlocking =
                 orders.stream()
                         .flatMap(order -> order.getItems().stream())
-                        .anyMatch(
-                                item ->
-                                        item.getStatus() == OrderItemStatus.PENDING
-                                                || item.getStatus() == OrderItemStatus.COOKING);
+                        .anyMatch(item -> item.getStatus().blocksPayment());
 
         if (hasBlocking) {
             throw new BusinessException(
                     ErrorCode.PAYMENT_BLOCKED_PENDING_ITEMS,
-                    "Không thể thanh toán khi còn món đang chờ chế biến hoặc đang nấu");
+                    "Không thể thanh toán khi còn món chưa phục vụ (chờ chế biến, đang nấu hoặc"
+                            + " hoàn thành)");
         }
 
         BigDecimal total =

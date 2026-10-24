@@ -1,5 +1,10 @@
 # Quản lý quán ăn phục vụ tại bàn — KLTN UEH
 
+> **Cập nhật 24/10/2026:** triển khai 8 KLTN issues; D5/D8 đã thay thế, có sửa reservation,
+> giữ chỗ nguyên liệu lúc Start, hai badge trên bàn và migration V2–V4. Xem [báo cáo implementation](docs/phase_results/kltn-issues-implementation.md).
+> Phần Phase 0–4 bên dưới giữ bằng chứng lịch sử ngày23/10. Không chạy QA ghi lên Neon production.
+
+
 Prototype nội bộ cho quán ăn khoảng 30–50 bàn, hỗ trợ bán hàng tại bàn và kho NVL.
 Đặc tả chính: [master Spring/React](CODEX_MASTER_SPEC_KLTN_SPRING_REACT.md).
 Tra cứu tài liệu: [docs/README](docs/README.md).

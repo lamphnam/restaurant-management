@@ -20,6 +20,8 @@ import static vn.ueh.kltn.restaurant.TestFixtures.account;
 import static vn.ueh.kltn.restaurant.TestFixtures.ingredient;
 import static vn.ueh.kltn.restaurant.TestFixtures.item;
 
+import jakarta.persistence.EntityManager;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -39,8 +41,11 @@ import vn.ueh.kltn.restaurant.enums.MovementType;
 import vn.ueh.kltn.restaurant.enums.OrderItemStatus;
 import vn.ueh.kltn.restaurant.enums.SessionStatus;
 import vn.ueh.kltn.restaurant.exception.BusinessException;
+import vn.ueh.kltn.restaurant.exception.InventoryAvailabilityException;
 import vn.ueh.kltn.restaurant.realtime.RealtimeEvent;
 import vn.ueh.kltn.restaurant.repository.AccountRepository;
+import vn.ueh.kltn.restaurant.repository.IngredientRepository;
+import vn.ueh.kltn.restaurant.repository.MenuItemRepository;
 import vn.ueh.kltn.restaurant.repository.OrderItemRepository;
 import vn.ueh.kltn.restaurant.repository.RecipeItemRepository;
 import vn.ueh.kltn.restaurant.repository.ServiceSessionRepository;
@@ -60,14 +65,24 @@ class KitchenServiceImplTest {
     private final CurrentUser user = mock(CurrentUser.class);
     private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
     private final ServiceSessionRepository sessions = mock(ServiceSessionRepository.class);
+    private final MenuItemRepository menu = mock(MenuItemRepository.class);
+    private final IngredientRepository ingredients = mock(IngredientRepository.class);
+    private final CookingInventory inventory =
+            new CookingInventory(mock(EntityManager.class), ingredients, items, movements);
     private final KitchenServiceImpl service =
             new KitchenServiceImpl(
-                    items, recipes, movements, accounts, user, CLOCK, events, sessions);
+                    items, recipes, movements, accounts, user, CLOCK, events, sessions, menu,
+                    inventory);
     private OrderItem item;
 
     @BeforeEach
     void setup() {
         item = item();
+        when(menu.findLockedById(1L)).thenReturn(Optional.of(item.getMenuItem()));
+        when(ingredients.findLockedById(any()))
+                .thenAnswer(call -> Optional.of(ingredient(call.getArgument(0))));
+        when(movements.sumQuantityByIngredientId(any())).thenReturn(new BigDecimal("1000"));
+        when(items.reservedQuantity(any(), any())).thenReturn(BigDecimal.ZERO);
         when(items.findSessionIdById(9L)).thenReturn(Optional.of(7L));
         when(sessions.findLockedById(7L)).thenReturn(Optional.of(item.getOrder().getSession()));
         when(items.findLockedById(9L)).thenReturn(Optional.of(item));
@@ -75,7 +90,7 @@ class KitchenServiceImplTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void completeUsesCurrentRecipeIncludingInactiveAndNeverChecksStock() {
+    void legacyCompleteCapturesCurrentRecipeIncludingRetainedInactiveAndChecksStock() {
         item.startCooking();
         Ingredient inactive = ingredient(2L);
         inactive.deactivate();
@@ -144,15 +159,16 @@ class KitchenServiceImplTest {
 
     @Test
     void startAndUnavailableUseLockAndPublishOnlyRealChangesWithoutConsumption() {
-        service.start(9L);
-        service.start(9L);
+        service.start(9L, false);
+        service.start(9L, false);
         assertThrows(BusinessException.class, () -> service.unavailable(9L, " "));
         service.unavailable(9L, "Hết nguyên liệu");
         service.unavailable(9L, "Lý do khác");
         assertEquals("Hết nguyên liệu", item.getUnavailableReason());
         verify(items, times(5)).findLockedById(9L);
         verify(events, times(2)).publishEvent(new RealtimeEvent(RealtimeEvent.Type.ORDER, 7L));
-        verifyNoInteractions(recipes, movements);
+        verify(recipes, times(1)).findByMenuItemId(1L);
+        verifyNoInteractions(movements);
     }
 
     @Test
@@ -167,7 +183,7 @@ class KitchenServiceImplTest {
 
     @Test
     void missingItemIsRejected() {
-        assertThrows(BusinessException.class, () -> service.start(99L));
+        assertThrows(BusinessException.class, () -> service.start(99L, false));
         assertThrows(BusinessException.class, () -> service.unavailable(99L, "Hết món"));
         assertThrows(BusinessException.class, () -> service.complete(99L));
         verifyNoInteractions(events, movements);
@@ -204,9 +220,64 @@ class KitchenServiceImplTest {
         verify(items, never()).findById(9L);
     }
 
+    @Test
+    void lowStockWarningHasNoSideEffectsAndConfirmationRechecks() {
+        when(recipes.findByMenuItemId(1L))
+                .thenReturn(
+                        List.of(
+                                new RecipeItem(
+                                        item.getMenuItem(),
+                                        ingredient(1L),
+                                        new BigDecimal("0.8"))));
+        when(movements.sumQuantityByIngredientId(1L)).thenReturn(new BigDecimal("3"));
+        assertEquals(false, service.start(9L, false).started());
+        assertEquals(OrderItemStatus.PENDING, item.getStatus());
+        assertNull(item.getIngredientRequirements());
+        verifyNoInteractions(events);
+        when(movements.sumQuantityByIngredientId(1L)).thenReturn(new BigDecimal("2"));
+        assertThrows(InventoryAvailabilityException.class, () -> service.start(9L, true));
+        assertEquals(OrderItemStatus.PENDING, item.getStatus());
+        assertNull(item.getIngredientRequirements());
+    }
+
+    @Test
+    void startCapturesQuantityAndCompleteNeverRereadsChangedRecipe() {
+        when(recipes.findByMenuItemId(1L))
+                .thenReturn(
+                        List.of(
+                                new RecipeItem(
+                                        item.getMenuItem(),
+                                        ingredient(1L),
+                                        new BigDecimal("0.8"))));
+        assertEquals(true, service.start(9L, false).started());
+        assertEquals(new BigDecimal("2.4"), item.getIngredientRequirements().getFirst().quantity());
+        service.start(9L, false);
+        when(recipes.findByMenuItemId(1L)).thenReturn(List.of());
+        service.complete(9L);
+        service.complete(9L);
+        verify(recipes, times(1)).findByMenuItemId(1L);
+        verify(movements, times(1)).saveAll(any());
+    }
+
+    @Test
+    void startAccountsForOtherReservationsAndExactZeroCanBeConfirmed() {
+        when(recipes.findByMenuItemId(1L))
+                .thenReturn(
+                        List.of(
+                                new RecipeItem(
+                                        item.getMenuItem(),
+                                        ingredient(1L),
+                                        new BigDecimal("0.8"))));
+        when(movements.sumQuantityByIngredientId(1L)).thenReturn(new BigDecimal("3.4"));
+        when(items.reservedQuantity(1L, 9L)).thenReturn(BigDecimal.ONE);
+        assertEquals(false, service.start(9L, false).started());
+        assertEquals(true, service.start(9L, true).started());
+        assertEquals(OrderItemStatus.COOKING, item.getStatus());
+    }
+
     private void mutate(String action) {
         switch (action) {
-            case "start" -> service.start(9L);
+            case "start" -> service.start(9L, false);
             case "unavailable" -> service.unavailable(9L, "Hết nguyên liệu");
             case "complete" -> service.complete(9L);
             default -> throw new IllegalArgumentException(action);

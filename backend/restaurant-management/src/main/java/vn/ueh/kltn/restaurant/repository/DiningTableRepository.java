@@ -20,7 +20,7 @@ public interface DiningTableRepository extends JpaRepository<DiningTable, Long> 
 
     @Query(
             "select t from DiningTable t join fetch t.area a where a.status ="
-                + " vn.ueh.kltn.restaurant.enums.AreaStatus.ACTIVE order by a.id, t.name")
+                    + " vn.ueh.kltn.restaurant.enums.AreaStatus.ACTIVE order by a.id, t.name")
     List<DiningTable> findFloorPlanTables();
 
     @Query(
@@ -28,7 +28,7 @@ public interface DiningTableRepository extends JpaRepository<DiningTable, Long> 
             select t from DiningTable t join fetch t.area a
             where a.status = vn.ueh.kltn.restaurant.enums.AreaStatus.ACTIVE
               and t.status <> vn.ueh.kltn.restaurant.enums.TableStatus.INACTIVE and t.capacity >= :guestCount
-              and not exists (select r.id from Reservation r where r.table = t and r.status in :statuses
+              and not exists (select r.id from Reservation r where r.table = t and r.status in :statuses and r.id <> coalesce(:excludedId, -1)
                               and :startTime < r.endTime and :endTime > r.startTime)
             order by t.capacity, a.id, t.name
             """)
@@ -36,7 +36,8 @@ public interface DiningTableRepository extends JpaRepository<DiningTable, Long> 
             @Param("startTime") Instant startTime,
             @Param("endTime") Instant endTime,
             @Param("guestCount") int guestCount,
-            @Param("statuses") Collection<ReservationStatus> statuses);
+            @Param("statuses") Collection<ReservationStatus> statuses,
+            @Param("excludedId") Long excludedId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select entity from DiningTable entity where entity.id = :id")

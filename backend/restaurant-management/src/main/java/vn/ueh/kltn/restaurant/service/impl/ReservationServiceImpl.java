@@ -19,6 +19,7 @@ import vn.ueh.kltn.restaurant.dto.response.ReservationResponse;
 import vn.ueh.kltn.restaurant.entity.Account;
 import vn.ueh.kltn.restaurant.entity.DiningTable;
 import vn.ueh.kltn.restaurant.entity.Reservation;
+import vn.ueh.kltn.restaurant.enums.AreaStatus;
 import vn.ueh.kltn.restaurant.enums.ReservationStatus;
 import vn.ueh.kltn.restaurant.enums.TableStatus;
 import vn.ueh.kltn.restaurant.exception.BusinessException;
@@ -29,6 +30,7 @@ import vn.ueh.kltn.restaurant.realtime.RealtimeEvent;
 import vn.ueh.kltn.restaurant.repository.AccountRepository;
 import vn.ueh.kltn.restaurant.repository.DiningTableRepository;
 import vn.ueh.kltn.restaurant.repository.ReservationRepository;
+import vn.ueh.kltn.restaurant.repository.ServiceSessionRepository;
 import vn.ueh.kltn.restaurant.security.CurrentUser;
 import vn.ueh.kltn.restaurant.service.ReservationService;
 
@@ -37,9 +39,12 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -54,6 +59,7 @@ public class ReservationServiceImpl implements ReservationService {
     private final Clock clock;
     private final AppProperties properties;
     private final ApplicationEventPublisher events;
+    private final ServiceSessionRepository sessions;
 
     public PageResponse<ReservationResponse> list(
             LocalDate date,
@@ -96,10 +102,15 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     public List<AvailableTableResponse> available(Instant start, Instant end, int guestCount) {
+        return available(start, end, guestCount, null);
+    }
+
+    public List<AvailableTableResponse> available(
+            Instant start, Instant end, int guestCount, Long excludedId) {
         validateInterval(start, end);
         if (guestCount <= 0)
             throw new BusinessException(ErrorCode.INVALID_INPUT, "Số khách phải lớn hơn 0");
-        return tables.findAvailable(start, end, guestCount, BLOCKING).stream()
+        return tables.findAvailable(start, end, guestCount, BLOCKING, excludedId).stream()
                 .map(TableMapper::available)
                 .toList();
     }
@@ -142,6 +153,53 @@ public class ReservationServiceImpl implements ReservationService {
                                 now));
         events.publishEvent(new RealtimeEvent(RealtimeEvent.Type.RESERVATION, null));
         return ReservationMapper.toResponse(saved, now);
+    }
+
+    @Transactional
+    public ReservationResponse update(Long id, CreateReservationRequest request) {
+        Long sourceId =
+                reservations
+                        .findTableIdById(id)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+        Map<Long, DiningTable> locked = new HashMap<>();
+        for (Long tableId : Stream.of(sourceId, request.tableId()).distinct().sorted().toList())
+            locked.put(
+                    tableId,
+                    tables.findLockedById(tableId)
+                            .orElseThrow(
+                                    () ->
+                                            new BusinessException(
+                                                    ErrorCode.NOT_FOUND, "Không tìm thấy bàn")));
+        Reservation reservation =
+                reservations
+                        .findLockedById(id)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+        if (!reservation.getTable().getId().equals(sourceId))
+            throw new BusinessException(
+                    ErrorCode.DATA_CONFLICT, "Đặt bàn vừa được thay đổi. Vui lòng tải lại");
+        if (reservation.getStatus() != ReservationStatus.CONFIRMED
+                || sessions.existsByReservationId(id))
+            throw new BusinessException(ErrorCode.RESERVATION_NOT_CONFIRMED);
+        DiningTable target = locked.get(request.tableId());
+        if (target.getStatus() == TableStatus.INACTIVE
+                || target.getArea().getStatus() != AreaStatus.ACTIVE)
+            throw new BusinessException(ErrorCode.TABLE_INACTIVE);
+        if (!target.hasEnoughCapacity(request.guestCount()))
+            throw new BusinessException(ErrorCode.TABLE_CAPACITY_EXCEEDED);
+        validateInterval(request.startTime(), request.endTime());
+        if (reservations.existsOverlapExcluding(
+                target.getId(), request.startTime(), request.endTime(), BLOCKING, id))
+            throw new BusinessException(ErrorCode.RESERVATION_OVERLAP);
+        reservation.updateInfo(
+                target,
+                request.customerName(),
+                request.customerPhone(),
+                request.guestCount(),
+                request.startTime(),
+                request.endTime(),
+                request.note());
+        events.publishEvent(new RealtimeEvent(RealtimeEvent.Type.RESERVATION, null));
+        return ReservationMapper.toResponse(reservation, clock.instant());
     }
 
     public void checkOverlap(Long tableId, Instant start, Instant end) {

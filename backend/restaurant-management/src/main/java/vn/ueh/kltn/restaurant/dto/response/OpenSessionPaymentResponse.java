@@ -10,5 +10,6 @@ public record OpenSessionPaymentResponse(
         String areaName,
         Instant openedAt,
         BigDecimal provisionalTotal,
-        boolean hasPendingOrCookingItems,
-        int totalItems) {}
+        boolean hasBlockingItems,
+        int totalItems,
+        String tableCode) {}

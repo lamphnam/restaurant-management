@@ -153,7 +153,8 @@ public class ServiceSessionServiceImpl implements ServiceSessionService {
                 session.getClosedAt(),
                 session.getStatus(),
                 responses,
-                total);
+                total,
+                session.getTable().getCode());
     }
 
     @Transactional
@@ -241,6 +242,17 @@ public class ServiceSessionServiceImpl implements ServiceSessionService {
                 .stream()
                 .map(FoodOrderMapper::queueItem)
                 .toList();
+    }
+
+    @Transactional
+    public OrderItemResponse acknowledgeUnavailable(Long id) {
+        OrderItem item = lockedItem(id);
+        if (item.acknowledgeUnavailable(
+                accounts.getReferenceById(currentUser.accountId()), clock.instant()))
+            events.publishEvent(
+                    new RealtimeEvent(
+                            RealtimeEvent.Type.ORDER, item.getOrder().getSession().getId()));
+        return FoodOrderMapper.item(item);
     }
 
     private OrderItem lockedItem(Long id) {

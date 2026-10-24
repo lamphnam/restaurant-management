@@ -97,6 +97,7 @@ function StockTab({ isOwner, isHeadChef }: { isOwner: boolean; isHeadChef: boole
     queryKey: ['inventory', 'ingredients', { q, status, belowMinStockOnly }],
     queryFn: ({ signal }) =>
       inventoryApi.listIngredients({ q: q || undefined, status, belowMinStockOnly }, signal),
+    refetchInterval: 30_000,
   })
 
   useApiFeedback(error)
@@ -185,6 +186,9 @@ function StockTab({ isOwner, isHeadChef }: { isOwner: boolean; isHeadChef: boole
       ),
     },
     {
+      title: 'Khả dụng / Đang giữ', key: 'available', render: (_, row) => `${row.availableStock ?? row.currentStock} / ${row.reservedStock ?? 0} ${row.unit}`,
+    },
+    {
       title: 'Tồn tối thiểu',
       dataIndex: 'minStock',
       key: 'minStock',
@@ -222,7 +226,7 @@ function StockTab({ isOwner, isHeadChef }: { isOwner: boolean; isHeadChef: boole
             <Button
               size="small"
               danger
-              disabled={record.currentStock <= 0}
+              disabled={record.availableStock <= 0}
               onClick={() => {
                 setDisposalIngredient(record)
                 disposalForm.setFieldsValue({
@@ -496,7 +500,7 @@ function StockTab({ isOwner, isHeadChef }: { isOwner: boolean; isHeadChef: boole
               showIcon
               message={
                 <div>
-                  Tồn kho hiện tại: <strong>{Number(disposalIngredient.currentStock).toFixed(3)} {disposalIngredient.unit}</strong>
+                  Tồn kho khả dụng: <strong>{Number(disposalIngredient.availableStock).toFixed(3)} {disposalIngredient.unit}</strong>
                 </div>
               }
               style={{ marginBottom: 16 }}
@@ -510,8 +514,8 @@ function StockTab({ isOwner, isHeadChef }: { isOwner: boolean; isHeadChef: boole
                 {
                   type: 'number',
                   min: 0.001,
-                  max: Number(disposalIngredient.currentStock),
-                  message: `Số lượng phải lớn hơn 0 và nhỏ hơn hoặc bằng tồn kho (${disposalIngredient.currentStock})`,
+                  max: Number(disposalIngredient.availableStock),
+                  message: `Số lượng phải lớn hơn 0 và nhỏ hơn hoặc bằng tồn khả dụng (${disposalIngredient.availableStock})`,
                 },
               ]}
             >
@@ -519,7 +523,7 @@ function StockTab({ isOwner, isHeadChef }: { isOwner: boolean; isHeadChef: boole
                 precision={3}
                 step={0.1}
                 min={0.001}
-                max={Number(disposalIngredient.currentStock)}
+                max={Number(disposalIngredient.availableStock)}
                 style={{ width: '100%' }}
               />
             </Form.Item>

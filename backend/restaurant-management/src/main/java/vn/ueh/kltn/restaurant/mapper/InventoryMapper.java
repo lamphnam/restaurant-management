@@ -31,6 +31,11 @@ public final class InventoryMapper {
 
     public static IngredientResponse toIngredientResponse(
             Ingredient ingredient, BigDecimal currentStock) {
+        return toIngredientResponse(ingredient, currentStock, BigDecimal.ZERO);
+    }
+
+    public static IngredientResponse toIngredientResponse(
+            Ingredient ingredient, BigDecimal currentStock, BigDecimal reserved) {
         BigDecimal stock = currentStock != null ? currentStock : BigDecimal.ZERO;
         return new IngredientResponse(
                 ingredient.getId(),
@@ -41,7 +46,9 @@ public final class InventoryMapper {
                 ingredient.isTrackExpiry(),
                 ingredient.getStatus(),
                 stock,
-                ingredient.isBelowMinStock(stock));
+                ingredient.isBelowMinStock(stock.subtract(reserved)),
+                reserved,
+                stock.subtract(reserved));
     }
 
     public static IngredientLotAttentionResponse toLotAttentionResponse(

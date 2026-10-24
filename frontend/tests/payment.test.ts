@@ -1,5 +1,7 @@
 import { expect, test } from 'bun:test'
 import { statusColors, statusLabel } from '../src/utils/labels'
+import { api } from '../src/api/client'
+import { paymentApi } from '../src/api/paymentApi'
 
 test('PaymentMethod labels and colors match design system', () => {
   expect(statusLabel('PaymentMethod', 'CASH')).toBe('Tiền mặt')
@@ -9,20 +11,20 @@ test('PaymentMethod labels and colors match design system', () => {
   expect(statusColors['BANK_TRANSFER']).toBe('blue')
 })
 
-test('Payment blocking items logic correctly identifies blocking states', () => {
-  const items = [
-    { id: 1, name: 'Phở bò', status: 'READY' },
-    { id: 2, name: 'Cơm tấm', status: 'SERVED' },
-    { id: 3, name: 'Trà đá', status: 'CANCELLED' },
-  ]
-  const hasBlocking = items.some((i) => i.status === 'PENDING' || i.status === 'COOKING')
-  expect(hasBlocking).toBe(false)
-
-  const itemsWithPending = [...items, { id: 4, name: 'Bún chả', status: 'PENDING' }]
-  expect(itemsWithPending.some((i) => i.status === 'PENDING' || i.status === 'COOKING')).toBe(true)
-
-  const itemsWithCooking = [...items, { id: 5, name: 'Gỏi cuốn', status: 'COOKING' }]
-  expect(itemsWithCooking.some((i) => i.status === 'PENDING' || i.status === 'COOKING')).toBe(true)
+test('Payment API preserves server eligibility for READY and sends no client total', async () => {
+  const original = api.defaults.adapter
+  const requests: unknown[] = []
+  api.defaults.adapter = async (config) => {
+    requests.push(config.data ? JSON.parse(config.data) : config.url)
+    return { data: { hasBlockingItems: true, blockingItems: [{ id: 1, status: 'READY' }] }, status: 200, statusText: 'OK', headers: {}, config }
+  }
+  try {
+    const preview = await paymentApi.getPreview(7)
+    expect(preview.hasBlockingItems).toBe(true)
+    expect(preview.blockingItems[0].status).toBe('READY')
+    await paymentApi.pay({ sessionId: 7, paymentMethod: 'CASH' })
+    expect(requests[1]).toEqual({ sessionId: 7, paymentMethod: 'CASH' })
+  } finally { api.defaults.adapter = original }
 })
 
 test('Billable items calculation excludes cancelled and unavailable', () => {

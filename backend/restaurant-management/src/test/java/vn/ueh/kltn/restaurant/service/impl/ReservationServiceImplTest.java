@@ -26,6 +26,8 @@ import jakarta.persistence.criteria.Root;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
+import org.mockito.InOrder;
+import org.mockito.Mockito;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -45,6 +47,7 @@ import vn.ueh.kltn.restaurant.realtime.RealtimeEvent;
 import vn.ueh.kltn.restaurant.repository.AccountRepository;
 import vn.ueh.kltn.restaurant.repository.DiningTableRepository;
 import vn.ueh.kltn.restaurant.repository.ReservationRepository;
+import vn.ueh.kltn.restaurant.repository.ServiceSessionRepository;
 import vn.ueh.kltn.restaurant.security.CurrentUser;
 
 import java.time.Instant;
@@ -58,6 +61,7 @@ class ReservationServiceImplTest {
     private final AccountRepository accounts = mock(AccountRepository.class);
     private final CurrentUser user = mock(CurrentUser.class);
     private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
+    private final ServiceSessionRepository sessions = mock(ServiceSessionRepository.class);
     private ReservationServiceImpl service;
     private DiningTable table;
 
@@ -72,7 +76,7 @@ class ReservationServiceImplTest {
                         new AppProperties.Reservation(60));
         service =
                 new ReservationServiceImpl(
-                        reservations, tables, accounts, user, CLOCK, properties, events);
+                        reservations, tables, accounts, user, CLOCK, properties, events, sessions);
         table = table(1L, 4);
         when(tables.findLockedById(1L)).thenReturn(Optional.of(table));
         when(user.accountId()).thenReturn(2L);
@@ -83,6 +87,39 @@ class ReservationServiceImplTest {
     private CreateReservationRequest request(int guests) {
         return new CreateReservationRequest(
                 1L, "Khách", "0910000001", guests, NOW, NOW.plusSeconds(7200), "Ghi chú");
+    }
+
+    @Test
+    void updatePreservesCreationAndExcludesSelfAfterTableLocks() {
+        DiningTable target = table(1L, 4);
+        Reservation existing = reservation(target);
+        when(reservations.findTableIdById(1L)).thenReturn(Optional.of(1L));
+        when(reservations.findLockedById(1L)).thenReturn(Optional.of(existing));
+        ReservationResponse result = service.update(1L, request(3));
+        assertEquals(3, result.guestCount());
+        assertEquals(existing.getCreatedAt(), result.createdAt());
+        verify(reservations).existsOverlapExcluding(eq(1L), any(), any(), any(), eq(1L));
+        InOrder locks = Mockito.inOrder(tables, reservations);
+        locks.verify(reservations).findTableIdById(1L);
+        locks.verify(tables).findLockedById(1L);
+        locks.verify(reservations).findLockedById(1L);
+    }
+
+    @Test
+    void updateRejectsSeatedCancelledAndConcurrentMove() {
+        DiningTable target = table(1L, 4);
+        Reservation existing = reservation(target);
+        when(reservations.findTableIdById(1L)).thenReturn(Optional.of(1L));
+        when(reservations.findLockedById(1L)).thenReturn(Optional.of(existing));
+        existing.confirmSeated();
+        assertThrows(BusinessException.class, () -> service.update(1L, request(2)));
+        Reservation cancelled = reservation(target);
+        cancelled.cancel();
+        when(reservations.findLockedById(1L)).thenReturn(Optional.of(cancelled));
+        assertThrows(BusinessException.class, () -> service.update(1L, request(2)));
+        when(reservations.findTableIdById(1L)).thenReturn(Optional.of(2L));
+        when(tables.findLockedById(2L)).thenReturn(Optional.of(table(2L, 4)));
+        assertThrows(BusinessException.class, () -> service.update(1L, request(2)));
     }
 
     @Test
@@ -141,7 +178,7 @@ class ReservationServiceImplTest {
                 ErrorCode.INVALID_INPUT,
                 assertThrows(BusinessException.class, () -> service.available(NOW, NOW, 2))
                         .getErrorCode());
-        when(tables.findAvailable(any(), any(), anyInt(), any())).thenReturn(List.of(table));
+        when(tables.findAvailable(any(), any(), anyInt(), any(), any())).thenReturn(List.of(table));
         assertEquals(
                 1, service.available(NOW.minusSeconds(7200), NOW.minusSeconds(3600), 2).size());
     }

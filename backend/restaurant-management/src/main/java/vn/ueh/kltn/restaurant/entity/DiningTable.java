@@ -11,9 +11,11 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
 import vn.ueh.kltn.restaurant.enums.TableStatus;
 import vn.ueh.kltn.restaurant.exception.BusinessException;
 import vn.ueh.kltn.restaurant.exception.ErrorCode;
@@ -34,6 +36,9 @@ public class DiningTable {
     @Column(name = "name", nullable = false, length = 50)
     private String name;
 
+    @Column(name = "code", nullable = false, unique = true, length = 64)
+    private String code;
+
     @Column(name = "capacity", nullable = false)
     private int capacity;
 
@@ -42,10 +47,16 @@ public class DiningTable {
     private TableStatus status;
 
     public DiningTable(DiningArea area, String name, int capacity) {
+        this.code = area.getCode() + "-" + name;
         this.area = area;
         this.name = name;
         this.capacity = capacity;
         this.status = TableStatus.AVAILABLE;
+    }
+
+    public DiningTable(DiningArea area, String name, String code, int capacity) {
+        this(area, name, capacity);
+        this.code = code;
     }
 
     public boolean hasEnoughCapacity(int guestCount) {

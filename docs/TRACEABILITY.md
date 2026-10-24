@@ -15,13 +15,20 @@ TR-09 restore, thiết bị tablet thật và benchmark nhiều user chưa nghi�
 Handoff/prompt là mốc lịch sử trước code, không ghi đè tiến độ hiện tại.
 [Mục lục hiện trạng](README.md) phân biệt bằng chứng từng lượt; lần đồng bộ tài liệu không chạy lại QA.
 
+## Cập nhật hiện hành 24/10/2026
+
+8 issues triển khai theo yêu cầu mới; chi tiết [implementation](phase_results/kltn-issues-implementation.md).
+FR-03 có MANAGER sửa CONFIRMED chưa gắn session; FR-07/18 kiểm/reserve snapshot tại Start;
+FR-08 có hai badge trên bàn và ack bền vững; FR-09 chặn READY. FR-02 có code khu vực/bàn,
+vẫn không có UC3 CRUD. Dữ liệu lịch sử không bị sửa. Các mục 6 trở đi là lịch sử của từng lượt cũ.
+
 ## 1. Functional Requirements
 
 | FR | Use Case | Phạm vi | Phase | Controller | Service | Entity | Hiện trạng |
 |---|---|---|---|---|---|---|---|
 | FR-01 | UC1.1, UC4 (UC1.2, UC12 chưa hiện thực) | Đơn giản hóa | 0, 1 | Auth, Account | AuthService, AccountService | Account | Đã làm |
 | FR-02 | UC5, UC3 (UC3 chưa hiện thực — dữ liệu từ seed) | Đơn giản hóa | 1 | Menu, Table | MenuService, TableService | MenuItem, DiningArea, DiningTable | Đã làm |
-| FR-03 | UC7 (không sửa đặt bàn) | Đơn giản hóa | 1 | Table | ReservationService | Reservation, DiningTable | Đã làm |
+| FR-03 | UC7 (gồm sửa CONFIRMED) | Đã làm | 1 | Table | ReservationService | Reservation, DiningTable | Đã làm |
 | FR-04 | UC8.1, UC11.1 | Đã làm (đầy đủ) | 1, 3 | ServiceSession, Payment | ServiceSessionService, PaymentService | DiningTable, ServiceSession | Đã làm |
 | FR-05 | UC8.2 | Đã làm (đầy đủ) | 2 | ServiceSession | ServiceSessionService | FoodOrder, OrderItem | Đã làm |
 | FR-06 | UC8.2, UC9 (chỉ hủy khi `PENDING`) | Đơn giản hóa | 2 | ServiceSession, Kitchen | ServiceSessionService, KitchenService | OrderItem | Đã làm |
@@ -46,7 +53,6 @@ Handoff/prompt là mốc lịch sử trước code, không ghi đè tiến độ
 | UC12.1 | Sửa thông tin cá nhân | Như trên |
 | UC12.2 | Đổi mật khẩu | Như trên (ưu tiên số 1 nếu còn thời gian) |
 | UC3 | Thêm/sửa/ngừng khu vực và bàn | Dữ liệu lấy từ seed |
-| UC7 (phần sửa) | Sửa đặt bàn | Hủy rồi tạo lại |
 | FR-13/14 (phần lô) | Tồn, tiêu hao, kiểm kê theo từng lô; FEFO | Chỉ ghi lô/HSD khi nhập |
 
 ## 3. Business Requirements

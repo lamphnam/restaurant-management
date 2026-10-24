@@ -9,6 +9,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import vn.ueh.kltn.restaurant.config.AppProperties;
@@ -42,6 +43,7 @@ import vn.ueh.kltn.restaurant.mapper.InventoryMapper;
 import vn.ueh.kltn.restaurant.repository.AccountRepository;
 import vn.ueh.kltn.restaurant.repository.IngredientLotRepository;
 import vn.ueh.kltn.restaurant.repository.IngredientRepository;
+import vn.ueh.kltn.restaurant.repository.OrderItemRepository;
 import vn.ueh.kltn.restaurant.repository.StockMovementRepository;
 import vn.ueh.kltn.restaurant.repository.StockReceiptItemRepository;
 import vn.ueh.kltn.restaurant.repository.StockReceiptRepository;
@@ -80,8 +82,11 @@ public class InventoryServiceImpl implements InventoryService {
     private final CurrentUser currentUser;
     private final Clock clock;
     private final AppProperties properties;
+    private final OrderItemRepository orderItems;
+    private final CookingInventory cookingInventory;
 
     @Override
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public List<IngredientResponse> listIngredients(
             String q, IngredientStatus status, Boolean belowMinStockOnly) {
         Specification<Ingredient> spec =
@@ -99,15 +104,19 @@ public class InventoryServiceImpl implements InventoryService {
 
         List<Ingredient> list = ingredients.findAll(spec, Sort.by(Sort.Direction.ASC, "name"));
         Map<Long, BigDecimal> stockMap = getStockMapGrouped();
+        Map<Long, BigDecimal> reservedMap = new HashMap<>();
+        for (Object[] row : orderItems.reservedQuantities())
+            reservedMap.put(((Number) row[0]).longValue(), (BigDecimal) row[1]);
 
         List<IngredientResponse> results = new ArrayList<>();
         for (Ingredient ing : list) {
             BigDecimal currentStock = stockMap.getOrDefault(ing.getId(), BigDecimal.ZERO);
-            boolean isBelow = ing.isBelowMinStock(currentStock);
+            BigDecimal reserved = reservedMap.getOrDefault(ing.getId(), BigDecimal.ZERO);
+            boolean isBelow = ing.isBelowMinStock(currentStock.subtract(reserved));
             if (Boolean.TRUE.equals(belowMinStockOnly) && !isBelow) {
                 continue;
             }
-            results.add(InventoryMapper.toIngredientResponse(ing, currentStock));
+            results.add(InventoryMapper.toIngredientResponse(ing, currentStock, reserved));
         }
 
         return results;
@@ -137,7 +146,7 @@ public class InventoryServiceImpl implements InventoryService {
     public IngredientResponse updateIngredient(Long id, UpdateIngredientRequest request) {
         Ingredient ingredient =
                 ingredients
-                        .findById(id)
+                        .findLockedById(id)
                         .orElseThrow(
                                 () ->
                                         new BusinessException(
@@ -151,7 +160,8 @@ public class InventoryServiceImpl implements InventoryService {
 
         String newUnit = request.unit().trim();
         if (!ingredient.getUnit().equalsIgnoreCase(newUnit)) {
-            if (stockMovements.existsByIngredientId(id)) {
+            if (stockMovements.existsByIngredientId(id)
+                    || orderItems.reservedQuantity(id, null).signum() > 0) {
                 throw new BusinessException(
                         ErrorCode.UNIT_CHANGE_BLOCKED,
                         "Không thể thay đổi đơn vị tính của nguyên vật liệu đã có biến"
@@ -163,7 +173,8 @@ public class InventoryServiceImpl implements InventoryService {
                 newName, newUnit, request.minStock(), request.trackLot(), request.trackExpiry());
 
         BigDecimal currentStock = stockMovements.sumQuantityByIngredientId(id);
-        return InventoryMapper.toIngredientResponse(ingredient, currentStock);
+        return InventoryMapper.toIngredientResponse(
+                ingredient, currentStock, orderItems.reservedQuantity(id, null));
     }
 
     @Override
@@ -171,7 +182,7 @@ public class InventoryServiceImpl implements InventoryService {
     public IngredientResponse deactivateIngredient(Long id) {
         Ingredient ingredient =
                 ingredients
-                        .findById(id)
+                        .findLockedById(id)
                         .orElseThrow(
                                 () ->
                                         new BusinessException(
@@ -179,7 +190,8 @@ public class InventoryServiceImpl implements InventoryService {
                                                 "Không tìm thấy nguyên vật liệu"));
         ingredient.deactivate();
         BigDecimal currentStock = stockMovements.sumQuantityByIngredientId(id);
-        return InventoryMapper.toIngredientResponse(ingredient, currentStock);
+        return InventoryMapper.toIngredientResponse(
+                ingredient, currentStock, orderItems.reservedQuantity(id, null));
     }
 
     @Override
@@ -187,7 +199,7 @@ public class InventoryServiceImpl implements InventoryService {
     public IngredientResponse activateIngredient(Long id) {
         Ingredient ingredient =
                 ingredients
-                        .findById(id)
+                        .findLockedById(id)
                         .orElseThrow(
                                 () ->
                                         new BusinessException(
@@ -195,7 +207,8 @@ public class InventoryServiceImpl implements InventoryService {
                                                 "Không tìm thấy nguyên vật liệu"));
         ingredient.activate();
         BigDecimal currentStock = stockMovements.sumQuantityByIngredientId(id);
-        return InventoryMapper.toIngredientResponse(ingredient, currentStock);
+        return InventoryMapper.toIngredientResponse(
+                ingredient, currentStock, orderItems.reservedQuantity(id, null));
     }
 
     @Override
@@ -244,6 +257,8 @@ public class InventoryServiceImpl implements InventoryService {
 
     private StockReceiptResponse createReceiptWithActor(
             CreateStockReceiptRequest request, Account actor) {
+        cookingInventory.lock(
+                request.items().stream().map(StockReceiptItemRequest::ingredientId).toList());
         Instant now = clock.instant();
 
         StockReceipt receipt = new StockReceipt(actor, now);
@@ -252,7 +267,7 @@ public class InventoryServiceImpl implements InventoryService {
         for (StockReceiptItemRequest itemReq : request.items()) {
             Ingredient ingredient =
                     ingredients
-                            .findById(itemReq.ingredientId())
+                            .findLockedById(itemReq.ingredientId())
                             .orElseThrow(
                                     () ->
                                             new BusinessException(
@@ -411,6 +426,13 @@ public class InventoryServiceImpl implements InventoryService {
                         ErrorCode.INVALID_STOCKTAKE, "Số lượng thực tế không được âm");
             }
 
+            if (itemReq.actualQuantity()
+                            .compareTo(orderItems.reservedQuantity(ingredient.getId(), null))
+                    < 0)
+                throw new BusinessException(
+                        ErrorCode.INVALID_STOCKTAKE,
+                        "Số thực đếm không được thấp hơn lượng đang giữ cho món chế biến");
+
             String note =
                     itemReq.note() != null && !itemReq.note().isBlank()
                             ? itemReq.note().trim()
@@ -517,7 +539,11 @@ public class InventoryServiceImpl implements InventoryService {
         }
 
         BigDecimal totalStock = stockMovements.sumQuantityByIngredientId(ingredient.getId());
-        if (request.quantity().compareTo(totalStock) > 0) {
+        if (request.quantity()
+                        .compareTo(
+                                totalStock.subtract(
+                                        orderItems.reservedQuantity(ingredient.getId(), null)))
+                > 0) {
             throw new BusinessException(
                     ErrorCode.INSUFFICIENT_STOCK, "Số lượng tồn kho không đủ để xuất hủy");
         }

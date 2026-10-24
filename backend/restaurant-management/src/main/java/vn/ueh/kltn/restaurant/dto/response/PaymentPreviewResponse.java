@@ -13,9 +13,10 @@ public record PaymentPreviewResponse(
         String areaName,
         Instant openedAt,
         BigDecimal provisionalTotal,
-        boolean hasPendingOrCookingItems,
+        boolean hasBlockingItems,
         List<BlockingItemResponse> blockingItems,
-        List<OrderPreviewResponse> orders) {
+        List<OrderPreviewResponse> orders,
+        String tableCode) {
 
     public record BlockingItemResponse(
             Long id,

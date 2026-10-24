@@ -71,7 +71,13 @@ class PhaseTwoSecurityTest {
                                     HttpMethod.GET,
                                     "/api/sessions/items/awaiting-service",
                                     null,
+                                    Set.of(Role.WAITER, Role.MANAGER, Role.CASHIER, Role.OWNER)),
+                            new Endpoint(
+                                    HttpMethod.PATCH,
+                                    "/api/sessions/items/9/acknowledge-unavailable",
+                                    null,
                                     waiter),
+                            new Endpoint(HttpMethod.GET, "/api/kitchen/orders/8", null, kitchen),
                             new Endpoint(HttpMethod.GET, "/api/kitchen/queue", null, kitchen),
                             new Endpoint(
                                     HttpMethod.PATCH, "/api/kitchen/items/9/start", null, kitchen),

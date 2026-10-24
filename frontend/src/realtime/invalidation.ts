@@ -8,12 +8,12 @@ export function eventKeys(event: RealtimeEvent): QueryKey[] {
   switch (event.type) {
     case 'FLOOR_PLAN': return [['floor-plan'], ['payment'], ...session, ['awaiting-service']]
     case 'RESERVATION': return [['reservations'], ['floor-plan']]
-    case 'ORDER': return [['kitchen'], ...session, ['awaiting-service'], ['payment']]
+    case 'ORDER': return [['kitchen'], ...session, ['awaiting-service'], ['payment'], ['inventory']]
     default: return []
   }
 }
 
 export function refreshLiveQueries(cache: QueryClient, event?: RealtimeEvent) {
-  const keys: QueryKey[] = event ? eventKeys(event) : [['floor-plan'], ['reservations'], ['kitchen'], ['session'], ['awaiting-service'], ['payment']]
+  const keys: QueryKey[] = event ? eventKeys(event) : [['floor-plan'], ['reservations'], ['kitchen'], ['session'], ['awaiting-service'], ['payment'], ['inventory']]
   return Promise.all(keys.map((queryKey) => cache.invalidateQueries({ queryKey })))
 }

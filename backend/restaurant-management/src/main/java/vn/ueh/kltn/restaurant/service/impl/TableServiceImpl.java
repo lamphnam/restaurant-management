@@ -71,7 +71,15 @@ public class TableServiceImpl implements TableService {
                 .map(
                         a ->
                                 new FloorPlanAreaResponse(
-                                        a.getKey(), names.get(a.getKey()), a.getValue()))
+                                        a.getKey(),
+                                        names.get(a.getKey()),
+                                        a.getValue(),
+                                        all.stream()
+                                                .filter(t -> t.getArea().getId().equals(a.getKey()))
+                                                .findFirst()
+                                                .orElseThrow()
+                                                .getArea()
+                                                .getCode()))
                 .toList();
     }
 }

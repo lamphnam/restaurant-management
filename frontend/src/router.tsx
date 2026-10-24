@@ -15,7 +15,6 @@ const FloorPlanPage = lazy(() => import('./pages/floor-plan/FloorPlanPage'))
 const ReservationsPage = lazy(() => import('./pages/reservations/ReservationsPage'))
 const SessionPage = lazy(() => import('./pages/sessions/SessionPage'))
 const KitchenPage = lazy(() => import('./pages/kitchen/KitchenPage'))
-const AwaitingServicePage = lazy(() => import('./pages/awaiting-service/AwaitingServicePage'))
 const PaymentPage = lazy(() => import('./pages/payment/PaymentPage'))
 const InvoicesPage = lazy(() => import('./pages/invoices/InvoicesPage'))
 const InventoryPage = lazy(() => import('./pages/inventory/InventoryPage'))
@@ -32,7 +31,6 @@ const businessPages: Record<string, React.ReactNode> = {
   '/floor-plan': <FloorPlanPage />,
   '/reservations': <ReservationsPage />,
   '/kitchen': <KitchenPage />,
-  '/awaiting-service': <AwaitingServicePage />,
   '/payment': <PaymentPage />,
   '/invoices': <InvoicesPage />,
   '/inventory': <InventoryPage />,
@@ -65,6 +63,9 @@ export function AppRouter() {
                 />
               </Route>
             ))}
+            <Route element={<RequireRole roles={['WAITER']} />}>
+              <Route path="/awaiting-service" element={<Navigate to="/floor-plan" replace />} />
+            </Route>
             <Route element={<RequireRole roles={['WAITER', 'MANAGER']} />}>
               <Route path="/sessions/:id" element={<SessionPage />} />
             </Route>

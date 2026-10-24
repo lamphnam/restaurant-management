@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ServiceSessionRepository extends JpaRepository<ServiceSession, Long> {
+    boolean existsByReservationId(Long reservationId);
+
     boolean existsByTableIdAndStatus(Long tableId, SessionStatus status);
 
     List<ServiceSession> findByTableIdInAndStatus(Collection<Long> tableIds, SessionStatus status);
@@ -29,7 +31,7 @@ public interface ServiceSessionRepository extends JpaRepository<ServiceSession, 
     Optional<ServiceSession> findDetailById(Long id);
 
     @Query(
-            "select distinct s from ServiceSession s join fetch s.table t join fetch t.area"
-                    + " left join fetch s.reservation where s.status = :status order by s.openedAt desc")
+            "select distinct s from ServiceSession s join fetch s.table t join fetch t.area left"
+                    + " join fetch s.reservation where s.status = :status order by s.openedAt desc")
     List<ServiceSession> findByStatusWithTableAndArea(@Param("status") SessionStatus status);
 }

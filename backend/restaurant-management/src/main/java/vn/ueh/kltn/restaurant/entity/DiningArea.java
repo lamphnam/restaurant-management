@@ -8,10 +8,14 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
 import vn.ueh.kltn.restaurant.enums.AreaStatus;
+
+import java.util.UUID;
 
 @Entity
 @Table(name = "dining_area")
@@ -25,11 +29,23 @@ public class DiningArea {
     @Column(name = "name", nullable = false, length = 100)
     private String name;
 
+    @Column(name = "code", nullable = false, unique = true, length = 40)
+    private String code;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 30)
     private AreaStatus status;
 
-    public DiningArea(String name) { this.name = name;
+    public DiningArea(String name) {
+        this.name = name;
+        this.code =
+                switch (name) {
+                    case "Tầng 1" -> "T01";
+                    case "Tầng 2" -> "T02";
+                    case "Sân vườn", "Sân Vườn" -> "SV";
+                    default -> "KV" + UUID.randomUUID().toString().replace("-", "");
+                };
 
-    this.status = AreaStatus.ACTIVE; }
+        this.status = AreaStatus.ACTIVE;
+    }
 }
