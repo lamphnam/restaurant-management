@@ -4,8 +4,10 @@ import { Link, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
 import { navigation } from '../auth/roles'
 import { roleLabels } from '../utils/labels'
+import { useRealtime } from '../realtime/useRealtime'
 
 export function AppLayout() {
+  useRealtime()
   const { account, logout } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
   const location = useLocation()

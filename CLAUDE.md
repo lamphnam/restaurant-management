@@ -4,19 +4,90 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-This is a graduation-thesis (KLTN, UEH) prototype: an internal web app for a ~30–50 table dine-in restaurant. It covers two business chains, **table service and sales** and **ingredient inventory**, and both must demo end to end. Hard deadline: **2026-10-27**.
+This is a graduation-thesis (KLTN, UEH) prototype for a ~30–50 table dine-in restaurant.
+Both table service/sales and ingredient inventory must demo end to end. Deadline: **2026-10-27**.
+Last documentation update: **2026-10-23**, Asia/Ho_Chi_Minh.
 
-The Git repository has been initialized. Backend scaffold is in
-`backend/restaurant-management/` (Java 21, Boot 4.1.1); frontend scaffold is in
-`frontend/` (React, TypeScript, Vite, Bun). Neon direct connectivity and both
-builds have been verified. Phase 0 now includes the V1 migration (18 domain
-tables), entities/repositories, JWT login and `/me`, frontend authentication,
-role guards and navigation, shared status labels, and account/area/table seed.
-Phase 0 is complete: both builds, 9 unit tests, live DB/API checks, and checklist
-1–4 through Chrome headless passed. Phase 1 has not been started.
-Business screens are role-gated placeholders for Phase 1–4. Verification details
-are recorded in `docs/phase_results/phase-0.md`.
-The Java root package is `vn.ueh.kltn.restaurant`.
+Backend: `backend/restaurant-management/`, Java 21, Spring Boot 4.1.1, Maven wrapper;
+root package `vn.ueh.kltn.restaurant`. Frontend: `frontend/`, React, TypeScript, Vite, **Bun**.
+Schema is Flyway V1 with exactly 18 domain tables; JPA validates it. Database: existing Neon `main`.
+
+**Phase 0–4, the UI review and all nine PR #4 fixes are implemented.**
+Current documentation index: `docs/README.md`; latest QA: `docs/phase_results/phase-4-pr-review.md`.
+Latest inspected code baseline (23/10/2026): branch `feat/phase-4-implement`, commit `67e1af2`,
+which includes the PR #4 fixes. `1b3699f` was the pre-review baseline; the fixes are already committed.
+This records local git state, not PR merge/push status. Check actual git status/HEAD before work and preserve all changes.
+Do not commit, push, reset, stash or discard them without the user's instruction.
+
+- Phase 1: accounts, menu/locked recipe diff, ingredient lookup, floor plan, reservations/opening.
+  All seven PR #1 fixes remain, including retained inactive recipe ingredients and filtered reservation picker.
+- Phase 2: session detail, order batches/cancel, kitchen/consumption, serving, SSE.
+  All five item PATCH workflows lock ServiceSession → OrderItem and require ACTIVE before no-op.
+  Orders accept 1–50 lines and 1–99 portions per line. SSE dispatch/send is isolated AFTER_COMMIT,
+  on a dedicated four-worker executor/queue 256, never CallerRuns. Polling fallback: 30 seconds.
+  Reduced-motion CSS uses `transition: none`; never restore global positive durations that interpolate popup left/top.
+- Phase 3: locked payment, duplicate payment 409, snapshot billing, READY/zero-amount billing (D8),
+  CLOSED sessions/table release; invoice history; ingredient CRUD (D12), atomic receipts/lots,
+  stock ledger, stocktakes, disposals, attention lots and movement history.
+- PR #3 review: stocktake actual inputs start blank, only counted lines are sent, clearing omits a line,
+  explicit zero is retained. Stocktakes reject duplicate/inactive ingredients and lock all Ingredient IDs
+  ascending before SUM, sharing locks with disposal. Opening seed uses configured nonnegative actuals,
+  runs before demo receipts through InventoryService helpers with an internal Account, no fake seed JWT.
+  IngredientService/Impl were removed; InventoryService owns the lookup/workflows. Invoice/movement pages
+  fetch to-one graphs; receipt/stocktake pages fetch details for the page IDs. FLOOR_PLAN also invalidates awaiting-service.
+
+Implemented routes: `/accounts`, `/menu`, `/floor-plan`, `/reservations`, `/sessions/:id`,
+`/kitchen`, `/awaiting-service`, `/payment`, `/invoices`, `/inventory`, `/inventory/receipts`,
+`/inventory/stocktake`, `/reconciliation` (CASHIER/MANAGER), `/reports` (OWNER).
+
+- Phase 4: ReconciliationService preview/create/list/locked confirm; PaymentService summary.
+  Invoice-only revenue by paidAt `[startTime,endTime)` (D9), zero invoices count too.
+  POST recomputes; JWT actor/Clock time; snapshots immutable. Confirm again returns 409 (§12.18).
+  List optional `confirmed`, page0/size20 (max100), fetches cashier/manager; no own-cashier restriction.
+  Summary uses independent aggregates and snapshot price; excludes CANCELLED/UNAVAILABLE, keeps READY.
+  Report inventory is current, using existing APIs. No new schema/status/report service.
+- Vite proxy closes interrupted `/api/events` via `dev/sseProxy.ts` so the client retries.
+  Keep SSE AFTER_COMMIT executor isolation, polling30s and reduced-motion transition:none.
+
+User UI review (23/10/2026) is implemented: OWNER accounts search name/phone (accent-insensitive),
+role/status filters over the full fetched list; reports have month/day selection, daily amounts/counts,
+all tied positive peak days and server-calculated averages. Summary has 3 aggregate SQL statements in
+one read-only REPEATABLE_READ transaction. Sparse daily results are grouped in configured timezone;
+calendar zero rows are generated for the visible frontend page only. Keep pickers as calendar dates
+to avoid timezone-object endOf/DST errors in browsers outside Vietnam.
+HEAD_CHEF stocktake has an explicit per-row match-stock button, disabled for negative stock;
+copying preserves the displayed actual while backend still recomputes system stock under D7.
+
+PR #4 review: preview/create reject endTime after Clock with400 INVALID_INPUT; never clamp shifts.
+Cashier defaults to today midnight/current minute and disables future dates/times. DTO alone validates
+actual/reason; service checks server revenue overflow with a specific message. Report calendarDays
+stops at Clock's configured-zone today (future-only intervals:0 days/average); current month ends today.
+Top10 is limited in SQL via Pageable with an Invoice join. OrderItemStatus.NON_BILLABLE is shared by
+subtotal and reports; daily SQL receives PaymentMethod enum names. Reconciliation lists poll30s.
+Evidence and live/mock limits: `docs/phase_results/phase-4-pr-review.md`.
+
+Latest verification: **224 backend tests; 36 frontend tests / 111 assertions; both builds/lint PASS**.
+These are recorded PR #4 QA results; documentation synchronization did not rerun QA or write to Neon.
+PR #4: 75 read-only query checks; 9 guarded API rejection groups with 0 records created; 13 real read-only
+browser/API groups. Per Chrome/Edge: 3 picker/polling mock groups (real 30s timers), 30 UI-review groups,
+36 Phase 4 regression groups. Counts/ledger unchanged; keep each evidence set separate.
+Previous UI review: 30 mock checks each Chrome/Edge; 70 read-only Neon query checks; 11 real API/browser
+check groups with unchanged counts/ledger, no domain writes. Evidence: `docs/phase_results/phase-4-review.md`.
+Phase 4: 152 API checks in one resumed fixture chain; 39 read-only query checks before QA;
+60 query/held-transaction checks afterward (not additive); 36 mock UI checks each Chrome/Edge;
+32 live browser observations including repeated login/guard checks; real restart/reconnect;
+5 local HTTP proxy assertions. Old mock regressions: 7 picker / 16 stocktake / 59 popup checks.
+Evidence: `docs/phase_results/phase-4.md`; historical test counts are not new acceptance.
+
+Neon main after Phase 4: QA account9 LOCKED, menu23 DISCONTINUED, ingredient19 INACTIVE stock0kg;
+review ingredient18 still INACTIVE stock8kg. Sessions13/14/15 CLOSED through payment,
+invoices6/7/8, reconciliations1/2/3 confirmed; no reset/history edits. Before/after in the report.
+Readiness snapshot at the last QA (23/10/2026): 5 free tables/7 ACTIVE; no confirmed booking for 27/10. Inspect again before
+QA/demo writes. Physical tablet, multi-user load and actual backup/restore remain unverified.
+Do not restore main merely to test documentation.
+
+Phase 4 handoff/instructions/prompt are the historical starting contract. Use the Phase 4 result
+and TRACEABILITY for current status. No next phase or cut feature is authorized automatically.
 
 - `CODEX_MASTER_SPEC_KLTN_SPRING_REACT.md`: **the source of truth**, written in Vietnamese. Section numbers below (§N) refer to this file.
 - `CODEX_MASTER_SPEC_KLTN_ASPNET_FINAL.md`: the superseded ASP.NET version, for reference only. When the two disagree, the Spring/React spec wins.
@@ -47,7 +118,7 @@ The Java root package is `vn.ueh.kltn.restaurant`.
   - Redux, Next.js.
 - The user writes in Vietnamese. Reply in the language they use.
 
-## Commands (from §23, once scaffolded)
+## Commands (from §23)
 
 Backend (`backend/restaurant-management/`, Spring Boot 4, Java 21, Maven wrapper, Windows PowerShell):
 
@@ -82,6 +153,12 @@ Tests are JUnit 5 + Mockito unit tests that need no DB (§21.1).
 - **ServiceImpl:** owns workflows, `@Transactional` boundaries, row locks and real-time event publishing.
 - **Entities:** carry the class-diagram state-transition methods (e.g. `OrderItem.markReady()`, `Reservation.confirmSeated()`, §8). An invalid transition throws `BusinessException`.
 - **Mapping:** entities are never returned from the API. They are mapped to response DTOs by hand.
+- **Java style after the Phase 1 review:** explicit imports and explicit types for repository
+  results, collections returned by methods, Optional and time values; keep `var` only where
+  the right-hand side is an obvious `new X(...)`. Avoid inline fully qualified class names,
+  wildcard imports and multiple statements per line. Phase 1 was formatted with
+  google-java-format 1.28.0, AOSP mode (four-space indentation); do not add a project
+  dependency just to format code.
 
 **Schema:** owned by **Flyway** (`db/migration/V1__init_schema.sql`). JPA runs with `ddl-auto: validate`, so schema changes go into migrations, never into entity annotations alone.
 
@@ -109,6 +186,12 @@ Tests are JUnit 5 + Mockito unit tests that need no DB (§21.1).
 - The acting user always comes from the JWT, never from the request body.
 
 **Demo seed (§20, owner approved 22/10/2026):** work on the existing Neon `main`, without an automatic reset. The base `DataSeeder` is `@Order(0)`, gated by `app.seed` and an empty account table. Future phase runners have their own ordered, transactional, table-specific gates; existing accounts must not block menu/ingredient/reservation seed. Never overwrite historical data to refresh relative demo dates; inspect freshness before the demo and create new records through the implemented workflows.
+
+**Phase 1 QA override (owner approved 22/10/2026):** run QA directly on Neon `main`; do not create a QA branch. The owner explicitly permits resetting and initializing demo data again if errors require it. Normal startup still preserves existing rows. Use `[QA]` prefixes for test data, never print secrets, and record QA/reset actions in the phase report. Sessions opened during QA remain active until a later phase implements payment/closing.
+
+The approval comes from the owner's instruction: “cứ làm trên branch main của Neon không cần tạo thêm gì nữa hết. Nếu lỗi cứ reset và init lại data”. It does not instruct scripts to reset automatically. Mutating Phase 1 QA scripts require `PHASE1_QA_ALLOW_WRITES=main` for that run; inspect readiness with the read-only `node scripts/phase1-demo-readiness.mjs` first.
+
+**Recipe review policy (requested 22/10/2026):** new recipe lines require an ACTIVE ingredient; an existing line may remain or change quantity after its ingredient becomes INACTIVE. Serialize full replacements by locking MenuItem before reading recipe rows. The reservation picker uses optional `tableId` and `unexpired=true` filters; ordinary lists keep historical data by default.
 
 **Real-time (§14):** Server-Sent Events, with SSE only as an invalidation signal.
 - A `ServiceImpl` publishes a `RealtimeEvent`.

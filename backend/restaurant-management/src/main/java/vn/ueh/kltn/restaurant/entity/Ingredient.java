@@ -42,16 +42,38 @@ public class Ingredient {
     @Column(name = "status", nullable = false, length = 30)
     private IngredientStatus status;
 
-    public Ingredient(String name, String unit, BigDecimal minStock, boolean trackLot, boolean trackExpiry) {
-        updateInfo(name, unit, minStock, trackLot, trackExpiry); status = IngredientStatus.ACTIVE;
+    public Ingredient(
+            String name,
+            String unit,
+            BigDecimal minStock,
+            boolean trackLot,
+            boolean trackExpiry) {
+        updateInfo(name, unit, minStock, trackLot, trackExpiry);
+        this.status = IngredientStatus.ACTIVE;
     }
-    public void updateInfo(String name, String unit, BigDecimal minStock, boolean trackLot, boolean trackExpiry) {
-        this.name = name; this.unit = unit;
+
+    public void updateInfo(
+            String name,
+            String unit,
+            BigDecimal minStock,
+            boolean trackLot,
+            boolean trackExpiry) {
+        this.name = name;
+        this.unit = unit;
         this.minStock = minStock;
         this.trackLot = trackLot;
         this.trackExpiry = trackExpiry;
     }
-    public void activate() { status = IngredientStatus.ACTIVE; }
-    public void deactivate() { status = IngredientStatus.INACTIVE; }
-    public boolean isBelowMinStock(BigDecimal currentStock) { return currentStock.compareTo(minStock) < 0; }
+
+    public void activate() {
+        this.status = IngredientStatus.ACTIVE;
+    }
+
+    public void deactivate() {
+        this.status = IngredientStatus.INACTIVE;
+    }
+
+    public boolean isBelowMinStock(BigDecimal currentStock) {
+        return currentStock.compareTo(minStock) < 0;
+    }
 }

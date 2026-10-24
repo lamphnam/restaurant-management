@@ -11,13 +11,16 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.math.BigDecimal;
+
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
 import vn.ueh.kltn.restaurant.enums.OrderItemStatus;
 import vn.ueh.kltn.restaurant.exception.BusinessException;
 import vn.ueh.kltn.restaurant.exception.ErrorCode;
+
+import java.math.BigDecimal;
 
 @Entity
 @Table(name = "order_item")
@@ -53,44 +56,68 @@ public class OrderItem {
     private BigDecimal unitPriceAtOrder;
 
     public OrderItem(MenuItem menuItem, int quantity, String note) {
-        if (quantity <= 0) throw new BusinessException(ErrorCode.INVALID_INPUT, "Số lượng món phải lớn hơn 0");
-        this.menuItem = menuItem; this.quantity = quantity;
+        if (quantity <= 0)
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "Số lượng món phải lớn hơn 0");
+        this.menuItem = menuItem;
+        this.quantity = quantity;
         this.note = note;
         this.unitPriceAtOrder = menuItem.getPrice();
         this.status = OrderItemStatus.PENDING;
     }
+
     void attachTo(FoodOrder order) {
-        if (this.order != null) throw new BusinessException(ErrorCode.INVALID_STATE, "Món đã thuộc một đợt gọi món");
+        if (this.order != null)
+            throw new BusinessException(ErrorCode.INVALID_STATE, "Món đã thuộc một đợt gọi món");
         this.order = order;
     }
+
     public BigDecimal calculateSubtotal() {
-        return status == OrderItemStatus.CANCELLED || status == OrderItemStatus.UNAVAILABLE
-                ? BigDecimal.ZERO : unitPriceAtOrder.multiply(BigDecimal.valueOf(quantity));
+        return OrderItemStatus.NON_BILLABLE.contains(status)
+                ? BigDecimal.ZERO
+                : unitPriceAtOrder.multiply(BigDecimal.valueOf(quantity));
     }
+
     public void startCooking() {
         if (status == OrderItemStatus.COOKING) return;
-        requireStatus(OrderItemStatus.PENDING); status = OrderItemStatus.COOKING;
+        requireStatus(OrderItemStatus.PENDING);
+        status = OrderItemStatus.COOKING;
     }
+
     public void markUnavailable(String reason) {
         if (status == OrderItemStatus.UNAVAILABLE) return;
         if (status != OrderItemStatus.PENDING && status != OrderItemStatus.COOKING)
-            throw new BusinessException(ErrorCode.INVALID_STATE, "Không thể báo không chế biến được ở trạng thái hiện tại");
-        if (reason == null || reason.isBlank()) throw new BusinessException(ErrorCode.INVALID_INPUT, "Vui lòng nhập lý do không thể chế biến");
-        unavailableReason = reason.trim(); status = OrderItemStatus.UNAVAILABLE;
+            throw new BusinessException(
+                    ErrorCode.INVALID_STATE,
+                    "Không thể báo không chế biến được ở trạng thái hiện tại");
+        if (reason == null || reason.isBlank())
+            throw new BusinessException(
+                    ErrorCode.INVALID_INPUT, "Vui lòng nhập lý do không thể chế biến");
+        unavailableReason = reason.trim();
+        status = OrderItemStatus.UNAVAILABLE;
     }
+
     public void markReady() {
         if (status == OrderItemStatus.READY || status == OrderItemStatus.SERVED) return;
-        requireStatus(OrderItemStatus.COOKING); status = OrderItemStatus.READY;
+        requireStatus(OrderItemStatus.COOKING);
+        status = OrderItemStatus.READY;
     }
+
     public void markServed() {
         if (status == OrderItemStatus.SERVED) return;
-        requireStatus(OrderItemStatus.READY); status = OrderItemStatus.SERVED;
+        requireStatus(OrderItemStatus.READY);
+        status = OrderItemStatus.SERVED;
     }
+
     public void cancel() {
         if (status == OrderItemStatus.CANCELLED) return;
-        requireStatus(OrderItemStatus.PENDING); status = OrderItemStatus.CANCELLED;
+        requireStatus(OrderItemStatus.PENDING);
+        status = OrderItemStatus.CANCELLED;
     }
+
     private void requireStatus(OrderItemStatus expected) {
-        if (status != expected) throw new BusinessException(ErrorCode.INVALID_STATE, "Không thể chuyển trạng thái món ở trạng thái hiện tại");
+        if (status != expected)
+            throw new BusinessException(
+                    ErrorCode.INVALID_STATE,
+                    "Không thể chuyển trạng thái món ở trạng thái hiện tại");
     }
 }
