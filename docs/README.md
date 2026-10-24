@@ -33,6 +33,8 @@ FR-10/FR-17, kiểm toàn bộ 1–36, Edge và thực diễn backup/restore cò
 
 ## Chạy app và QA
 
+- [Triển khai Oracle Cloud + Cloudflare + HTTPS](deployment/oracle-cloud.md): guide Ubuntu 22.04/24.04,
+  Caddy/systemd, DNS, SSL, script deploy từ Windows và rollback; bổ sung 24/10/2026.
 - [README gốc](../README.md): cấu hình, lệnh chạy/test, tài khoản, seed, backup/restore.
 - [Frontend README](../frontend/README.md): route/role, query key, shared UI và điểm nối Phase 4.
 - `node scripts/phase1-demo-readiness.mjs`: kiểm chỉ đọc trước QA/demo; snapshot trong báo cáo không thay kiểm live.
