@@ -1,5 +1,8 @@
 # Prompt triển khai Phase 4
 
+> **Tài liệu lịch sử trước triển khai.** Phase 0–4 và cả 9 sửa PR #4 đã có trong code tại `67e1af2` (đối chiếu 23/10/2026). Xem [hiện trạng](../README.md) và [review PR #4](../phase_results/phase-4-pr-review.md). Nội dung bên dưới giữ mốc bàn giao/prompt gốc; không dùng các dòng “chưa triển khai” làm hiện trạng hoặc chạy lại như tác vụ mới.
+
+
 **Chưa thực thi.** Chỉ giao đoạn dưới khi chủ dự án yêu cầu bắt đầu code Phase 4.
 Chuẩn bị ngày 23/10/2026 không tự cấp quyền triển khai, commit hoặc push.
 

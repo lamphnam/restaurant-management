@@ -7,13 +7,19 @@ import { StatusTag } from '../../components/StatusTag'
 import { useApiFeedback } from '../../hooks/useApiFeedback'
 import type { AccountDetails, CreateAccount } from '../../types/accounts'
 import type { Role } from '../../types/auth'
-import { roleLabels } from '../../utils/labels'
+import { roleLabels, statusLabel } from '../../utils/labels'
+import { filterAccounts } from '../../utils/accountFilters'
 
 const roleOptions = Object.entries(roleLabels).map(([value, label]) => ({ value, label }))
 export default function AccountsPage() {
   const { account } = useAuth()
   const cache = useQueryClient()
   const [open, setOpen] = useState(false)
+  const [searchInput, setSearchInput] = useState('')
+  const [search, setSearch] = useState('')
+  const [roleFilter, setRoleFilter] = useState<Role>()
+  const [statusFilter, setStatusFilter] = useState<AccountDetails['status']>()
+  const [page, setPage] = useState(1)
   const [form] = Form.useForm<CreateAccount>()
   const query = useQuery({ queryKey: ['accounts'], queryFn: ({ signal }) => accountApi.list(signal) })
   const { report, message } = useApiFeedback(query.error)
@@ -24,13 +30,29 @@ export default function AccountsPage() {
   const change = useMutation({ mutationFn: (action: { id: number; type: 'lock' | 'unlock' | 'role'; role?: Role }) =>
     action.type === 'role' ? accountApi.role(action.id, action.role!) : accountApi[action.type](action.id),
   onSuccess: async () => { void message.success('Đã cập nhật tài khoản'); await refresh() }, onError: (error) => report(error) })
+  const filtered = filterAccounts(query.data ?? [], search, roleFilter, statusFilter)
 
   return <section>
     <div className="page-heading"><div><Typography.Title level={1}>Tài khoản</Typography.Title>
       <Typography.Paragraph>Quản lý quyền truy cập của nhân viên.</Typography.Paragraph></div>
       <Button type="primary" size="large" onClick={() => setOpen(true)}>Tạo tài khoản</Button></div>
-    <div className="data-panel"><Table<AccountDetails> rowKey="id" loading={query.isPending} dataSource={query.data ?? []} scroll={{ x: 760 }}
-      pagination={{ pageSize: 20, hideOnSinglePage: true }} columns={[
+    <div className="account-filters">
+      <div className="account-search"><label htmlFor="account-search">Tên hoặc số điện thoại</label>
+        <Input.Search id="account-search" placeholder="Ví dụ: Minh, phuc vu, 0900000004" allowClear enterButton="Tìm kiếm"
+          value={searchInput} onChange={(event) => { setSearchInput(event.target.value); if (!event.target.value) { setSearch(''); setPage(1) } }}
+          onSearch={(value) => { setSearch(value.trim()); setPage(1) }} />
+      </div>
+      <div><label htmlFor="account-role-filter">Vai trò</label><Select id="account-role-filter" value={roleFilter} allowClear placeholder="Tất cả vai trò"
+        options={roleOptions} onChange={(value: Role | undefined) => { setRoleFilter(value); setPage(1) }} /></div>
+      <div><label htmlFor="account-status-filter">Trạng thái</label><Select id="account-status-filter" value={statusFilter} allowClear placeholder="Tất cả trạng thái"
+        options={(['ACTIVE', 'LOCKED'] as const).map((value) => ({ value, label: statusLabel('AccountStatus', value) }))}
+        onChange={(value: AccountDetails['status'] | undefined) => { setStatusFilter(value); setPage(1) }} /></div>
+      <Button onClick={() => { setSearchInput(''); setSearch(''); setRoleFilter(undefined); setStatusFilter(undefined); setPage(1) }}>Đặt lại</Button>
+    </div>
+    <Typography.Paragraph type="secondary" role="status">Tìm thấy {filtered.length} / {query.data?.length ?? 0} tài khoản</Typography.Paragraph>
+    <div className="data-panel"><Table<AccountDetails> rowKey="id" loading={query.isPending} dataSource={filtered} scroll={{ x: 760 }}
+      locale={{ emptyText: 'Không tìm thấy tài khoản. Thử tên/SĐT khác hoặc đặt lại bộ lọc.' }}
+      pagination={{ current: Math.min(page, Math.max(1, Math.ceil(filtered.length / 20))), pageSize: 20, hideOnSinglePage: true, onChange: setPage }} columns={[
         { title: 'Họ tên', dataIndex: 'fullName', render: (name, row) => <strong>{name}{row.id === account?.accountId ? ' (Bạn)' : ''}</strong> },
         { title: 'Số điện thoại', dataIndex: 'phone' },
         { title: 'Vai trò', render: (_, row) => <Select aria-label={`Vai trò ${row.fullName}`} value={row.role} options={roleOptions}

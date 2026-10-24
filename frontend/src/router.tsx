@@ -21,8 +21,12 @@ const InvoicesPage = lazy(() => import('./pages/invoices/InvoicesPage'))
 const InventoryPage = lazy(() => import('./pages/inventory/InventoryPage'))
 const ReceiptsPage = lazy(() => import('./pages/inventory/ReceiptsPage'))
 const StocktakePage = lazy(() => import('./pages/inventory/StocktakePage'))
+const ReconciliationPage = lazy(() => import('./pages/reconciliation/ReconciliationPage'))
+const ReportsPage = lazy(() => import('./pages/reports/ReportsPage'))
 
 const businessPages: Record<string, React.ReactNode> = {
+  '/reconciliation': <ReconciliationPage />,
+  '/reports': <ReportsPage />,
   '/accounts': <AccountsPage />,
   '/menu': <MenuPage />,
   '/floor-plan': <FloorPlanPage />,

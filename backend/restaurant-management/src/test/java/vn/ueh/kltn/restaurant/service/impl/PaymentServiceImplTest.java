@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -15,6 +14,7 @@ import static org.mockito.Mockito.when;
 import static vn.ueh.kltn.restaurant.TestFixtures.CLOCK;
 import static vn.ueh.kltn.restaurant.TestFixtures.NOW;
 import static vn.ueh.kltn.restaurant.TestFixtures.account;
+import static vn.ueh.kltn.restaurant.TestFixtures.appProperties;
 import static vn.ueh.kltn.restaurant.TestFixtures.id;
 import static vn.ueh.kltn.restaurant.TestFixtures.menu;
 import static vn.ueh.kltn.restaurant.TestFixtures.session;
@@ -40,7 +40,6 @@ import vn.ueh.kltn.restaurant.entity.Invoice;
 import vn.ueh.kltn.restaurant.entity.MenuItem;
 import vn.ueh.kltn.restaurant.entity.OrderItem;
 import vn.ueh.kltn.restaurant.entity.ServiceSession;
-import vn.ueh.kltn.restaurant.enums.OrderItemStatus;
 import vn.ueh.kltn.restaurant.enums.PaymentMethod;
 import vn.ueh.kltn.restaurant.enums.SessionStatus;
 import vn.ueh.kltn.restaurant.enums.TableStatus;
@@ -50,6 +49,7 @@ import vn.ueh.kltn.restaurant.realtime.RealtimeEvent;
 import vn.ueh.kltn.restaurant.repository.AccountRepository;
 import vn.ueh.kltn.restaurant.repository.FoodOrderRepository;
 import vn.ueh.kltn.restaurant.repository.InvoiceRepository;
+import vn.ueh.kltn.restaurant.repository.OrderItemRepository;
 import vn.ueh.kltn.restaurant.repository.ServiceSessionRepository;
 import vn.ueh.kltn.restaurant.security.CurrentUser;
 
@@ -73,7 +73,15 @@ class PaymentServiceImplTest {
     void setUp() {
         service =
                 new PaymentServiceImpl(
-                        sessions, foodOrders, invoices, accounts, currentUser, CLOCK, events);
+                        sessions,
+                        foodOrders,
+                        invoices,
+                        accounts,
+                        currentUser,
+                        CLOCK,
+                        events,
+                        mock(OrderItemRepository.class),
+                        appProperties("Asia/Ho_Chi_Minh"));
     }
 
     @Test
@@ -106,8 +114,7 @@ class PaymentServiceImplTest {
     @Test
     void previewSessionCalculatesSubtotalAndDetectsBlockingItems() {
         ServiceSession activeSession = session();
-        when(sessions.findDetailById(activeSession.getId()))
-                .thenReturn(Optional.of(activeSession));
+        when(sessions.findDetailById(activeSession.getId())).thenReturn(Optional.of(activeSession));
 
         FoodOrder order = id(new FoodOrder(activeSession, account(), NOW), 20L);
 
@@ -144,8 +151,7 @@ class PaymentServiceImplTest {
         ServiceSession activeSession = session();
         activeSession.getTable().occupy();
 
-        when(sessions.findLockedById(activeSession.getId()))
-                .thenReturn(Optional.of(activeSession));
+        when(sessions.findLockedById(activeSession.getId())).thenReturn(Optional.of(activeSession));
         when(invoices.existsBySessionId(activeSession.getId())).thenReturn(false);
         when(foodOrders.findDetailsBySessionId(activeSession.getId()))
                 .thenReturn(Collections.emptyList());
@@ -170,8 +176,7 @@ class PaymentServiceImplTest {
         ServiceSession closedSession = session();
         closedSession.close(NOW);
 
-        when(sessions.findLockedById(closedSession.getId()))
-                .thenReturn(Optional.of(closedSession));
+        when(sessions.findLockedById(closedSession.getId())).thenReturn(Optional.of(closedSession));
 
         BusinessException ex =
                 assertThrows(
@@ -188,8 +193,7 @@ class PaymentServiceImplTest {
     void payRejectsSessionWithExistingInvoiceWith409() {
         ServiceSession activeSession = session();
 
-        when(sessions.findLockedById(activeSession.getId()))
-                .thenReturn(Optional.of(activeSession));
+        when(sessions.findLockedById(activeSession.getId())).thenReturn(Optional.of(activeSession));
         when(invoices.existsBySessionId(activeSession.getId())).thenReturn(true);
 
         BusinessException ex =
@@ -206,8 +210,7 @@ class PaymentServiceImplTest {
     @Test
     void payBlocksPaymentWhenPendingItemsExist() {
         ServiceSession activeSession = session();
-        when(sessions.findLockedById(activeSession.getId()))
-                .thenReturn(Optional.of(activeSession));
+        when(sessions.findLockedById(activeSession.getId())).thenReturn(Optional.of(activeSession));
         when(invoices.existsBySessionId(activeSession.getId())).thenReturn(false);
 
         FoodOrder order = id(new FoodOrder(activeSession, account(), NOW), 20L);
@@ -230,8 +233,7 @@ class PaymentServiceImplTest {
     @Test
     void payBlocksPaymentWhenCookingItemsExist() {
         ServiceSession activeSession = session();
-        when(sessions.findLockedById(activeSession.getId()))
-                .thenReturn(Optional.of(activeSession));
+        when(sessions.findLockedById(activeSession.getId())).thenReturn(Optional.of(activeSession));
         when(invoices.existsBySessionId(activeSession.getId())).thenReturn(false);
 
         FoodOrder order = id(new FoodOrder(activeSession, account(), NOW), 20L);
@@ -258,8 +260,7 @@ class PaymentServiceImplTest {
         DiningTable table = activeSession.getTable();
         table.occupy();
 
-        when(sessions.findLockedById(activeSession.getId()))
-                .thenReturn(Optional.of(activeSession));
+        when(sessions.findLockedById(activeSession.getId())).thenReturn(Optional.of(activeSession));
         when(invoices.existsBySessionId(activeSession.getId())).thenReturn(false);
 
         FoodOrder order = id(new FoodOrder(activeSession, account(), NOW), 20L);
@@ -294,8 +295,7 @@ class PaymentServiceImplTest {
         DiningTable table = activeSession.getTable();
         table.occupy();
 
-        when(sessions.findLockedById(activeSession.getId()))
-                .thenReturn(Optional.of(activeSession));
+        when(sessions.findLockedById(activeSession.getId())).thenReturn(Optional.of(activeSession));
         when(invoices.existsBySessionId(activeSession.getId())).thenReturn(false);
         when(foodOrders.findDetailsBySessionId(activeSession.getId()))
                 .thenReturn(Collections.emptyList());
@@ -307,7 +307,8 @@ class PaymentServiceImplTest {
                 .thenAnswer(invocation -> id(invocation.getArgument(0), 102L));
 
         InvoiceResponse response =
-                service.pay(new PaySessionRequest(activeSession.getId(), PaymentMethod.BANK_TRANSFER));
+                service.pay(
+                        new PaySessionRequest(activeSession.getId(), PaymentMethod.BANK_TRANSFER));
 
         assertNotNull(response);
         assertEquals(BigDecimal.ZERO, response.amount());
@@ -319,7 +320,8 @@ class PaymentServiceImplTest {
     @Test
     void listInvoicesPaginatesAndMapsResponse() {
         ServiceSession s = session();
-        Invoice invoice = id(new Invoice(s, account(), PaymentMethod.CASH, new BigDecimal("50000"), NOW), 1L);
+        Invoice invoice =
+                id(new Invoice(s, account(), PaymentMethod.CASH, new BigDecimal("50000"), NOW), 1L);
 
         when(invoices.findAll(any(Specification.class), any(PageRequest.class)))
                 .thenReturn(new PageImpl<>(List.of(invoice), PageRequest.of(0, 20), 1));
